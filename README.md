@@ -84,7 +84,6 @@ const scss = {
     builder: 'GCSSBuilder',
     src: 'assets/scss/**/*.scss',
     dest: 'www/css',
-    npmInstall: ['gulp-sass']
 }
 
 const scripts = {
@@ -92,7 +91,6 @@ const scripts = {
     builder: 'GJavaScriptBuilder',
     src: 'assets/js/**/*.js',
     dest: 'www/js',
-    npmInstall: ['gulp-babel', '@babel/core']
 }
 
 const build = {

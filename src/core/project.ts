@@ -1,6 +1,6 @@
 import * as upath from 'upath';
 import { BuildConfig, BuildName, GBuilder, BuildSet, TaskDoneFunction, BuildSetParallel, BuildItems, BuildNameSelector, BuildItem, CleanerConfig, WatcherConfig } from "./builder";
-import { RTB, GulpTaskFunction, CleanOptions } from "./rtb";
+import { RTB, GulpTaskFunction } from "./rtb";
 import { is, arrayify, info, ExternalCommand, warn, exec, msg } from "../utils/utils";
 import { GBuildManager } from './buildManager';
 import { GReloader, GBrowserSync } from './reloader';

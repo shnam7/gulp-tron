@@ -117,7 +117,7 @@ export class RTB extends EventEmitter {
         if (!src) return this;
 
         const mopts = this.moduleOptions;
-        this._stream = requireSafe('gulp').src(src, mopts.gulp?.src);
+        this._stream = require('gulp').src(src, mopts.gulp?.src);
 
         // check input file ordering
         if (this.conf.order && this.conf.order?.length > 0) {
@@ -143,7 +143,7 @@ export class RTB extends EventEmitter {
             this.pipe(requireSafe('gulp-sourcemaps').write(opts.dest, opts.write));
         }
 
-        return this.pipe(requireSafe('gulp').dest(path || this.conf.dest || '.', this.moduleOptions.gulp?.dest));
+        return this.pipe(require('gulp').dest(path || this.conf.dest || '.', this.moduleOptions.gulp?.dest));
     }
 
     pipe(destination: any, options?: { end?: boolean | undefined; }): this {
