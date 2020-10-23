@@ -19,7 +19,7 @@ export class NPM {
     protected _options: PackageManagerOptions = { name: "npm", installCommand: "npm i", installOptions: "--save-dev", autoInstall: true };
     protected _packageFile: any = {};
 
-    constructor() {}
+    constructor() { this._reloadPackegeFile(); }
 
     public lock(): Promise<unknown> {
         return (this._options.autoInstall ? NPM._mutex.lock() : Promise.resolve());
@@ -60,8 +60,6 @@ export class NPM {
             if (packageManager.installOptions != undefined) this._options.installOptions = packageManager.installOptions;
             if (packageManager.autoInstall != undefined) this._options.autoInstall = packageManager.autoInstall;
         }
-
-        if (this._options.autoInstall) this._reloadPackegeFile();
     }
 
     public install(ids: string | string[]) {
