@@ -107,11 +107,11 @@ tron.createProject(build)
     .addCleaner();
 ```
 
-Check **[examples](examples)** directory for more working examples.
+Check **[samples](https://github.com/shnam7/gulp-tron-samples)** for more examples.
 
 
-//TODO: logo
+<br/><br/>
 <p align="center">
-  <img class="logo" src="https://shnam7.github.io/gulp-tron/images/gulp-tron.svg" width="64px">
+  <img class="logo" src="gulp-tron.svg" width="64px">
   <p align=center>Copyright &copy; 2020, under <a href="./LICENSE">MIT</a></p>
 </div>
