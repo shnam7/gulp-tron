@@ -1,1 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[22],{80:function(o){o.exports=JSON.parse('{"allTagsPath":"/gulp-tron/blog/tags","slug":"hola","name":"hola","count":1,"permalink":"/gulp-tron/blog/tags/hola"}')}}]);
