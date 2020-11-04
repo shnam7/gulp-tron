@@ -28,7 +28,9 @@ export class GLiveReload extends GReloader {
 
     activate() {
         if (this._module) return;
-        this._module = requireSafe('gulp-livereload')(this._options);
+        this._module = requireSafe('gulp-livereload');
+        this._module.listen(this._options);
+        // console.log(this._options);
     }
 
     stream(opts: Options) {

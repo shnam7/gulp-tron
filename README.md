@@ -3,6 +3,9 @@ Easy to use, configuration based gulp build manager. Users can create gulp tasks
 
 Focus on build actions, rather than environment setup.
 
+Note: gulp-tron is the successor of gulp-build-manager, which is no longer maintained.
+
+
 ## Installation
 ```bash
 npm i gulp-tron --save-dev

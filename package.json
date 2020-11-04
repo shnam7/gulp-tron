@@ -1,6 +1,6 @@
 {
     "name": "gulp-tron",
-    "version": "1.0.0-alpha.2",
+    "version": "1.0.0-alpha.3",
     "description": "Easy to use, flexible gulp build manager",
     "files": [
         "lib",
@@ -45,7 +45,7 @@
         "@types/gulp": "^4.0.7",
         "@types/gulp-filter": "^3.0.33",
         "chai": "^4.2.0",
-        "mocha": "^8.2.0",
+        "mocha": "^8.2.1",
         "typescript": "^4.0.5"
     }
 }

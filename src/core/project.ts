@@ -3,7 +3,7 @@ import { BuildConfig, BuildName, GBuilder, BuildSet, TaskDoneFunction, BuildSetP
 import { RTB, GulpTaskFunction } from "./rtb";
 import { is, arrayify, info, ExternalCommand, warn, exec, msg } from "../utils/utils";
 import { GBuildManager } from './buildManager';
-import { GReloader, GBrowserSync } from './reloader';
+import { GReloader, GBrowserSync, GLiveReload } from './reloader';
 
 export type ProjectOptions = {
     projectName?: string;       // optional
@@ -42,7 +42,7 @@ export class GProject {
         const opts: WatcherConfig = is.String(config) ? { name: config, builder: 'watcher' } : Object.assign({}, config);
 
         if (opts.browserSync) this._reloaders.push(new GBrowserSync(opts.browserSync));
-        if (opts.livereload) this._reloaders.push(new GBrowserSync(opts.livereload));
+        if (opts.livereload) this._reloaders.push(new GLiveReload(opts.livereload));
 
         // create watch build item
         return this.addBuildItem({
