@@ -15,7 +15,8 @@ gulp should also be installed.
 
 
 ## Documentation
-Go to [Documentation](https://shnam7.github.io/gulp-tron)
+Go to [Documentation](https://shnam7.github.io/gulp-tron)<br>
+Go to [gulp-tron-samples](https://github.com/shnam7/gulp-tron-samples) for various working examples.
 
 
 ## Key features
