@@ -36,7 +36,7 @@ Go to [gulp-tron-samples](https://github.com/shnam7/gulp-tron-samples) for vario
 const tron = require('gulp-tron');
 
 const scss = {
-    buildName: 'scss',
+    name: 'scss',
     builder: (rtb) => {
         const sass = require('gulp-sass');
         rtb.src().pipe(sass().on('error', sass.logError)).dest()
@@ -47,7 +47,7 @@ const scss = {
 }
 
 const scripts = {
-    buildName: 'babel',
+    name: 'babel',
     builder: (rtb) => {
         const babel = require('gulp-babel');
         rtb.src().pipe(babel()).dest()
@@ -58,7 +58,7 @@ const scripts = {
 }
 
 const build = {
-    buildName: '@build',
+    name: '@build',
     triggers: tron.parallel(scss, scripts),
     clean: 'www/{css,js}'
 }
@@ -84,21 +84,21 @@ This gulpfile will create a single project with 5 gulp tasks as following:
 const tron = require('gulp-tron');
 
 const scss = {
-    buildName: 'scss',
+    name: 'scss',
     builder: 'GCSSBuilder',
     src: 'assets/scss/**/*.scss',
     dest: 'www/css',
 }
 
 const scripts = {
-    buildName: 'babel',
+    name: 'babel',
     builder: 'GJavaScriptBuilder',
     src: 'assets/js/**/*.js',
     dest: 'www/js',
 }
 
 const build = {
-    buildName: '@build',
+    name: '@build',
     triggers: tron.parallel(scss, scripts),
     clean: 'www/{css,js}'
 }
