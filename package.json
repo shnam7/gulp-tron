@@ -1,0 +1,54 @@
+{
+    "name": "gulp-tron",
+    "version": "1.0.0-alpha.3",
+    "description": "Easy to use, flexible gulp build manager",
+    "files": [
+        "lib",
+        "!**/*.map"
+    ],
+    "main": "lib/index.js",
+    "scripts": {
+        "build": "tsc -p src",
+        "clean": "rimraf lib",
+        "rebuild": "npm run clean && npm run build",
+        "watch": "tsc -p src --watch",
+        "test": "mocha test --reporter spec",
+        "prepare-to-commit": "npm run rebuild && npm run test",
+        "npm-dry-run": "npm publish --dry-run"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/shnam7/gulp-tron"
+    },
+    "keywords": [
+        "gulp",
+        "task",
+        "build",
+        "manager",
+        "builder"
+    ],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/shnam7/gulp-tron/issues"
+    },
+    "homepage": "https://github.com/shnam7/gulp-tron#readme",
+    "dependencies": {
+        "@repo/mutex": "workspace:*",
+        "chalk": "^5.3.0",
+        "del": "^7.1.0",
+        "fast-glob": "^3.3.2",
+        "rimraf": "^5.0.5",
+        "upath": "^2.0.1"
+    },
+    "peerDependencies": {
+        "gulp": "^4.0.2"
+    },
+    "devDependencies": {
+        "@types/gulp": "^4.0.17",
+        "@types/gulp-filter": "^3.0.39",
+        "@types/node": "^20.10.6",
+        "chai": "^5.0.0",
+        "mocha": "^10.2.0",
+        "typescript": "^5.3.3"
+    }
+}
