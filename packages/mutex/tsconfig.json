@@ -1,0 +1,15 @@
+{
+    // "$schema": "https://json.schemastore.org/tsconfig",
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ES6",
+        "moduleResolution": "Node",
+        "esModuleInterop": true,
+        "strict": true,
+        "noEmitOnError": true,
+        "noImplicitAny": true,
+        "declaration": true,
+        "outDir": "./dist"
+    },
+    "include": ["./src/**/*.ts"]
+}

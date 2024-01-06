@@ -1,0 +1,22 @@
+{
+    "name": "@repo/mutex",
+    "version": "0.0.0",
+    "private": true,
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": "./dist/index.js",
+    "scripts": {
+        "dev": "tsc --watch",
+        "build": "tsc",
+        "test": "vitest run --coverage",
+        "test:watch": "vitest watch --coverage",
+        "clean": "rimraf dist"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.6",
+        "@vitest/coverage-v8": "^1.1.0",
+        "rimraf": "^5.0.5",
+        "typescript": "^5.3.3",
+        "vitest": "^1.1.0"
+    }
+}
