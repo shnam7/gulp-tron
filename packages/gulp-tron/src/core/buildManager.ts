@@ -4,7 +4,7 @@ import { BuildSet, BuildSetSeries, BuildSetParallel, series, parallel, BuildItem
 import { GProject, ProjectOptions } from './project.js';
 import { npm, PackageManagerOptions } from '../utils/npm.js';
 import gulp, { Gulp } from 'gulp';
-import { CopyBuilder } from './copy-builder.js';
+import { CopyBuilder } from './copyBuilder.js';
 
 //--- GBuildManager
 export class GBuildManager {

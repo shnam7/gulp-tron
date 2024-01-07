@@ -41,6 +41,18 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
 
+  examples/02-task:
+    devDependencies:
+      gulp:
+        specifier: ^4.0.2
+        version: 4.0.2
+      gulp-tron:
+        specifier: workspace:*
+        version: link:../../packages/gulp-tron
+      upath:
+        specifier: ^2.0.1
+        version: 2.0.1
+
   packages/gulp-tron:
     dependencies:
       '@repo/mutex':

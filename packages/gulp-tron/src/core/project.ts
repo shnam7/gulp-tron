@@ -159,13 +159,13 @@ export class GProject {
             const displayName = this._options.prefix + conf.name;
 
             // check for duplicate task registeration
-            let gulpTask = gulp.task(conf.name);
-            if (gulpTask && (gulpTask.name === conf.name)) {
+            let gulpTask = gulp.task(displayName);
+            if (gulpTask && (gulpTask.displayName === displayName)) {
                 // duplicated build name may not be error in case it was resolved multiple time due to deps or triggers
                 // So, info message is displayed only when verbose mode is turned on.
                 // However, it's recommended to avoid it by using buildNames in deppendencies and triggers field of BuildConfig
-                if (conf.verbose) info(`GProject:resolve: taskName=${conf.name} already registered`);
-                return conf.name;
+                if (conf.verbose) info(`GProject:resolve: taskName=${displayName} already registered`);
+                return displayName;
             }
 
             const builderInstance = this.getBuilder(conf);
@@ -173,8 +173,8 @@ export class GProject {
             const deps = arrayify(conf.dependencies);
             const task = conf.builder ? mainTask : undefined;
             const triggers = arrayify(conf.triggers);
-
-            mainTask.displayName = conf.name
+            mainTask.displayName = displayName
+            builderInstance.displayName = displayName
 
             // sanity check for the final task function before calling gulp.task()
             let resolved = this.resolveBuildSet([...deps, task, ...triggers] as BuildSet);
@@ -184,10 +184,9 @@ export class GProject {
                 resolved = gulp.parallel(resolved);
 
             builderInstance.__create(conf)
-            builderInstance.displayName = displayName
-            gulp.task(builderInstance.name, <GulpTaskFunction>resolved);
+            gulp.task(displayName, <GulpTaskFunction>resolved);
             this._builders.push(builderInstance);
-            return conf.name;
+            return displayName;
         }
 
         // if buildSet is BuildSetSeries: recursion

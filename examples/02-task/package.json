@@ -1,0 +1,14 @@
+{
+    "name": "02-task",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "gulp 02-task:@build"
+    },
+    "devDependencies": {
+        "gulp": "^4.0.2",
+        "gulp-tron": "workspace:*",
+        "upath": "^2.0.1"
+    }
+}

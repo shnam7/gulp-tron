@@ -6,11 +6,12 @@ import debug from 'gulp-debug';
 import filter from 'gulp-filter';
 import gulp, { SrcMethod } from 'gulp'
 import * as del from 'del';
-import { Options, msg, ExternalCommand, arrayify, copy, requireSafe, npm } from "../utils/utils.js";
+import { Options, msg, ExternalCommand, arrayify, copy, requireSafe, npm, exec } from "../utils/utils.js";
 import { TaskFunction } from 'gulp';
 import { ReloaderOptions } from './reloader.js';
 import is from '../utils/typecheck.js';
 import { EventEmitter } from 'events';
+import { SpawnOptions } from 'child_process';
 
 export type GulpStream = ReturnType<SrcMethod>;
 export type Stream = GulpStream;
@@ -115,9 +116,9 @@ export class GBuilder extends EventEmitter {
 
     protected _stream: GulpStream = gulp.src('./initial-dummy/**/*.dummy')
     protected _streamQ: GulpStream[] = [];
-    protected _promises: Promise<any>[] = [];
+    // protected _promises: Promise<any>[] = [];
     protected _promiseSync: Promise<any> = Promise.resolve();
-    protected _syncMode: boolean = false;
+    // protected _syncMode: boolean = false;
 
     constructor() { super() }
 
@@ -149,7 +150,7 @@ export class GBuilder extends EventEmitter {
         this.emit('build', this, this._conf);
         await this._build(this, this.conf)
         await this._promiseSync
-        await Promise.all(this._promises)
+        // await Promise.all(this._promises)
         this.emit('postbuild', this, this._conf);
         await this._execute(this.conf.postBuild)
         this.emit('finish', this, this._conf);
@@ -168,8 +169,9 @@ export class GBuilder extends EventEmitter {
     }
 
     protected _start(): void {
-        this._syncMode = false;
-        if (this._syncMode) console.log('RTB: Strating build in sync Mode.');
+        // this._syncMode = false;
+        // if (this._syncMode)
+        // console.log('RTB: Strating build in sync Mode.');
     }
 
     protected _finish() {
@@ -241,20 +243,25 @@ export class GBuilder extends EventEmitter {
 
     //--- accept function or promise
     promise(promise?: Promise<any> | void | PromiseExecutor, sync: boolean = false): this {
-        if (promise instanceof Promise) {
-            if (sync || this._syncMode)
-                this._promiseSync = this._promiseSync.then(() => promise);
-            else
-                this._promises.push(promise);
-        }
+        if (promise instanceof Promise)
+            this._promiseSync = this._promiseSync.then(() => promise);
         else if (is.Function(promise)) {
-            if (sync || this._syncMode)
-                this._promiseSync = this._promiseSync.then(promise as PromiseExecutor);
-            else {
-                promise = (promise as PromiseExecutor)();
-                if (promise) this._promises.push(promise);
-            }
+            this._promiseSync = this._promiseSync.then(promise as PromiseExecutor);
         }
+        // if (promise instanceof Promise) {
+        //     if (sync || this._syncMode)
+        //         this._promiseSync = this._promiseSync.then(() => promise);
+        //     else
+        //         this._promises.push(promise);
+        // }
+        // else if (is.Function(promise)) {
+        //     if (sync || this._syncMode)
+        //         this._promiseSync = this._promiseSync.then(promise as PromiseExecutor);
+        //     else {
+        //         promise = (promise as PromiseExecutor)();
+        //         if (promise) this._promises.push(promise);
+        //     }
+        // }
         return this;
     }
 
@@ -315,7 +322,8 @@ export class GBuilder extends EventEmitter {
                 .then(() => { if (verbose) msg(`[${this.name}]:copying: ${copyInfo} --> done`) });
         }
         arrayify(param).forEach(target => this.promise(
-            (options.sync || this._syncMode) ? () => _copy(target) : _copy(target)
+            () => _copy(target)
+            // (options.sync || this._syncMode) ? () => _copy(target) : _copy(target)
         ));
         return this;
     }
@@ -323,18 +331,18 @@ export class GBuilder extends EventEmitter {
     del(patterns: string | string[], options: Options = {}): this {
         let silent = this.conf.silent || options.silent;
         if (!silent) msg('Deleting:', patterns);
-        if (options.sync || this._syncMode) {
-            del.deleteSync(patterns, options)
-            return this
-        }
-        return this.promise(del.deleteAsync(patterns, options), options.sync);
+        del.deleteSync(patterns, options)
+        return this
+        // if (options.sync || this._syncMode) {
+        //     del.deleteSync(patterns, options)
+        //     return this
+        // }
+        // return this.promise(del.deleteAsync(patterns, options), options.sync);
     }
 
-    // exec(cmd: string | ExternalCommand, args: string[] = [], options: SpawnOptions = {}): this {
-    //     return (options.sync || this._syncMode)
-    //         ? this.promise(() => exec(cmd, args, options), options.sync)
-    //         : this.promise(exec(cmd, args, options), options.sync);
-    // }
+    exec(cmd: string | ExternalCommand, args: string[] = [], options: SpawnOptions = {}): this {
+        return this.promise(() => exec(cmd, args, options))
+    }
 
     // clean(cleanList: string | string[] = [], options: CleanOptions = {}): this {
     //     cleanList = arrayify(this.conf.clean).concat(arrayify(cleanList));
@@ -360,6 +368,4 @@ export class GBuilder extends EventEmitter {
     // minifyJs(options: Options = {}): this {
     //     return this.filter().pipe(requireSafe('gulp-terser')(options)).rename({ extname: '.min.js' });
     // }
-
-
 }

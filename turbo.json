@@ -3,11 +3,13 @@
     "globalDependencies": ["**/.env.*local", "tsconfig.json"],
     "pipeline": {
         "build": {
-            "outputs": ["dist/**"],
+            "inputs": ["src/**", "test/**"],
+            "outputs": ["dist/**", "!converag/**"],
             "dependsOn": ["^build"]
         },
         "test": {
-            "inputs": ["test/**"]
+            "inputs": ["test/**"],
+            "cache": false
         },
         "clean": {
             "cache": false
@@ -15,6 +17,13 @@
         "dev": {
             "cache": false,
             "persistent": true
+        },
+
+        "01-conf#build": {
+            "cache": false
+        },
+        "01-task#build": {
+            "cache": false
         }
     }
 }

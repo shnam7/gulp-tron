@@ -4,8 +4,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "gulp @build",
-        "clean": "gulp @clean"
+        "build": "gulp 00-getting-started:@build",
+        "clean": "gulp 00-getting-started:@clean"
     },
     "devDependencies": {
         "gulp": "^4.0.2",

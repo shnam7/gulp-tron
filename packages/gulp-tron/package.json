@@ -4,6 +4,8 @@
     "description": "Easy to use, flexible gulp build manager",
     "type": "module",
     "main": "dist/index.js",
+    "exports": "./dist/index.js",
+    "types": "./dist/index.d.ts",
     "scripts": {
         "dev": "tsc --watch",
         "build": "tsc",
