@@ -1,11 +1,11 @@
 /**
  *  GReloader - Browser reloader
  */
-import { msg, Options } from "../utils/utils";
-import { requireSafe } from "../utils/npm";
+import { msg, Options } from "../utils/utils.js";
+import { requireSafe } from "../utils/npm.js";
 
 
-export interface ReloaderOptions extends Options { }
+export interface ReloaderOptions extends Options {}
 
 export class GReloader {
     protected _module: any;

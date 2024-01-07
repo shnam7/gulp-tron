@@ -1,0 +1,19 @@
+<meta charset="{{ site.charset | default:'utf-8' }}">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=yes">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>{{ site.title }}{% if page.title %}{{ ' - ' | append:page.title }}{% endif %}</title>
+<meta name="description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
+{% if page.tags %}
+<meta name="keywords" content="{{ page.tags | join: ', ' }}">{% endif %}
+<link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="{{site.baseurl}}/favicon.ico">
+
+<!-- web fonts: Fira Sans, Lato -->
+<link href="https://fonts.googleapis.com/css?family=Roboto|Roboto+Mono" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Roboto|Montserrat" rel="stylesheet">
+
+<!-- scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+<!-- styles -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css" />
+<link rel="stylesheet" href="{{site.baseurl}}/css/style.min.css">

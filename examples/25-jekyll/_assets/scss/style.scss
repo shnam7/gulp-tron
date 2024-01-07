@@ -1,0 +1,30 @@
+a {
+    text-decoration: none;
+}
+
+.l-site {
+    max-width: 960px;
+    margin: 0 auto;
+    border: 1px solid red;
+}
+
+.l-site-header .w-navbar {
+    background: #DA314B;
+    .wz-brand {
+        color: rgb(242,242,242);
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        line-height: 2.5;
+    }
+}
+
+.l-site-content {
+    padding: 1rem;
+    min-height: 30em;
+}
+
+.l-site-footer {
+    background: #444;
+    line-height: 3;
+    p { margin: 0; padding: 0.5rem 1rem; color: #eee; text-align: center;}
+}

@@ -1,0 +1,17 @@
+<html>
+<head>{% include head.html %}</head>
+
+<body class="{{page.body_class}}">
+    <div class="l-site">
+        <header class="l-site-header">{% include header.html %}</header>
+        <div class="l-site-content">
+            <div class="l-page {{page.class}}">
+                <div class="l-content">{{ content }}</div>
+            </div>
+        </div>
+        <footer class="l-site-footer">{% include footer.html %}</footer>
+    </div> <!-- l-site  -->
+    {% include scripts.html %}
+</body>
+
+</html>

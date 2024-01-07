@@ -2,17 +2,15 @@
     "name": "gulp-tron",
     "version": "1.0.0-alpha.3",
     "description": "Easy to use, flexible gulp build manager",
-    "files": [
-        "lib",
-        "!**/*.map"
-    ],
-    "main": "lib/index.js",
+    "type": "module",
+    "main": "dist/index.js",
     "scripts": {
-        "build": "tsc -p src",
-        "clean": "rimraf lib",
+        "dev": "tsc --watch",
+        "build": "tsc",
+        "test": "vitest run --coverage",
+        "test:watch": "vitest watch --coverage",
+        "clean": "rimraf dist",
         "rebuild": "npm run clean && npm run build",
-        "watch": "tsc -p src --watch",
-        "test": "mocha test --reporter spec",
         "prepare-to-commit": "npm run rebuild && npm run test",
         "npm-dry-run": "npm publish --dry-run"
     },
@@ -37,6 +35,9 @@
         "chalk": "^5.3.0",
         "del": "^7.1.0",
         "fast-glob": "^3.3.2",
+        "gulp-debug": "^5.0.1",
+        "gulp-filter": "^9.0.1",
+        "gulp-order": "^1.2.0",
         "rimraf": "^5.0.5",
         "upath": "^2.0.1"
     },
@@ -44,11 +45,13 @@
         "gulp": "^4.0.2"
     },
     "devDependencies": {
+        "@repo/typescript-config": "workspace:*",
         "@types/gulp": "^4.0.17",
+        "@types/gulp-debug": "^2.0.36",
         "@types/gulp-filter": "^3.0.39",
         "@types/node": "^20.10.6",
-        "chai": "^5.0.0",
-        "mocha": "^10.2.0",
-        "typescript": "^5.3.3"
+        "@vitest/coverage-v8": "^1.1.3",
+        "typescript": "^5.3.3",
+        "vitest": "^1.1.3"
     }
 }

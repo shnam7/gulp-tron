@@ -1,0 +1,7 @@
+- title: Examples
+  url: '#'
+  sub:
+    - title: Colors
+      url: '/contents/demo/colors/'
+    - title: Buttons
+      url: '/contents/demo/buttons'

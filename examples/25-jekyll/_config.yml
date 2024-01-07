@@ -1,0 +1,28 @@
+# Site settings
+title:              25-Jekyll
+description:        Compoment library for web front-end development.
+repo:               "https://github.com/shnam7/gulp-tron-samples/master/25-jekyll"
+url:                "https://shnam7.github.io/gulp-tron-samples"
+baseurl:            "/25-jekyll"
+
+# Project settings
+
+# source and destination is set by gulpfile.js
+# source:           .
+# destination:        _site
+encoding:           utf-8
+markdown:           kramdown
+# highlighter:        none
+permalink:          pretty
+exclude:            ['_assets', 'Gemfile*', 'gulpfile.js', 'tsconfig.json']
+
+# Module settings
+kramdown:
+  input: GFM
+  auto_ids: false
+  syntax_highlighter_opts:
+    disable : true
+
+#keep_files:       [css, js]
+
+# Custom variable

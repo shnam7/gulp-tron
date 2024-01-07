@@ -1,6 +1,8 @@
 import child_process = require('child_process');
+import upath from 'upath'
 import { Mutex } from "@repo/mutex";
-import { arrayify, notice, info, warn, is } from "./utils";
+import { arrayify, notice, info, warn } from "./utils.js";
+import is from './typecheck.js';
 
 //--- init: workaround for git-sh-setup not found error
 if (process.platform == 'win32')
@@ -89,7 +91,8 @@ export class NPM {
     public requireSafe(id: string): any {
         if (!this._options.autoInstall) return;
         this.install(id);
-        return require(id);
+        // return require(id);
+        return import(id);
     }
 
     // public isEnabled() { return this._enable; }
@@ -108,7 +111,6 @@ export class NPM {
             if (idx > 0) id = id.substring(idx + 1);
         }
         else if (id.startsWith('/') || id.startsWith('./') || id.startsWith('../')) {   // local folder
-            const upath = require('upath');
             id = upath.basename(id);
         }
         else if (id.startsWith('@')) {  // scope handling
@@ -117,7 +119,6 @@ export class NPM {
             if (idx > 0) id = id.substring(0, idx);     // ex) sax@0.0.1, @types/gulp@latest
         }
         else {  // normal name or github repo
-            const upath = require('upath');
             if (id.indexOf(upath.sep) > 0) {
                 id = upath.basename(id); // ex) shnam7/gulp-tron
                 let idx = id.lastIndexOf('#');
@@ -131,11 +132,12 @@ export class NPM {
     }
 
     protected _reloadPackegeFile() {
-        const fs = require("fs");
-        this._packageFile = JSON.parse(fs.readFileSync(process.cwd() + '/package.json', 'utf-8'));
+        import("fs").then(fs => {
+            this._packageFile = JSON.parse(fs.readFileSync(process.cwd() + '/package.json', 'utf-8'));
+        });
     }
 
-    protected static _mutex = new Mutex(1000);
+    protected static _mutex = new Mutex();
 };
 
 export const npm = new NPM();

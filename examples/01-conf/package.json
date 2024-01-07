@@ -1,0 +1,15 @@
+{
+    "name": "01-conf",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "gulp @build",
+        "clean": "gulp @clean"
+    },
+    "devDependencies": {
+        "gulp": "^4.0.2",
+        "gulp-tron": "workspace:*",
+        "upath": "^2.0.1"
+    }
+}

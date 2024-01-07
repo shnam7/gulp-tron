@@ -3,7 +3,8 @@
  */
 
 import * as child_process from 'child_process';
-import { msg, is } from "./utils";
+import { msg } from "./utils.js";
+import is from './typecheck.js';
 
 export interface SpawnOptions extends child_process.SpawnOptions {
     silent?: boolean;

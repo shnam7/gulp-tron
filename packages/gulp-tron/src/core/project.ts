@@ -1,9 +1,12 @@
-import * as upath from 'upath';
-import { BuildConfig, BuildName, GBuilder, BuildSet, TaskDoneFunction, BuildSetParallel, BuildItems, BuildNameSelector, BuildItem, CleanerConfig, WatcherConfig } from "./builder";
-import { RTB, GulpTaskFunction } from "./rtb";
-import { is, arrayify, info, ExternalCommand, warn, exec, msg } from "../utils/utils";
-import { GBuildManager } from './buildManager';
-import { GReloader, GBrowserSync, GLiveReload } from './reloader';
+import upath from 'upath';
+import gulp, { TaskFunctionCallback } from 'gulp'
+import { arrayify, info, ExternalCommand, exec, msg } from "../utils/utils.js";
+import { GBuildManager } from './buildManager.js';
+import { GReloader, GBrowserSync, GLiveReload } from './reloader.js';
+import { fileURLToPath } from 'url'
+import is from '../utils/typecheck.js';
+import { BuildConfig, BuildFunction, BuildItem, BuildItems, BuildName, BuildNameSelector, BuildSet, BuildSetParallel, CleanerConfig, GBuilder, GulpTaskFunction, TaskOptions, WatcherConfig } from './builder.js';
+const __dirname = upath.dirname(fileURLToPath(import.meta.url))
 
 export type ProjectOptions = {
     projectName?: string;       // optional
@@ -13,7 +16,7 @@ export type ProjectOptions = {
 
 export class GProject {
     protected _options: ProjectOptions = { prefix: "" };
-    protected _rtbs: RTB[] = [];
+    protected _builders: GBuilder[] = [];
     protected _reloaders: GReloader[] = [];
     protected _vars: any = {};
 
@@ -38,7 +41,6 @@ export class GProject {
     }
 
     addWatcher(config: string | WatcherConfig = { builder: 'watcher' }): this {
-        const gulp = require('gulp');
         const opts: WatcherConfig = is.String(config) ? { name: config, builder: 'watcher' } : Object.assign({}, config);
 
         if (opts.browserSync) this._reloaders.push(new GBrowserSync(opts.browserSync));
@@ -47,40 +49,40 @@ export class GProject {
         // create watch build item
         return this.addBuildItem({
             name: opts.name || '@watch',
-            builder: (rtbWatcher) => {
+            builder: (watcher: GBuilder) => {
                 // watch build items
-                this._rtbs.forEach(rtb => {
+                this._builders.forEach(builderInstance => {
                     if (opts.filter) {
                         let skip = true;
-                        arrayify(opts.filter).forEach(filter => { if (rtb.name.match(filter)) { skip = false; return; } })
+                        arrayify(opts.filter).forEach(filter => { if (builderInstance.name.match(filter)) { skip = false; return; } })
                         if (skip) return;
                     }
 
-                    this._reloaders.forEach(reloader => rtb.on('reload', (rtb, type, path, stats) => {
+                    this._reloaders.forEach(reloader => builderInstance.on('reload', (builderInstance: GBuilder, type: string, path: string, stats) => {
                         // console.log(`[${rtb.name}:reload]: stream=${!!rtb.stream} type=${type}, path=${path}, stats=${stats}`);
-                        if (rtb.stream)
-                            rtb.pipe(reloader.stream(opts))
+                        if (builderInstance.stream)
+                            builderInstance.pipe(reloader.stream(opts))
                         else
                             reloader.reload(type == 'change' ? path : undefined)
                     }));
 
-                    let watched = arrayify(rtb.conf.watch ? rtb.conf.watch : rtb.conf.src).concat(arrayify(rtb.conf.addWatch));
-                    if (watched.length <= 0 || rtb.name.length === 0) return;
-                    msg(`Watching ${rtb.name}: [${watched}]`);
-                    let gulpWatcher = gulp.watch(watched, gulp.parallel(rtb.name));
+                    let watched = arrayify(builderInstance.conf.watch ? builderInstance.conf.watch : builderInstance.conf.src).concat(arrayify(builderInstance.conf.addWatch));
+                    if (watched.length <= 0 || builderInstance.name.length === 0) return;
+                    msg(`Watching ${builderInstance.name}: [${watched}]`);
+                    let gulpWatcher = gulp.watch(watched, gulp.parallel(builderInstance.name));
 
                     // transfer gulp watch events to rtb
-                    if (rtb.conf.reloadOnChange !== false)
-                        gulpWatcher.on('all', (...args: any[]) => rtb.once('finish', () => rtb.emit('reload', rtb, ...args)));
+                    if (builderInstance.conf.reloadOnChange !== false)
+                        gulpWatcher.on('all', (...args: any[]) => builderInstance.once('finish', () => builderInstance.emit('reload', builderInstance, ...args)));
                 });
 
                 // pure watch target
                 const watched = arrayify(opts.watch);
                 if (watched.length > 0) {
-                    msg(`Watching ${rtbWatcher.name}: [${watched}]`);
+                    msg(`Watching ${watcher.name}: [${watched}]`);
                     let gulpWatcher = gulp.watch(watched, (done: any) => done());
 
-                    if (rtbWatcher.conf.reloadOnChange != false) {
+                    if (watcher.conf.reloadOnChange != false) {
                         gulpWatcher.on('all', (path: string) => {
                             this._reloaders.forEach(reloader => reloader.reload(path));
                         });
@@ -98,20 +100,20 @@ export class GProject {
 
         return this.addBuildItem({
             name: opts.name || '@clean',
-            builder: (rtb) => {
+            builder: (builderInstance: GBuilder) => {
                 let cleanList = arrayify(opts.clean);
-                this._rtbs.forEach(rtb => {
+                this._builders.forEach(rtb => {
                     if (opts.filter) {
                         let skip = true;
-                        arrayify(opts.filter).forEach(filter => { if (rtb.name.match(filter)) { skip = false; return; } })
+                        arrayify(opts.filter).forEach(filter => { if (builderInstance.name.match(filter)) { skip = false; return; } })
                         if (skip) return;
                     }
 
-                    if (rtb.conf.clean) cleanList = cleanList.concat(arrayify(rtb.conf.clean))
+                    if (builderInstance.conf.clean) cleanList = cleanList.concat(arrayify(builderInstance.conf.clean))
                 });
 
-                msg(`[${rtb.conf.name}]: cleaning `, cleanList);
-                rtb.del(cleanList, { silent: true, sync: opts.sync });
+                msg(`[${builderInstance.conf.name}]: cleaning `, cleanList);
+                builderInstance.del(cleanList, { silent: true, sync: opts.sync });
             }
         });
     }
@@ -124,8 +126,8 @@ export class GProject {
     getBuildNames(selector: BuildNameSelector): string[] {
         let ret: string[] = [];
         const ar = arrayify(selector);
-        this.rtbs.forEach(rtb => ar.forEach(sel => {
-            if (rtb.name.match(sel)) ret.push(rtb.name)
+        this._builders.forEach((builderInstance: GBuilder) => ar.forEach(sel => {
+            if (builderInstance.name.match(sel)) ret.push(builderInstance.name)
         }));
         return ret;
     }
@@ -135,7 +137,7 @@ export class GProject {
 
     get projectName() { return this._options.projectName || ""; }
 
-    get rtbs() { return this._rtbs; }
+    get builders() { return this._builders; }
 
     get prefix() { return this._options.prefix; }
 
@@ -151,14 +153,14 @@ export class GProject {
         if (is.String(buildSet) || is.Function(buildSet))
             return buildSet as (BuildName | GulpTaskFunction);
 
-        const gulp = require('gulp');
         // if buildSet is BuildConfig
         if (GBuilder.isBuildItem(buildSet)) {
             let conf = buildSet as BuildConfig;
+            const displayName = this._options.prefix + conf.name;
 
             // check for duplicate task registeration
             let gulpTask = gulp.task(conf.name);
-            if (gulpTask && (gulpTask.displayName === conf.name)) {
+            if (gulpTask && (gulpTask.name === conf.name)) {
                 // duplicated build name may not be error in case it was resolved multiple time due to deps or triggers
                 // So, info message is displayed only when verbose mode is turned on.
                 // However, it's recommended to avoid it by using buildNames in deppendencies and triggers field of BuildConfig
@@ -166,28 +168,25 @@ export class GProject {
                 return conf.name;
             }
 
-            let rtb = this.getBuilder(conf);
-            let mainTask = (done: TaskDoneFunction) => rtb.__build().then(() => done());
-            let deps = arrayify(conf.dependencies);
-            let task = conf.builder ? mainTask : undefined;
-            let triggers = arrayify(conf.triggers);
+            const builderInstance = this.getBuilder(conf);
+            const mainTask: GulpTaskFunction = (done: TaskFunctionCallback) => builderInstance.buildProcess().then(() => done());
+            const deps = arrayify(conf.dependencies);
+            const task = conf.builder ? mainTask : undefined;
+            const triggers = arrayify(conf.triggers);
+
+            mainTask.displayName = conf.name
 
             // sanity check for the final task function before calling gulp.task()
-            let resolved = this.resolveBuildSet([...deps, task, ...<any>triggers]);
+            let resolved = this.resolveBuildSet([...deps, task, ...triggers] as BuildSet);
             if (!resolved)
                 resolved = mainTask;
             else if (is.String(resolved))
                 resolved = gulp.parallel(resolved);
 
-            // deprecated name check
-            if (!conf.name && conf.buildName) conf.name = conf.buildName;
-
-            conf.name = this._options.prefix + conf.name;
-            rtb.__create(conf)
-            gulp.task(conf.name, <GulpTaskFunction>resolved);
-
-            this._rtbs.push(rtb);
-            GBuildManager.rtbs.push(rtb);   // register to global rtb list
+            builderInstance.__create(conf)
+            builderInstance.displayName = displayName
+            gulp.task(builderInstance.name, <GulpTaskFunction>resolved);
+            this._builders.push(builderInstance);
             return conf.name;
         }
 
@@ -202,7 +201,7 @@ export class GProject {
                 if (ret) list.push(ret);
             }
             if (list.length === 0) return;
-            return list.length > 1 ? gulp.series.apply(null, <any>list) : list[0];
+            return list.length > 1 ? gulp.series(list) : list[0];
         }
 
         // if buildSet is BuildSetParallel: recursion
@@ -217,63 +216,43 @@ export class GProject {
                 if (ret) list.push(ret);
             }
             if (list.length === 0) return;
-            return list.length > 1 ? gulp.parallel.apply(null, <any>list) : list[0];
+            return list.length > 1 ? gulp.parallel(list) : list[0];
         }
 
         // info('GProject:resolve:buildSet='); dmsg(buildSet);
         throw Error('GProject:resolve:Unknown type of buildSet');
     }
 
-    protected getBuilder(conf: BuildConfig): RTB {
+    protected getBuilder(conf: BuildConfig): GBuilder {
         let builder = conf.builder;
 
-        // if builder is GBuilderClassName
-        if (is.String(builder)) {
-            if (builder === 'GBuilder') return new GBuilder();
+        // if builderInstance is GBuilder instance
+        if (builder instanceof GBuilder) return builder
 
-            // try custom dir first to give a chance to overload default builder
-            if (this._options.customBuilderDirs) {
-                let customBuildDirs = arrayify(this._options.customBuilderDirs);
-                for (const dir of customBuildDirs) {
-                    // dmsg('Trying custom builders in ', dir);
-                    let pathName = upath.join(process.cwd(), dir, builder);
-                    try {
-                        let builderClass = require(pathName);
-                        return new builderClass(conf);
-                    }
-                    catch (e: any) {
-                        if (e.code !== 'MODULE_NOT_FOUND' || e.message.indexOf(pathName) < 0) throw e;
-                    }
-                }
-            }
+        // if builderInstance is GBuilderClassName
+        if (is.String(builder)) return GBuildManager.createBuilderInstance(builder)
 
-            // now try builder directory, ../builders
-            let pathName = upath.join(__dirname, '../builders', builder as string);
-            try {
-                let builderClass = require(pathName);
-                return new builderClass.default(conf);
-            }
-            catch (e: any) {
-                if (e.code !== 'MODULE_NOT_FOUND' || e.message.indexOf(pathName) < 0) throw e;
-                warn(`builder '${builder}' not found:`, e);
-            }
-            throw Error('Builder not found: ' + builder + ', or check for modules imported from ' + builder);
+        // if builderInstance is BuildFunction
+        if (is.Function(builder)) {
+            const builderInstance = GBuildManager.createBuilderInstance()
+            const { name, builder, taskOptions }: TaskOptions = { buildOptions: {}, moduleOptions: {}, ...conf }
+            builderInstance.buildFunction = builder as BuildFunction
+            return builderInstance
         }
 
-        // if builder is BuildFunction
-        if (is.Function(builder)) return new RTB(builder);
+        // if builderInstance is ExternalBuilder
+        if (is.Object(builder) && builder!.hasOwnProperty('command')) {
+            const builderInstance = GBuildManager.createBuilderInstance()
+            const { name, builder, taskOptions }: TaskOptions = { buildOptions: {}, moduleOptions: {}, ...conf }
+            builderInstance.buildFunction = async () => exec(<ExternalCommand>builder)
+            return builderInstance
+        }
 
-        // if builders is RTB or its derivatives such as GBuilder
-        if (builder instanceof RTB) return builder;
-
-        // if builder is ExternalBuilder
-        if (is.Object(builder) && builder!.hasOwnProperty('command'))
-            return new RTB(() => exec(<ExternalCommand>builder));
-
-        // if builder is not specified
-        if (!builder) return new RTB(() => {
-            // dmsg(`BuildName:${buildItem.name}: No builder specified.`);
-        });
+        // if builderInstance is not specified
+        if (!builder) {
+            msg(`BuildName:${conf.name}: No builderInstance specified.`);
+            return GBuildManager.createBuilderInstance()
+        }
         throw Error(`[name:${this._options.prefix + conf.name}]Unknown ObjectBuilder.`);
     }
 }

@@ -1,33 +1,12 @@
-import * as fg from 'fast-glob';
-import * as upath from 'upath';
-import * as fs from "fs";
+import fg from 'fast-glob';
+import upath from 'upath';
+import fs from "fs";
+import { requireSafe } from './npm.js';
 import chalk from "chalk";
-import { requireSafe } from './npm';
+import is from './typecheck.js';
 
 export type Options = { [key: string]: any; }
 
-
-/** is: collection of type checking functions */
-function _is(a: any, name: string) {
-    return toString.call(a) === '[object ' + name + ']';
-}
-
-export const is = {
-    Array: (a: unknown): a is typeof a[] => Array.isArray(a),
-    Object: (a: unknown): a is object => a === Object(a),
-    Arguments: (a: unknown) => _is(a, 'Argument'),
-    Function: (a: unknown): a is Function => _is(a, 'Function'),
-    String: (a: unknown): a is string => _is(a, 'String'),
-    Number: (a: unknown): a is number => _is(a, 'Number'),
-    Date: (a: unknown): a is Date => _is(a, 'Date'),
-    RegExp: (a: unknown): a is RegExp => _is(a, 'RegExp'),
-    Error: (a: unknown): a is Error => _is(a, 'Error'),
-    Symbol: (a: unknown): a is Symbol => _is(a, 'Symbol'),
-    Map: (a: unknown): a is typeof Map => _is(a, 'Map'),
-    WeakMap: (a: unknown): a is typeof WeakMap => _is(a, 'WeakMap'),
-    Set: (a: unknown): a is typeof Set => _is(a, 'Set'),
-    WeakSet: (a: unknown): a is typeof WeakSet => _is(a, 'WeakSet')
-};
 
 export function arrayify<T>(arg?: T | T[]): T[] {
     return arg ? (is.Array(arg) ? arg : [arg]) : [];
@@ -125,5 +104,5 @@ export function notice(...args: any[]) { console.log(chalk.yellow(...args)); }
 
 export function warn(...args: any[]) { console.log(chalk.redBright(...args)); }
 
-export * from './process';
-export * from './npm';
+export * from './process.js';
+export * from './npm.js';

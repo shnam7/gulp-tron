@@ -79,12 +79,12 @@ describe.concurrent('Mutex', () => {
 
         for (let n = 0; n < res.length; ++n) {
             it(`${n} ${res[n]} is not in sent message list.`, () => {
-                expect(msg_sent.includes(res[n])).toBeTruthy()
+                expect(msg_sent.includes(res[n] as string)).toBeTruthy()
             })
         }
         for (let n = 0; n < msg_sent.length; ++n) {
             it(`${n} ${msg_sent[n]} is not in received message list.`, () => {
-                expect(res.includes(msg_sent[n])).toBeTruthy()
+                expect(res.includes(msg_sent[n] as string)).toBeTruthy()
             })
         }
     })
