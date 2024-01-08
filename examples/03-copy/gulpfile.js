@@ -1,46 +1,49 @@
-const tron = require('gulp-tron');
-const upath = require('upath');
+import tron from 'gulp-tron'
+import upath from 'upath'
+import { fileURLToPath } from 'url'
 
-const basePath = upath.relative(process.cwd(), __dirname);
-const projectName = upath.basename(__dirname);
-const prefix = projectName + ':';
+const __dirname = upath.dirname(fileURLToPath(import.meta.url))
+const basePath = upath.relative(process.cwd(), __dirname)
+const projectName = upath.basename(__dirname)
+const prefix = projectName + ':'
 
 const copy1 = {
     name: 'copy1',
-    builder: (rtb) => rtb.copy([
-            { src: [upath.join(basePath, 'path-src1/**/*.*')], dest: upath.join(basePath, 'path-dest1') },
-            { src: [upath.join(basePath, 'path-src2/**/*.*')], dest: upath.join(basePath, 'path-dest2') }
-        ], { verbose: true }),
-    flushStream: true, // task to finish after all the files copies are finished
+    builder: builder =>
+        builder.copy(
+            [
+                { src: [upath.join(basePath, 'path-src1/**/*.*')], dest: upath.join(basePath, 'path-dest1') },
+                { src: [upath.join(basePath, 'path-src2/**/*.*')], dest: upath.join(basePath, 'path-dest2') },
+            ],
+            { verbose: true },
+        ),
 }
 
 const copy2 = {
     name: 'copy2',
-    builder: (rtb) => rtb
-        .copy([
+    builder: builder =>
+        builder.copy([
             { src: [upath.join(basePath, 'path-src1/**/*.*')], dest: upath.join(basePath, 'path-dest3') },
             { src: [upath.join(basePath, 'path-src2/**/*.*')], dest: upath.join(basePath, 'path-dest4') },
-        ], {verbose: true}),
-    preBuild: (rtb) => rtb
-        .copy([
+        ]),
+    preBuild: builder =>
+        builder.copy([
             { src: [upath.join(basePath, 'path-src1/**/*.*')], dest: upath.join(basePath, 'path-dest3-pre') },
             { src: [upath.join(basePath, 'path-src2/**/*.*')], dest: upath.join(basePath, 'path-dest4-pre') },
-        ], {verbose: true}),
+        ]),
 
-    postBuild: (rtb) => rtb
-        .copy([
+    postBuild: builder =>
+        builder.copy([
             { src: [upath.join(basePath, 'path-src1/**/*.*')], dest: upath.join(basePath, 'path-dest3-post') },
             { src: [upath.join(basePath, 'path-src2/**/*.*')], dest: upath.join(basePath, 'path-dest4-post') },
-        ], {verbose: true}),
-
-    sync: true,
-    verbose: true
+        ]),
+    verbose: true,
 }
 
 const build = {
     name: '@build',
     triggers: tron.parallel(copy1, copy2),
-    clean: [upath.join(basePath, 'path-dest*')]
+    clean: [upath.join(basePath, 'path-dest*')],
 }
 
-tron.createProject(build, {prefix}).addCleaner();
+tron.createProject(build, { prefix }).addCleaner()

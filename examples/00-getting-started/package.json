@@ -9,9 +9,9 @@
     },
     "devDependencies": {
         "gulp": "^4.0.2",
+        "gulp-tron": "workspace:*",
         "gulp-babel": "^8.0.0",
         "gulp-sass": "^5.1.0",
-        "gulp-tron": "workspace:*",
         "sass": "^1.69.7",
         "upath": "^2.0.1"
     }

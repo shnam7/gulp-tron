@@ -9,7 +9,7 @@ import is from './typecheck.js';
 export interface SpawnOptions extends child_process.SpawnOptions {
     silent?: boolean;
     verbose?: boolean;
-    sync?: boolean
+    // sync?: boolean
 }
 
 export type ProcessOutput = {

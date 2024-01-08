@@ -1,10 +1,9 @@
-import upath from 'upath';
-import * as __utils from '../utils/utils.js';
-import { BuildSet, BuildSetSeries, BuildSetParallel, series, parallel, BuildItems, BuildNameSelector, BuildItem, BuilderClassType, GBuilder } from './builder.js';
-import { GProject, ProjectOptions } from './project.js';
-import { npm, PackageManagerOptions } from '../utils/npm.js';
-import gulp, { Gulp } from 'gulp';
-import { CopyBuilder } from './copyBuilder.js';
+import upath from 'upath'
+import * as __utils from '../utils/utils.js'
+import { BuildSet, BuildSetSeries, BuildSetParallel, series, parallel, BuildItems, BuildNameSelector, BuildItem, BuilderClassType, GBuilder } from './builder.js'
+import { GProject, ProjectOptions } from './project.js'
+import gulp, { Gulp } from 'gulp'
+import { CopyBuilder } from './copyBuilder.js'
 
 //--- GBuildManager
 export class GBuildManager {
@@ -36,33 +35,33 @@ export class GBuildManager {
     }
 
     createProject(buildItems: BuildItem | BuildItems = {}, options?: ProjectOptions): GProject {
-        let proj = new GProject(buildItems, options);
-        this._projects.push(proj);
-        return proj;
+        let proj = new GProject(buildItems, options)
+        this._projects.push(proj)
+        return proj
     }
 
     getBuildNames(selector: BuildNameSelector): string[] {
-        let buildNames: string[] = [];
+        let buildNames: string[] = []
         this._projects.forEach(proj => {
-            buildNames = buildNames.concat(proj.getBuildNames(selector));
-        });
-        return buildNames;
+            buildNames = buildNames.concat(proj.getBuildNames(selector))
+        })
+        return buildNames
     }
 
     findProject(projectName: string): GProject | undefined {
         for (let proj of this._projects)
-            if (proj.projectName === projectName) return proj;
-        return undefined;
+            if (proj.projectName === projectName) return proj
+        return undefined
     }
 
-    setPackageManager(packageManager: string | PackageManagerOptions) {
-        return npm.setPackageManager(packageManager);
-    }
+    // setPackageManager(packageManager: string | PackageManagerOptions) {
+    //     return npm.setPackageManager(packageManager);
+    // }
 
 
     //--- utilities
-    series(...args: BuildSet[]): BuildSetSeries { return series(args); }
-    parallel(...args: BuildSet[]): BuildSetParallel { return parallel(args); }
+    series(...args: BuildSet[]): BuildSetSeries { return series(args) }
+    parallel(...args: BuildSet[]): BuildSetParallel { return parallel(args) }
     // registerExtension(name: string, ext: RTBExtension): void { RTB.registerExtension(name, ext) }
     // loadExtension(globModules: string | string[]) { RTB.loadExtension(globModules) }
     // require(id: string) { return npm.requireSafe(id); }

@@ -100,20 +100,20 @@ export class GProject {
 
         return this.addBuildItem({
             name: opts.name || '@clean',
-            builder: (builderInstance: GBuilder) => {
+            builder: (builder: GBuilder) => {
                 let cleanList = arrayify(opts.clean);
-                this._builders.forEach(rtb => {
+                this._builders.forEach(builder => {
                     if (opts.filter) {
                         let skip = true;
-                        arrayify(opts.filter).forEach(filter => { if (builderInstance.name.match(filter)) { skip = false; return; } })
+                        arrayify(opts.filter).forEach(filter => { if (builder.name.match(filter)) skip = false })
                         if (skip) return;
                     }
 
-                    if (builderInstance.conf.clean) cleanList = cleanList.concat(arrayify(builderInstance.conf.clean))
+                    if (builder.conf.clean) cleanList = cleanList.concat(arrayify(builder.conf.clean))
                 });
 
-                msg(`[${builderInstance.conf.name}]: cleaning `, cleanList);
-                builderInstance.del(cleanList, { silent: true, sync: opts.sync });
+                msg(`[${builder.conf.name}]: cleaning `, cleanList);
+                builder.del(cleanList, { silent: true });
             }
         });
     }
