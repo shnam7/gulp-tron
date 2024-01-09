@@ -1,9 +1,9 @@
 import upath from 'upath'
-import * as __utils from '../utils/utils.js'
 import { BuildSet, BuildSetSeries, BuildSetParallel, series, parallel, BuildItems, BuildNameSelector, BuildItem, BuilderClassType, GBuilder } from './builder.js'
 import { GProject, ProjectOptions } from './project.js'
 import gulp, { Gulp } from 'gulp'
 import { CopyBuilder } from './copyBuilder.js'
+import { msg } from '../utils/log.js'
 
 //--- GBuildManager
 export class GBuildManager {
@@ -23,7 +23,7 @@ export class GBuildManager {
     static registerBuilder(builderClass: BuilderClassType): void {
         const entry = GBuildManager._builderTypes.get(builderClass.name)
         if (entry)
-            __utils.msg(`registerBuilder:builderClass '${builderClass}' is already registered. Registration skipped.`)
+            msg(`registerBuilder:builderClass '${builderClass}' is already registered. Registration skipped.`)
         else
             GBuildManager._builderTypes.set(builderClass.name, builderClass)
     }

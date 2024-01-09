@@ -8,12 +8,14 @@ import filter from 'gulp-filter'
 import rename from 'gulp-rename'
 import streamToPromise from 'stream-to-promise'
 import * as del from 'del'
-import { Options, msg, ExternalCommand, arrayify, copy, exec, cloneStream } from "../utils/utils.js"
+import { Options, arrayify, copy, cloneStream } from "../utils/utils.js"
 import { TaskFunction } from 'gulp'
 import { ReloaderOptions } from './reloader.js'
 import is from '../utils/typecheck.js'
 import { EventEmitter } from 'events'
 import { SpawnOptions } from 'child_process'
+import { ExternalCommand, exec } from '../utils/process.js'
+import { msg } from '../utils/log.js'
 
 export type GulpStream = ReturnType<SrcMethod>
 export type Stream = GulpStream
@@ -310,16 +312,13 @@ export class GBuilder extends EventEmitter {
         if (!param) return this   // allow null argument
 
         const verbose = this.conf.verbose || options.verbose
-        const _copy = (target: any): Promise<unknown> => {
+        const _copy = (target: any): void => {
             let copyInfo = `[${target.src}] => ${target.dest}`
             if (verbose) msg(`[${this.name}]:copying: ${copyInfo}`)
-            return copy(target.src, target.dest)
-                .then(() => { if (verbose) msg(`[${this.name}]:copying: ${copyInfo} --> done`) })
+            copy(target.src, target.dest)
+            // .then(() => { if (verbose) msg(`[${this.name}]:copying: ${copyInfo} --> done`) })
         }
-        arrayify(param).forEach(target => this.promise(
-            () => _copy(target)
-            // (options.sync || this._syncMode) ? () => _copy(target) : _copy(target)
-        ))
+        arrayify(param).forEach(target => _copy(target))
         return this
     }
 

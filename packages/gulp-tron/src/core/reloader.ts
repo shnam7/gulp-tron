@@ -2,7 +2,8 @@
  *  GReloader - Browser reloader
  */
 import browserSync from 'browser-sync'
-import { msg, Options } from "../utils/utils.js"
+import { Options } from "../utils/utils.js"
+import { msg } from '../utils/log.js'
 
 export interface ReloaderOptions extends Options {}
 
