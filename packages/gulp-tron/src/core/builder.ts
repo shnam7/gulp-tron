@@ -2,7 +2,7 @@
  *  Builder Base Class
  */
 
-import gulp, { SrcMethod } from 'gulp'
+import gulp, { SrcMethod, DestMethod } from 'gulp'
 import debug from 'gulp-debug'
 import filter from 'gulp-filter'
 import rename from 'gulp-rename'
@@ -24,7 +24,6 @@ export type BuildFunction = (builder: GBuilder, conf: TaskOptions) => void | Pro
 export type CopyParam = { src: string | string[], dest: string }
 // export type RTBExtension = (...args: any[]) => BuildFunction;
 
-
 //--- BuilderType
 export type BuildName = string
 export type BuildNameSelector = string | string[] | RegExp | RegExp[]; export type BuilderClassName = string
@@ -42,27 +41,30 @@ export function parallel(...args: BuildSet[]): BuildSetParallel { return { set: 
 export type BuildItem = BuildConfig | WatcherConfig | CleanerConfig
 export type BuildItems = { [key: string]: BuildItem }
 
+type SRC = Parameters<SrcMethod>
+
+
 //--- BuildConfig
 export interface BuildConfig {
-    name: string                   // build name, mandatory field
-    builder?: BuilderType          // main build operations in various form: function, object, class, etc
-    src?: string | string[]        // source for build operation
-    dest?: string                  // output(destination) directory of the build operation
-    // order?: string[];               // input file(src) ordering
-    outFile?: string               // optional output file name
-    preBuild?: BuildFunction       // function to be executed before BuildConfig.builder
-    postBuild?: BuildFunction      // function to be executed after BuildConfig.builder
-    buildOptions?: Options         // buildConfig instance specific custom options
-    moduleOptions?: Options        // gulp module options
-    dependencies?: BuildSet        // buildSet to be executed before this build task
-    triggers?: BuildSet            // buildSet to be executed after this build task
-    watch?: string | string[]      // override default watch, 'src' if defined
-    addWatch?: string | string[]   // additional watch in addition to watch or default watch
-    clean?: string | string[]      // clean targets
-    flushStream?: boolean          // finish all the output streams before exiting gulp task
-    reloadOnChange?: boolean       // Reload on change when watcher is running. default is true.
-    verbose?: boolean,              // print verbose messages
-    silent?: boolean,               // depress informative messages
+    name: string                        // build name, mandatory field
+    builder?: BuilderType               // main build operations in various form: function, object, class, etc
+    src?: Parameters<SrcMethod>[0]      // source for build operation
+    dest?: Parameters<DestMethod>[0]    // output(destination) directory of the build operation
+    // order?: string[];                // input file(src) ordering
+    outFile?: string                    // optional output file name
+    preBuild?: BuildFunction            // function to be executed before BuildConfig.builder
+    postBuild?: BuildFunction           // function to be executed after BuildConfig.builder
+    buildOptions?: Options              // buildConfig instance specific custom options
+    moduleOptions?: Options             // gulp module options
+    dependencies?: BuildSet             // buildSet to be executed before this build task
+    triggers?: BuildSet                 // buildSet to be executed after this build task
+    watch?: string | string[]           // override default watch, 'src' if defined
+    addWatch?: string | string[]        // additional watch in addition to watch or default watch
+    clean?: string | string[]           // clean targets
+    flushStream?: boolean               // finish all the output streams before exiting gulp task
+    reloadOnChange?: boolean            // Reload on change when watcher is running. default is true.
+    verbose?: boolean,                  // print verbose messages
+    silent?: boolean,                   // depress informative messages
 };
 
 //--- WatcherConfig (Watcher task config)
@@ -100,23 +102,19 @@ type PromiseExecutor = () => void | Promise<any>
 //     moduleOptions: Options;
 // }
 
-function toPromise(stream: Stream): Promise<Buffer> {
-    return streamToPromise(stream)
-}
+// function toPromise(stream: Stream): Promise<Buffer> {
+//     return streamToPromise(stream)
+// }
 
 
 //--- GBuilder
 export class GBuilder extends EventEmitter {
     protected _name: string = ""
-    protected _displayName: string = ""
+    protected _displayName: string = ""     // gulp task name
     protected _conf: TaskOptions = { name: '', buildOptions: {}, moduleOptions: {} };
-    protected _buildFunc: BuildFunction = (builder: GBuilder, conf: TaskOptions) => {}
-
     protected _stream: GulpStream = gulp.src('./initial-dummy/**/*.dummy')
     protected _streamQ: GulpStream[] = [];
-    // protected _promises: Promise<any>[] = [];
     protected _promiseSync: Promise<any> = Promise.resolve();
-    // protected _syncMode: boolean = false;
 
     constructor() { super() }
 
@@ -195,43 +193,28 @@ export class GBuilder extends EventEmitter {
 
     setModuleOptions(mopts: Options) { Object.assign(this.conf.moduleOptions, mopts) }
 
-    src(src?: string | string[]): this {
-        if (!src) src = this.conf.src
-        if (!src) return this
+    src(...args: Parameters<SrcMethod>): this {
+        const globs = args[0] || this._conf.src
+        if (!globs) return this
 
-        const mopts = this.moduleOptions
+        const opt = { ...this.moduleOptions.gulp?.src, ...args[1] }
+        if (this.buildOptions.sourceMap) opt.sourcemaps = this.buildOptions.sourcemaps
 
-        this._stream = gulp.src(src, mopts.gulp?.src)
-
-        // check input file ordering
-        // if (this.conf.order && this.conf.order?.length > 0) {
-        //     this.pipe(order(this.conf.order, mopts.order));
-        // }
+        this._stream = gulp.src(globs, opt)
         this.emit('after-src', this)
-
-        // check sourceMap option
-        // if (this.buildOptions.sourceMap)
-        //     this.pipe(requireSafe('gulp-sourcemaps').init(this.moduleOptions?.sourcemaps?.init));
-
         return this
     }
 
-    dest(path?: string): this {
+    dest(...args: Parameters<DestMethod>): this {
         this.emit('before-dest', this)
-
-        // check sourceMap option
-        if (this.buildOptions.sourceMap) {
-            let opts = this.moduleOptions.sourcemaps || {}
-            if (!opts.dest && opts.inline !== true) opts.dest = '.'
-            //TODO: to be fixe later...
-            this.pipe(gulp.dest(opts.dest, opts.write))
-        }
-
-        return this.pipe(gulp.dest(path || this.conf.dest || '.', this.moduleOptions.gulp?.dest))
+        const folder = args[0] || this.conf.dest || '.'
+        const opt = { ...this.moduleOptions.gulp?.dest, ...args[1] }
+        if (this.buildOptions.sourceMap) opt.sourcemaps = this.buildOptions.sourcemaps
+        return this.pipe(gulp.dest(folder, opt))
     }
 
-    pipe(destination: any, options?: { end?: boolean | undefined }): this {
-        this._stream = this._stream.pipe(destination, options)
+    pipe(...args: Parameters<ReturnType<SrcMethod>['pipe']>): this {
+        this._stream = this._stream.pipe(...args) as GulpStream
         return this
     }
 
@@ -241,44 +224,14 @@ export class GBuilder extends EventEmitter {
 
 
     //--- accept function or promise
-    promise(promise?: Promise<any> | void | PromiseExecutor, sync: boolean = false): this {
+    promise(promise?: Promise<any> | void | PromiseExecutor): this {
         if (promise instanceof Promise)
             this._promiseSync = this._promiseSync.then(() => promise)
         else if (is.Function(promise)) {
             this._promiseSync = this._promiseSync.then(promise as PromiseExecutor)
         }
-        // if (promise instanceof Promise) {
-        //     if (sync || this._syncMode)
-        //         this._promiseSync = this._promiseSync.then(() => promise);
-        //     else
-        //         this._promises.push(promise);
-        // }
-        // else if (is.Function(promise)) {
-        //     if (sync || this._syncMode)
-        //         this._promiseSync = this._promiseSync.then(promise as PromiseExecutor);
-        //     else {
-        //         promise = (promise as PromiseExecutor)();
-        //         if (promise) this._promises.push(promise);
-        //     }
-        // }
         return this
     }
-
-    // sync(): this {
-    //     this._syncMode = true;
-    //     return this;
-    // }
-
-    // async(): this {
-    //     this._syncMode = true;
-    //     return this;
-    // }
-
-    // wait(msec: number = 0, sync: boolean = false): this {
-    //     return (sync || this._syncMode)
-    //         ? this.promise(() => wait(msec), sync)
-    //         : this.promise(wait(msec), sync);
-    // }
 
     pushStream(): this {
         this._streamQ.push(this._stream)
@@ -288,16 +241,16 @@ export class GBuilder extends EventEmitter {
 
     popStream(): this {
         if (this._streamQ.length > 0) {
-            if (this._stream) this.promise(toPromise(this._stream))  // back for flushing
+            if (this._stream) this.promise(streamToPromise(this._stream))  // promise for flushing
             const stream = this._streamQ.pop()
             if (stream) this._stream = stream
         }
         return this
     }
 
-    debug(options: Options = {}): this {
-        let opts = Object.assign({ title: options.title || '' }, options)
-        return this.pipe(debug(opts))
+    debug(...args: Parameters<typeof debug>): this {
+        this._stream = this._stream.pipe(debug(...args))
+        return this
     }
 
     filter(pattern: string | string[] | filter.FileFunction = ["**", "!**/*.map"], options: filter.Options = {}): this {
@@ -327,11 +280,6 @@ export class GBuilder extends EventEmitter {
         if (!silent) msg('Deleting:', patterns)
         del.deleteSync(patterns, options)
         return this
-        // if (options.sync || this._syncMode) {
-        //     del.deleteSync(patterns, options)
-        //     return this
-        // }
-        // return this.promise(del.deleteAsync(patterns, options), options.sync);
     }
 
     exec(cmd: string | ExternalCommand, args: string[] = [], options: SpawnOptions = {}): this {

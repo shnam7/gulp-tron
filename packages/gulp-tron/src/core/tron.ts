@@ -6,30 +6,30 @@ import { CopyBuilder } from './copyBuilder.js'
 import { msg } from '../utils/log.js'
 
 //--- GBuildManager
-export class GBuildManager {
+export class GTron {
     protected _gulp: Gulp = gulp
     protected _projects: GProject[] = [];
     protected static _builderTypes: Map<string, BuilderClassType> = new Map()
 
     constructor() {
-        GBuildManager.registerBuilder(GBuilder)
-        GBuildManager.registerBuilder(CopyBuilder)
+        GTron.registerBuilder(GBuilder)
+        GTron.registerBuilder(CopyBuilder)
     }
 
     //--- expose gulp
     get gulp(): typeof gulp { return this._gulp }
-    get builderTypes() { return GBuildManager._builderTypes }
+    get builderTypes() { return GTron._builderTypes }
 
     static registerBuilder(builderClass: BuilderClassType): void {
-        const entry = GBuildManager._builderTypes.get(builderClass.name)
+        const entry = GTron._builderTypes.get(builderClass.name)
         if (entry)
             msg(`registerBuilder:builderClass '${builderClass}' is already registered. Registration skipped.`)
         else
-            GBuildManager._builderTypes.set(builderClass.name, builderClass)
+            GTron._builderTypes.set(builderClass.name, builderClass)
     }
 
     static createBuilderInstance(builderClassName?: string): GBuilder {
-        const builderClass = GBuildManager._builderTypes.get(builderClassName || 'GBuilder')
+        const builderClass = GTron._builderTypes.get(builderClassName || 'GBuilder')
         if (!builderClass) throw Error(`createBuilder:"${builderClassName}" not found. It should be registered first with registerBuilder().`)
         return new builderClass()
     }

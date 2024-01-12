@@ -4,6 +4,8 @@
 import browserSync from 'browser-sync'
 import { Options } from "../utils/utils.js"
 import { msg } from '../utils/log.js'
+import { GulpStream } from './builder.js'
+import through2 from 'through2'
 
 export interface ReloaderOptions extends Options {}
 
@@ -14,7 +16,8 @@ export class GReloader {
     constructor(options?: ReloaderOptions) { Object.assign(this._options, options) }
 
     activate() {}
-    stream(opts: Options = {}) {}
+    // module(opts: Options = {}): GulpStream { return through2.obj() }    // return pass-through
+    module(opts: Options = {}): GulpStream { return this._module }    // return pass-through
     reload(path?: string | string[], opts: Options = {}) {
         if (!this._module) return  // if not activated, return
         this._module.reload(...(path ? [path, opts] : [opts]))
@@ -34,7 +37,7 @@ export class GLiveReload extends GReloader {
         // // console.log(this._options);
     }
 
-    stream(opts: Options) {
+    module(opts: Options) {
         if (this._module) return this._module(opts)
     }
 }
@@ -50,7 +53,7 @@ export class GBrowserSync extends GReloader {
         this._module.init(this._options, () => msg('browserSync server started with options:', this._options))
     }
 
-    stream(opts: Options) {
+    module(opts: Options) {
         if (this._module) return this._module.stream(opts)
     }
 }

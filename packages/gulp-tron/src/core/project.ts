@@ -1,9 +1,7 @@
-import upath from 'upath'
 import gulp, { TaskFunctionCallback } from 'gulp'
 import { arrayify, } from "../utils/utils.js"
-import { GBuildManager } from './buildManager.js'
+import { GTron } from './tron.js'
 import { GReloader, GBrowserSync, GLiveReload } from './reloader.js'
-import { fileURLToPath } from 'url'
 import is from '../utils/typecheck.js'
 import { BuildConfig, BuildFunction, BuildItem, BuildItems, BuildName, BuildNameSelector, BuildSet, BuildSetParallel, CleanerConfig, GBuilder, GulpTaskFunction, TaskOptions, WatcherConfig } from './builder.js'
 import { ExternalCommand, exec } from '../utils/process.js'
@@ -62,7 +60,7 @@ export class GProject {
                     this._reloaders.forEach(reloader => builderInstance.on('reload', (builderInstance: GBuilder, type: string, path: string, stats) => {
                         // console.log(`[${rtb.name}:reload]: stream=${!!rtb.stream} type=${type}, path=${path}, stats=${stats}`);
                         if (builderInstance.stream)
-                            builderInstance.pipe(reloader.stream(opts))
+                            builderInstance.pipe(reloader.module(opts))
                         else
                             reloader.reload(type == 'change' ? path : undefined)
                     }))
@@ -230,11 +228,11 @@ export class GProject {
         if (builder instanceof GBuilder) return builder
 
         // if builderInstance is GBuilderClassName
-        if (is.String(builder)) return GBuildManager.createBuilderInstance(builder)
+        if (is.String(builder)) return GTron.createBuilderInstance(builder)
 
         // if builderInstance is BuildFunction
         if (is.Function(builder)) {
-            const builderInstance = GBuildManager.createBuilderInstance()
+            const builderInstance = GTron.createBuilderInstance()
             const { name, builder, taskOptions }: TaskOptions = { buildOptions: {}, moduleOptions: {}, ...conf }
             builderInstance.buildFunction = builder as BuildFunction
             return builderInstance
@@ -242,7 +240,7 @@ export class GProject {
 
         // if builderInstance is ExternalBuilder
         if (is.Object(builder) && builder!.hasOwnProperty('command')) {
-            const builderInstance = GBuildManager.createBuilderInstance()
+            const builderInstance = GTron.createBuilderInstance()
             const { name, builder, taskOptions }: TaskOptions = { buildOptions: {}, moduleOptions: {}, ...conf }
             builderInstance.buildFunction = async () => exec(<ExternalCommand>builder)
             return builderInstance
@@ -251,7 +249,7 @@ export class GProject {
         // if builderInstance is not specified
         if (!builder) {
             msg(`BuildName:${conf.name}: No builderInstance specified.`)
-            return GBuildManager.createBuilderInstance()
+            return GTron.createBuilderInstance()
         }
         throw Error(`[name:${this._options.prefix + conf.name}]Unknown ObjectBuilder.`)
     }

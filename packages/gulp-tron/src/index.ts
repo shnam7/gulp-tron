@@ -2,7 +2,7 @@
  *  gulp-tron - Build Manager
  */
 
-import { GBuildManager } from './core/buildManager.js';
+import { GTron } from './core/tron.js'
 
-const tron = new GBuildManager();
+const tron = new GTron()
 export default tron
