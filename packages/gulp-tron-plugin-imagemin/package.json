@@ -1,0 +1,38 @@
+{
+    "name": "gulp-tron-plugin-imagemin",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": "./dist/index.js",
+    "scripts": {
+        "dev": "tsc --watch",
+        "build": "tsc",
+        "build:trubo": "turbo build --filter=gulp-tron-plugin-imagemin",
+        "test": "vitest run --coverage",
+        "test:watch": "vitest watch --coverage",
+        "clean": "rimraf ./dist ./coverage",
+        "rebuild": "npm-run-all -s clean build",
+        "prepare-to-commit": "npm-run-all rebuild test",
+        "npm-dry-run": "npm publish --dry-run"
+    },
+    "devDependencies": {
+        "@repo/typescript-config": "workspace:*",
+        "@repo/utils": "workspace:*",
+        "@types/glob-base": "^0.3.2",
+        "@types/gulp-imagemin": "^8.0.6",
+        "@types/imagemin": "^8.0.5",
+        "@types/imagemin-jpegtran": "^5.0.4",
+        "@vitest/coverage-v8": "^1.2.1",
+        "fast-glob": "^3.3.2",
+        "glob-base": "^0.3.0",
+        "gulp-imagemin": "^9.0.0",
+        "gulp-tron": "workspace:*",
+        "imagemin": "^8.0.1",
+        "imagemin-jpegtran": "^7.0.0",
+        "rimraf": "^5.0.5",
+        "typescript": "^5.3.3",
+        "vitest": "^1.2.1"
+    }
+}

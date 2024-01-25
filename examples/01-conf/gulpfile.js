@@ -1,6 +1,8 @@
 import tron from 'gulp-tron'
 import upath from 'upath'
-import { fileURLToPath } from 'url'
+import {
+    fileURLToPath
+} from 'url'
 
 const __dirname = upath.dirname(fileURLToPath(import.meta.url))
 const basePath = upath.relative(process.cwd(), __dirname)
@@ -34,4 +36,10 @@ const main = {
     triggers: tron.series(build1, build2),
 }
 
-tron.createProject({ main }, {})
+tron.createProject({
+    main
+}, {})
+
+tron.task('task1', (bs) => {
+    console.log(`task1: className=${bs.className}`)
+})

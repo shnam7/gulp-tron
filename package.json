@@ -10,7 +10,7 @@
         "format": "prettier --write \"**/*.{ts,tsx,md}\""
     },
     "license": "MIT",
-    "packageManager": "pnpm@8.14.0",
+    "packageManager": "pnpm@8.14.3",
     "engines": {
         "node": ">=18"
     }

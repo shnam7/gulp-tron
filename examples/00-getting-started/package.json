@@ -12,7 +12,7 @@
         "gulp-tron": "workspace:*",
         "gulp-babel": "^8.0.0",
         "gulp-sass": "^5.1.0",
-        "sass": "^1.69.7",
+        "sass": "^1.70.0",
         "upath": "^2.0.1"
     }
 }

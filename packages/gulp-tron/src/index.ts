@@ -2,7 +2,9 @@
  *  gulp-tron - Build Manager
  */
 
-import { GTron } from './core/tron.js'
+import { Tron } from './core/tron.js'
+export { BuildStream } from './core/buildSream.js'
+export type { PluginFunction, PluginOptions } from './core/buildSream.js'
 
-const tron = new GTron()
+const tron = new Tron()
 export default tron

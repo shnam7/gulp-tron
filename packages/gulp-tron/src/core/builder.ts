@@ -139,17 +139,12 @@ export class GBuilder extends EventEmitter {
      *-----------------------------------------------------------------*/
     //: gulp task entry point
     protected async __buildProcess(): Promise<any> {
-        this.emit('start', this, this._conf)
         this._start()
-        this.emit('prebuild', this, this._conf)
         await this._execute(this.conf.preBuild)
-        this.emit('build', this, this._conf)
         await this._build(this, this.conf)
         await this._promiseSync
         // await Promise.all(this._promises)
-        this.emit('postbuild', this, this._conf)
         await this._execute(this.conf.postBuild)
-        this.emit('finish', this, this._conf)
         this._finish()
     }
 
@@ -181,7 +176,6 @@ export class GBuilder extends EventEmitter {
         Object.assign(this._conf, conf)
         this._name = conf.name
         // this.moduleOptions = Object.assign({}, GBuildManager.defaultModuleOptions, conf.moduleOptions);
-        this.emit('create', this, this._conf)
         return this
     }
 
@@ -201,12 +195,10 @@ export class GBuilder extends EventEmitter {
         if (this.buildOptions.sourceMap) opt.sourcemaps = this.buildOptions.sourcemaps
 
         this._stream = gulp.src(globs, opt)
-        this.emit('after-src', this)
         return this
     }
 
     dest(...args: Parameters<DestMethod>): this {
-        this.emit('before-dest', this)
         const folder = args[0] || this.conf.dest || '.'
         const opt = { ...this.moduleOptions.gulp?.dest, ...args[1] }
         if (this.buildOptions.sourceMap) opt.sourcemaps = this.buildOptions.sourcemaps

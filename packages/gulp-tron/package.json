@@ -3,7 +3,7 @@
     "version": "1.0.0-alpha.3",
     "description": "Easy to use, flexible gulp build manager",
     "type": "module",
-    "main": "dist/index.js",
+    "main": "./dist/index.js",
     "exports": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "scripts": {
@@ -55,13 +55,13 @@
         "@types/gulp-debug": "^2.0.36",
         "@types/gulp-filter": "^3.0.39",
         "@types/gulp-rename": "^2.0.6",
-        "@types/node": "^20.10.6",
+        "@types/node": "^20.11.6",
         "@types/stream-to-promise": "^2.2.4",
         "@types/through2": "^2.0.41",
-        "@vitest/coverage-v8": "^1.1.3",
+        "@vitest/coverage-v8": "^1.2.1",
         "through2": "^4.0.2",
         "typescript": "^5.3.3",
         "vinyl": "^3.0.0",
-        "vitest": "^1.1.3"
+        "vitest": "^1.2.1"
     }
 }

@@ -1,41 +1,56 @@
 import upath from 'upath'
 import { BuildSet, BuildSetSeries, BuildSetParallel, series, parallel, BuildItems, BuildNameSelector, BuildItem, BuilderClassType, GBuilder } from './builder.js'
-import { GProject, ProjectOptions } from './project.js'
+import { Project, ProjectOptions } from './project.js'
 import gulp, { Gulp } from 'gulp'
 import { CopyBuilder } from './copyBuilder.js'
 import { msg } from '../utils/log.js'
+import { BuildStream } from './buildSream.js'
+
+export interface BuildOptions {
+    [key: string]: any
+}
+
+export type BuildFunction = (bs: BuildStream, opts?: BuildOptions) => void | Promise<any>
 
 //--- GBuildManager
-export class GTron {
+export class Tron {
     protected _gulp: Gulp = gulp
-    protected _projects: GProject[] = [];
+    protected _projects: Project[] = [];
     protected static _builderTypes: Map<string, BuilderClassType> = new Map()
 
     constructor() {
-        GTron.registerBuilder(GBuilder)
-        GTron.registerBuilder(CopyBuilder)
+        Tron.registerBuilder(GBuilder)
+        Tron.registerBuilder(CopyBuilder)
+    }
+
+    task(name: string, func: BuildFunction): void | Promise<void> {
+        const bs = new BuildStream(name)
+        gulp.task(name, async (callback) => {
+            await func(bs)
+            callback()
+        })
     }
 
     //--- expose gulp
     get gulp(): typeof gulp { return this._gulp }
-    get builderTypes() { return GTron._builderTypes }
+    get builderTypes() { return Tron._builderTypes }
 
     static registerBuilder(builderClass: BuilderClassType): void {
-        const entry = GTron._builderTypes.get(builderClass.name)
+        const entry = Tron._builderTypes.get(builderClass.name)
         if (entry)
             msg(`registerBuilder:builderClass '${builderClass}' is already registered. Registration skipped.`)
         else
-            GTron._builderTypes.set(builderClass.name, builderClass)
+            Tron._builderTypes.set(builderClass.name, builderClass)
     }
 
     static createBuilderInstance(builderClassName?: string): GBuilder {
-        const builderClass = GTron._builderTypes.get(builderClassName || 'GBuilder')
+        const builderClass = Tron._builderTypes.get(builderClassName || 'GBuilder')
         if (!builderClass) throw Error(`createBuilder:"${builderClassName}" not found. It should be registered first with registerBuilder().`)
         return new builderClass()
     }
 
-    createProject(buildItems: BuildItem | BuildItems = {}, options?: ProjectOptions): GProject {
-        let proj = new GProject(buildItems, options)
+    createProject(buildItems: BuildItem | BuildItems = {}, options?: ProjectOptions): Project {
+        let proj = new Project(buildItems, options)
         this._projects.push(proj)
         return proj
     }
@@ -48,7 +63,7 @@ export class GTron {
         return buildNames
     }
 
-    findProject(projectName: string): GProject | undefined {
+    findProject(projectName: string): Project | undefined {
         for (let proj of this._projects)
             if (proj.projectName === projectName) return proj
         return undefined
