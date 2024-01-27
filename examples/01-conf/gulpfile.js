@@ -1,5 +1,6 @@
 import tron from 'gulp-tron'
 import upath from 'upath'
+import gulp from 'gulp'
 import {
     fileURLToPath
 } from 'url'
@@ -9,37 +10,41 @@ const basePath = upath.relative(process.cwd(), __dirname)
 const projectName = upath.basename(__dirname)
 const prefix = projectName + ':'
 
-// Create BuildConf Item #1
+
 const build1 = {
     name: 'build1',
-    builder: builder => console.log(builder.name + ' executed.'),
-    preBuild: builder => console.log(builder.name + ' preBuild called.'),
-    postBuild: builder => console.log(builder.name + ' postBuild called.'),
+    build: bs => console.log(`${bs.name} executed.`),
 }
 
-// Create BuildConf Item #2
 const build2 = {
     name: 'build2',
-    builder: builder => console.log(builder.name + ' executed.'),
-    preBuild: builder => console.log(builder.name + ' preBuild called.'),
-    postBuild: builder => console.log(builder.name + ' postBuild called.'),
+    build: bs => console.log(`${bs.name}:main executed.`),
+    dependsOn: build1
 }
 
-// Create BuildConf for main
-const main = {
-    name: '@build',
-    builder: builder => console.log(builder.name + ' executed.'),
-    preBuild: builder => console.log(builder.name + ' preBuild called.'),
-    postBuild: builder => console.log(builder.name + ' postBuild called.'),
-
-    dependencies: tron.parallel(build1, build2),
-    triggers: tron.series(build1, build2),
+const build3 = {
+    name: 'build3',
+    build: bs => console.log(`${bs.name}:main executed.`),
+    dependsOn: tron.parallel('build1', 'build2')
 }
 
-tron.createProject({
-    main
-}, {})
-
-tron.task('task1', (bs) => {
-    console.log(`task1: className=${bs.className}`)
+tron.task('build1', (bs) => {
+    console.log(`${bs.name}: className=${bs.className}`)
 })
+
+tron.task({
+    name: '@build',
+    build: bs => console.log(`${bs.name}:main executed.`),
+    dependsOn: tron.series(build1, tron.parallel(build2, build3, 'build4')),
+    logLevel: 'verbose'
+})
+
+
+
+// gulp.task('b2', (cb) => {
+//     cb()
+// })
+// gulp.task('@b2', b2)
+
+// gulp.task('t1', gulp.series((cb) => cb()))
+// gulp.task('t1', gulp.series((cb) => cb(), undefined))

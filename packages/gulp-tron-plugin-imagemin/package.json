@@ -24,7 +24,7 @@
         "@types/gulp-imagemin": "^8.0.6",
         "@types/imagemin": "^8.0.5",
         "@types/imagemin-jpegtran": "^5.0.4",
-        "@vitest/coverage-v8": "^1.2.1",
+        "@vitest/coverage-v8": "^1.2.2",
         "fast-glob": "^3.3.2",
         "glob-base": "^0.3.0",
         "gulp-imagemin": "^9.0.0",
@@ -33,6 +33,6 @@
         "imagemin-jpegtran": "^7.0.0",
         "rimraf": "^5.0.5",
         "typescript": "^5.3.3",
-        "vitest": "^1.2.1"
+        "vitest": "^1.2.2"
     }
 }

@@ -11,14 +11,18 @@
         "build": "tsc",
         "test": "vitest run --coverage",
         "test:watch": "vitest watch --coverage",
-        "clean": "rimraf dist"
+        "clean": "rimraf ./dist ./coverage",
+        "rebuild": "npm-run-all -s clean build",
+        "prepare-to-commit": "npm-run-all rebuild test",
+        "npm-dry-run": "npm publish --dry-run"
     },
     "devDependencies": {
         "@repo/typescript-config": "workspace:*",
-        "@types/node": "^20.11.6",
-        "@vitest/coverage-v8": "^1.2.1",
+        "@types/node": "^20.11.7",
+        "@vitest/coverage-v8": "^1.2.2",
+        "npm-run-all": "^4.1.5",
         "rimraf": "^5.0.5",
         "typescript": "^5.3.3",
-        "vitest": "^1.2.1"
+        "vitest": "^1.2.2"
     }
 }

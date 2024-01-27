@@ -22,13 +22,14 @@
     },
     "devDependencies": {
         "@repo/typescript-config": "workspace:*",
-        "@vitest/coverage-v8": "^1.2.1",
+        "@vitest/coverage-v8": "^1.2.2",
         "del": "^7.1.0",
         "dev-null": "^0.1.1",
         "fast-glob": "^3.3.2",
         "is": "^3.3.0",
+        "npm-run-all": "^4.1.5",
         "rimraf": "^5.0.5",
         "typescript": "^5.3.3",
-        "vitest": "^1.2.1"
+        "vitest": "^1.2.2"
     }
 }

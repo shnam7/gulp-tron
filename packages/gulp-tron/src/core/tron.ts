@@ -1,10 +1,6 @@
-import upath from 'upath'
-import { BuildSet, BuildSetSeries, BuildSetParallel, series, parallel, BuildItems, BuildNameSelector, BuildItem, BuilderClassType, GBuilder } from './builder.js'
-import { Project, ProjectOptions } from './project.js'
-import gulp, { Gulp } from 'gulp'
-import { CopyBuilder } from './copyBuilder.js'
-import { msg } from '../utils/log.js'
+import gulp from 'gulp'
 import { BuildStream } from './buildSream.js'
+import type { BuildSet, BuildSetParallel, BuildSetSeries, GulpTaskFunction, GulpTaskFunctionCallback, TaskConfig } from './types.js'
 
 export interface BuildOptions {
     [key: string]: any
@@ -14,85 +10,102 @@ export type BuildFunction = (bs: BuildStream, opts?: BuildOptions) => void | Pro
 
 //--- GBuildManager
 export class Tron {
-    protected _gulp: Gulp = gulp
-    protected _projects: Project[] = [];
-    protected static _builderTypes: Map<string, BuilderClassType> = new Map()
+    constructor() {}
 
-    constructor() {
-        Tron.registerBuilder(GBuilder)
-        Tron.registerBuilder(CopyBuilder)
+    task(conf: TaskConfig): void | Promise<void>
+
+    task(name: string, build?: BuildFunction, dependsOn?: BuildSet): void | Promise<void>
+
+    task(arg1: TaskConfig | string, build?: BuildFunction, dependsOn?: BuildSet): void | Promise<void> {
+        const conf = (typeof arg1 === 'string') ? { name: arg1, build, dependsOn } : arg1
+        resolveBuildSet(conf)
     }
-
-    task(name: string, func: BuildFunction): void | Promise<void> {
-        const bs = new BuildStream(name)
-        gulp.task(name, async (callback) => {
-            await func(bs)
-            callback()
-        })
-    }
-
-    //--- expose gulp
-    get gulp(): typeof gulp { return this._gulp }
-    get builderTypes() { return Tron._builderTypes }
-
-    static registerBuilder(builderClass: BuilderClassType): void {
-        const entry = Tron._builderTypes.get(builderClass.name)
-        if (entry)
-            msg(`registerBuilder:builderClass '${builderClass}' is already registered. Registration skipped.`)
-        else
-            Tron._builderTypes.set(builderClass.name, builderClass)
-    }
-
-    static createBuilderInstance(builderClassName?: string): GBuilder {
-        const builderClass = Tron._builderTypes.get(builderClassName || 'GBuilder')
-        if (!builderClass) throw Error(`createBuilder:"${builderClassName}" not found. It should be registered first with registerBuilder().`)
-        return new builderClass()
-    }
-
-    createProject(buildItems: BuildItem | BuildItems = {}, options?: ProjectOptions): Project {
-        let proj = new Project(buildItems, options)
-        this._projects.push(proj)
-        return proj
-    }
-
-    getBuildNames(selector: BuildNameSelector): string[] {
-        let buildNames: string[] = []
-        this._projects.forEach(proj => {
-            buildNames = buildNames.concat(proj.getBuildNames(selector))
-        })
-        return buildNames
-    }
-
-    findProject(projectName: string): Project | undefined {
-        for (let proj of this._projects)
-            if (proj.projectName === projectName) return proj
-        return undefined
-    }
-
-    // setPackageManager(packageManager: string | PackageManagerOptions) {
-    //     return npm.setPackageManager(packageManager);
-    // }
-
 
     //--- utilities
-    series(...args: BuildSet[]): BuildSetSeries { return series(args) }
-    parallel(...args: BuildSet[]): BuildSetParallel { return parallel(args) }
-    // registerExtension(name: string, ext: RTBExtension): void { RTB.registerExtension(name, ext) }
-    // loadExtension(globModules: string | string[]) { RTB.loadExtension(globModules) }
-    // require(id: string) { return npm.requireSafe(id); }
-    // install(ids: string | string[]) { return npm.install(ids); }    // TODO: add to docs
-
-    //--- properties
-    // get rtbs() { return GBuildManager.rtbs; }
-    // get builders() { return __builders; }
-    // get utils() { return __utils; }
-
-    //--- statics
-    // static rtbs: RTB[] = [];
+    series(...args: BuildSet[]): BuildSetSeries { return args }
+    parallel(...args: BuildSet[]): BuildSetParallel { return { set: args } }
 }
 
+/**
+ * Convert buildSet to gulp task tree
+ *
+ * @param buildSet
+ * @returns gulp task function of the gulp task tree constructed from buildSet. undefined there's no task.
+ */
+export const resolveBuildSet = (buildSet?: BuildSet): GulpTaskFunction | void => {
+    if (!buildSet) return
 
-//-- custom builders
-// function __builders() {}
-// namespace __builders { export const GBuilder = GBuilderClass; }
-// registerPropertiesFromFiles(__builders, upath.join(__dirname, '../builders/*.js'))
+    // buildSet is gulp task name (BuildName)
+    if (typeof buildSet === 'string') return gulp.task(buildSet)?.unwrap()
+
+    // buildSet is gulp task function
+    if (typeof buildSet === 'function') return gulp.task(buildSet)
+
+    // buildSet is series set
+    if (Array.isArray(buildSet)) {
+        // strip redundant arrays
+        while (buildSet.length === 1 && Array.isArray(buildSet[0])) buildSet = buildSet[0]
+
+        let list = []
+        for (let bs of buildSet) {
+            let ret = resolveBuildSet(bs)
+            if (ret) list.push(ret)
+        }
+        if (list.length === 0) return
+        return list.length > 1 ? gulp.series(list) : list[0]
+    }
+
+    // buildSet is parallel set
+    if (typeof buildSet === 'object' && buildSet.hasOwnProperty('set')) {
+        let set = (<BuildSetParallel>buildSet).set
+        while (set.length === 1 && Array.isArray(set[0])) set = set[0]
+
+        let list = []
+        for (let bs of set) {
+            let ret = resolveBuildSet(bs)
+            if (ret) list.push(ret)
+        }
+        if (list.length === 0) return
+        return list.length > 1 ? gulp.parallel(list) : list[0]
+    }
+
+    // buildSet is TaskConfig object
+    if (typeof buildSet === 'object') {
+        const { name, build, dependsOn, logLevel } = buildSet as TaskConfig
+        if (!name) throw Error(`resolveBuildSet: invalid task name: ${name}`)
+
+        const gulpTask = gulp.task(name)
+        if (gulpTask) {
+            // duplicated buil1d name may not be error in case it was resolved multiple time due to deps or triggers
+            // So, info message is displayed only when verbose mode is turned on.
+            // However, it's recommended to avoid it by using buildNames in deppendencies and triggers field of BuildConfig
+            if (logLevel == 'verbose') console.log(`resolveBuildSet:taskName=${name} already registered.`)
+            return gulpTask
+        }
+
+        const deps = resolveBuildSet(dependsOn)
+        if (build) {
+            const mainTask = async (callback: GulpTaskFunctionCallback) => {
+                const bs = new BuildStream(name)
+                if (build) await build(bs)
+                callback()
+            }
+            mainTask.displayName = (deps) ? name + ':main' : name
+            if (deps)
+                gulp.task(name, gulp.series(deps, mainTask))
+            else
+                gulp.task(name, mainTask)
+        }
+        else if (deps) {
+            if (/(series|parallel)/.test(deps.toString()))
+                gulp.task(name, deps)
+            else
+                gulp.task(name, gulp.series(deps))
+        }
+        return gulp.task(name)
+    }
+    else {
+        // buildSet is unknow - throw Error
+        throw Error(`resolveBuildSet:Unknown type of buildSet: ${buildSet}`)
+    }
+}
