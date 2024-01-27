@@ -25,26 +25,19 @@ const build2 = {
 const build3 = {
     name: 'build3',
     build: bs => console.log(`${bs.name}:main executed.`),
-    dependsOn: tron.parallel('build1', 'build2')
+    dependsOn: tron.parallel(build1, build2)
 }
 
-tron.task('build1', (bs) => {
+const build4 = {
+    name: 'build4'
+}
+
+tron.task('build5', (bs) => {
     console.log(`${bs.name}: className=${bs.className}`)
 })
 
 tron.task({
     name: '@build',
-    build: bs => console.log(`${bs.name}:main executed.`),
-    dependsOn: tron.series(build1, tron.parallel(build2, build3, 'build4')),
-    logLevel: 'verbose'
+    dependsOn: tron.series(build1, tron.parallel(build2, build3, build4), 'build5'),
+    triggers: tron.series(build1, tron.parallel(build2, build3, build4), 'build5'),
 })
-
-
-
-// gulp.task('b2', (cb) => {
-//     cb()
-// })
-// gulp.task('@b2', b2)
-
-// gulp.task('t1', gulp.series((cb) => cb()))
-// gulp.task('t1', gulp.series((cb) => cb(), undefined))

@@ -5,7 +5,7 @@
         "build": "turbo build",
         "clean:": "turbo clean --filter=...^gulp-tron",
         "clean:all": "pnpm run clean && turbo clean ",
-        "dev": "turbo dev",
+        "dev": "turbo dev --filter=gulp-tron",
         "lint": "turbo lint",
         "format": "prettier --write \"**/*.{ts,tsx,md}\""
     },

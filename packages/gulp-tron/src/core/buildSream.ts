@@ -7,6 +7,7 @@ import debug from 'gulp-debug'
 import filter from 'gulp-filter'
 import rename from 'gulp-rename'
 import type { GulpStream, PluginFunction } from './types.js'
+import streamToPromise from 'stream-to-promise'
 
 
 //--- GBuilder
@@ -34,6 +35,11 @@ export class BuildStream {
     dest(...args: Parameters<DestMethod>): this {
         const [folder, opt] = args
         return this.pipe(gulp.dest(folder, opt))
+    }
+
+    async flush(): Promise<void> {
+        await this._promiseSync
+        await streamToPromise(this._stream)
     }
 
     pipe(func: PluginFunction): this

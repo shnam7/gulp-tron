@@ -26,6 +26,7 @@ export class Tron {
     parallel(...args: BuildSet[]): BuildSetParallel { return { set: args } }
 }
 
+
 /**
  * Convert buildSet to gulp task tree
  *
@@ -36,10 +37,18 @@ export const resolveBuildSet = (buildSet?: BuildSet): GulpTaskFunction | void =>
     if (!buildSet) return
 
     // buildSet is gulp task name (BuildName)
-    if (typeof buildSet === 'string') return gulp.task(buildSet)?.unwrap()
+    if (typeof buildSet === 'string') {
+        const gulpTask = gulp.task(buildSet)
+        if (!gulpTask) throw Error(`resolveBuildset: Task "${buildSet}" is not found.`)
+        return gulpTask
+    }
 
     // buildSet is gulp task function
-    if (typeof buildSet === 'function') return gulp.task(buildSet)
+    if (typeof buildSet === 'function') {
+        if (/(series|parallel)/.test(buildSet.toString())) return buildSet
+        if (gulp.task(buildSet.name)) return buildSet
+        return gulp.task(buildSet)
+    }
 
     // buildSet is series set
     if (Array.isArray(buildSet)) {
@@ -60,18 +69,20 @@ export const resolveBuildSet = (buildSet?: BuildSet): GulpTaskFunction | void =>
         let set = (<BuildSetParallel>buildSet).set
         while (set.length === 1 && Array.isArray(set[0])) set = set[0]
 
+        console.log(`---1.0: set`, set)
         let list = []
         for (let bs of set) {
             let ret = resolveBuildSet(bs)
             if (ret) list.push(ret)
         }
+        console.log(`---1.1: list`, list)
         if (list.length === 0) return
         return list.length > 1 ? gulp.parallel(list) : list[0]
     }
 
     // buildSet is TaskConfig object
     if (typeof buildSet === 'object') {
-        const { name, build, dependsOn, logLevel } = buildSet as TaskConfig
+        const { name, build, dependsOn, triggers, logLevel } = buildSet as TaskConfig
         if (!name) throw Error(`resolveBuildSet: invalid task name: ${name}`)
 
         const gulpTask = gulp.task(name)
@@ -84,24 +95,16 @@ export const resolveBuildSet = (buildSet?: BuildSet): GulpTaskFunction | void =>
         }
 
         const deps = resolveBuildSet(dependsOn)
-        if (build) {
-            const mainTask = async (callback: GulpTaskFunctionCallback) => {
-                const bs = new BuildStream(name)
-                if (build) await build(bs)
-                callback()
-            }
-            mainTask.displayName = (deps) ? name + ':main' : name
-            if (deps)
-                gulp.task(name, gulp.series(deps, mainTask))
-            else
-                gulp.task(name, mainTask)
+        const trig = resolveBuildSet(triggers)
+        const mainTask = async () => {
+            if (!build) return Promise.resolve()
+            const bs = new BuildStream(name)
+            await build(bs)
+            return bs.flush()
         }
-        else if (deps) {
-            if (/(series|parallel)/.test(deps.toString()))
-                gulp.task(name, deps)
-            else
-                gulp.task(name, gulp.series(deps))
-        }
+        mainTask.displayName = (deps) ? name + ':main' : name
+        const tasks = [deps, mainTask, trig].filter(task => !!task) as GulpTaskFunction[]
+        gulp.task(name, (tasks.length === 1) ? tasks[0] as GulpTaskFunction : gulp.series(...tasks))
         return gulp.task(name)
     }
     else {

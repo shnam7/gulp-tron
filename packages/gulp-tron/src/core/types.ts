@@ -15,28 +15,17 @@ export type BuildOptions = {
 export type TaskConfig = LogOptions & {
     name: string                            // build name
     build?: BuildFunction                   // main build function
-    dependsOn?: BuildSet
+    dependsOn?: BuildSet                    // buildSet to be executed before main build function
+    triggers?: BuildSet                     // buildSet to be executed after main build function
 
-    // preBuild?: BuildFunction            // function to be executed before build
-    // postBuild?: BuildFunction           // function to be executed after build
-
-    // builder?: BuilderType               // main build operations in various form: function, object, class, etc
     // src?: Parameters<SrcMethod>[0]      // source for build operation
     // dest?: Parameters<DestMethod>[0]    // output(destination) directory of the build operation
     // // order?: string[];                // input file(src) ordering
     // outFile?: string                    // optional output file name
-    // // buildOptions?: Options              // buildConfig instance specific custom options
-    // // moduleOptions?: Options             // gulp module options
-    // dependencies?: BuildSet             // buildSet to be executed before this build task
-    // triggers?: BuildSet                 // buildSet to be executed after this build task
     // watch?: string | string[]           // override default watch, 'src' if defined
     // addWatch?: string | string[]        // additional watch in addition to watch or default watch
     // clean?: string | string[]           // clean targets
-    // flushStream?: boolean               // finish all the output streams before exiting gulp task
     // reloadOnChange?: boolean            // Reload on change when watcher is running. default is true.
-    // verbose?: boolean,                  // print verbose messages
-    // silent?: boolean,                   // depress informative messages
-    // [key: string]: any
 }
 
 // //--- BuildItem
