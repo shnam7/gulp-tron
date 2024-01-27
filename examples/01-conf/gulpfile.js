@@ -32,12 +32,32 @@ const build4 = {
     name: 'build4'
 }
 
-tron.task('build5', (bs) => {
+const build5 = {
+    name: 'build5',
+    dependsOn: tron.task('build6', (bs) => console.log(`${bs.name} executed.`)),
+    logLevel: 'verbose'
+}
+
+console.log(
+    tron.createTasks(build1), // test for single item
+    tron.createTasks(build2, build3, build4, build5) // test for multiple items
+)
+
+tron.task('build7', (bs) => {
     console.log(`${bs.name}: className=${bs.className}`)
 })
 
+tron.task('build8', (bs) => {
+    console.log(`${bs.name}: className=${bs.className}`)
+}, {
+    dependsOn: build1
+})
+
+
 tron.task({
     name: '@build',
-    dependsOn: tron.series(build1, tron.parallel(build2, build3, build4), 'build5'),
-    triggers: tron.series(build1, tron.parallel(build2, build3, build4), 'build5'),
+    dependsOn: tron.series(build1, tron.parallel(build2, build3, build4), build5),
+    triggers: tron.series(build1, tron.parallel(build2, build3, build4), build5),
 })
+
+console.log('Tron build streams:', tron.buildStreams)

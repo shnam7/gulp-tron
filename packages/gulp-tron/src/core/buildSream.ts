@@ -6,8 +6,10 @@ import gulp, { DestMethod, SrcMethod } from 'gulp'
 import debug from 'gulp-debug'
 import filter from 'gulp-filter'
 import rename from 'gulp-rename'
-import type { GulpStream, PluginFunction } from './types.js'
+import type { GulpStream, PluginFunction, TaskOptions } from './types.js'
 import streamToPromise from 'stream-to-promise'
+
+export type BuildStreamOptions = Omit<TaskOptions, 'build' | 'dependOn' | 'triggers'>
 
 
 //--- GBuilder
@@ -15,12 +17,17 @@ export class BuildStream {
     protected _name: string
     protected _stream: GulpStream = gulp.src('./initial-dummy/**/*.dummy')
     protected _promiseSync: Promise<any> = Promise.resolve();
+    protected _opts: BuildStreamOptions
 
-    constructor(name: string) { this._name = name }
+    constructor(name: string, opts: BuildStreamOptions = {}) {
+        this._name = name
+        this._opts = { ...opts }
+    }
 
     get name() { return this._name }
     get className() { return this.constructor.name }
     get stream() { return this._stream }
+    get opts() { return this._opts }
 
     /**----------------------------------------------------------------
      * Build API: Returns value should be 'this'

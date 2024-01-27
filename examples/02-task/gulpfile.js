@@ -1,16 +1,21 @@
 import tron from 'gulp-tron'
 import upath from 'upath'
-import { fileURLToPath } from 'url'
+import {
+    fileURLToPath
+} from 'url'
 
 const __dirname = upath.dirname(fileURLToPath(import.meta.url))
 const basePath = upath.relative(process.cwd(), __dirname)
 const projectName = upath.basename(__dirname)
 const prefix = projectName + ':'
-const gulp = tron.gulp
 
 //--- build item type #1: BuildConfig items
-const build1 = { name: 'build1' }
-const build2 = { name: 'build2' }
+const build1 = {
+    name: 'build1'
+}
+const build2 = {
+    name: 'build2'
+}
 
 //--- build item type #2: native gulp task function
 function gulpTaskFunc(done) {
@@ -31,17 +36,14 @@ const set06 = prefix + 'build1'
 
 const simpleTask = {
     name: 'simple-build',
-    builder: builder => console.log(`${builder.displayName} executed`),
-    preBuild: builder => console.log(`${builder.displayName}:preBuild called, customVar1=${builder.conf.customVar1}`),
-    postBuild: builder => console.log(`${builder.displayName}:postBuild called, customVar1=${builder.conf.customVar2}`),
+    build: builder => console.log(`${builder.displayName} executed`),
 
-    // buildSet can be of type GulpTaskFunction, not normal function.
+    // buildSet functiopn type should be GulpTaskFunction, not normal function.
     // so, gulp.serial() or gulp.parallel() is required
-    triggers: tron.parallel(done => {
+    triggers: done => {
         console.log(`annonymous: trigger successful.`)
         done()
-    }),
-
+    },
     customVar1: 'customer variable#1',
     customVar2: 'customer variable#2',
 }
@@ -49,26 +51,38 @@ const simpleTask = {
 //--- external commands
 const cmd1 = {
     name: 'cmd1',
-    builder: builder => builder.exec({ command: 'dir', args: ['.'] }),
-    flushStream: true,
+    build: bs => bs.exec({
+        command: 'dir',
+        args: ['.']
+    }),
 }
 
 const cmd2 = {
     name: 'cmd2',
-    builder: {
+    build: {
         command: 'node',
         args: ['-v'],
-        options: { shell: false },
+        options: {
+            shell: false
+        },
     },
-    flushStream: true,
 }
 
 const main = {
     name: '@build',
-    builder: builder => console.log(builder.name + ' is running'),
-    dependencies: tron.parallel(set01, set02, set03, set04, set05, set06),
+    build: builder => console.log(builder.name + ' is running'),
+    dependsOn: tron.parallel(set01, set02, set03, set04, set05, set06),
     triggers: [cmd1, cmd2], // run in series
 }
 
 // tron.createProject({ build1, build2, simpleTask, cmd1, cmd2, main }, { prefix })
-tron.createProject({ build1, build2, simpleTask, cmd1, cmd2, main }, { prefix })
+tron.createProject({
+    build1,
+    build2,
+    simpleTask,
+    cmd1,
+    cmd2,
+    main
+}, {
+    prefix
+})
