@@ -9,9 +9,9 @@ import { deleteSync, Options } from 'del'
  */
 export type DelOptions = Options & { logLevel?: 'verbose' | 'normal' | 'silent', logger?: (...args: any[]) => void }
 
-export const del = (patterns: string | string[], opt: DelOptions = {}): string[] => {
-    const logger = opt.logger || console.log
+export const del = (patterns: string | string[], opts: DelOptions = {}): string[] => {
+    const logger = opts.logger || console.log
 
-    if (opt.logLevel === 'verbose') logger('Deleting:', patterns)
-    return deleteSync(patterns, opt)
+    if (opts.logLevel === 'verbose') logger('Deleting:', patterns)
+    return deleteSync(patterns, opts)
 }

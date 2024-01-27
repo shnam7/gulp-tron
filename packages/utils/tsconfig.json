@@ -1,9 +1,0 @@
-{
-    "extends": "@repo/typescript-config/tsconfig.json",
-    "compilerOptions": {
-        "outDir": "./dist",
-        "sourceMap": false,
-        "declarationMap": false
-    },
-    "include": ["./src/**/*.ts"]
-}

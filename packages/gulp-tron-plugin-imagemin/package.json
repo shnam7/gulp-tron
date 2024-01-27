@@ -19,7 +19,6 @@
     },
     "devDependencies": {
         "@repo/typescript-config": "workspace:*",
-        "@repo/utils": "workspace:*",
         "@types/glob-base": "^0.3.2",
         "@types/gulp-imagemin": "^8.0.6",
         "@types/imagemin": "^8.0.5",

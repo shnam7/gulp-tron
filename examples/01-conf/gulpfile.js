@@ -56,8 +56,8 @@ tron.task('build8', (bs) => {
 
 tron.task({
     name: '@build',
-    dependsOn: tron.series(build1, tron.parallel(build2, build3, build4), build5),
-    triggers: tron.series(build1, tron.parallel(build2, build3, build4), build5),
+    dependsOn: tron.series(build1, tron.parallel(build2, build3, build4), build5, 'build6', 'build7', 'build8'),
+    triggers: tron.series(build1, tron.parallel(build2, build3, build4), build5, 'build6', 'build7', 'build8')
 })
 
 console.log('Tron build streams:', tron.buildStreams)

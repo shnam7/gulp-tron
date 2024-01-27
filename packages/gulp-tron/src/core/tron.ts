@@ -1,6 +1,7 @@
 import gulp from 'gulp'
 import { BuildStream, BuildStreamOptions } from './buildSream.js'
 import type { BuildSet, BuildSetParallel, BuildSetSeries, GulpTaskFunction, GulpTaskFunctionCallback, TaskConfig, TaskOptions } from './types.js'
+import is from '../utils/is.js'
 
 export interface BuildOptions {
     [key: string]: any
@@ -8,9 +9,11 @@ export interface BuildOptions {
 
 export type BuildFunction = (bs: BuildStream, opts?: BuildOptions) => void | Promise<any>
 
+
 //--- GBuildManager
 export class Tron {
     protected _buildStreams: BuildStream[]
+    protected static annonCount = 0
 
     constructor() {
         this._buildStreams = []
@@ -78,7 +81,7 @@ export class Tron {
      * @param buildSet
      * @returns gulp task function of the gulp task tree constructed from buildSet. undefined there's no task.
      */
-    resolveBuildSet(buildSet?: BuildSet): GulpTaskFunction | void {
+    resolveBuildSet(buildSet?: BuildSet): GulpTaskFunction | undefined {
         if (!buildSet) return
 
         // buildSet is gulp task name (BuildName)
@@ -88,12 +91,12 @@ export class Tron {
             return gulpTask
         }
 
+        //--- test if wrapped by gulp.serial() or gulp.parallel()
+        const isWrapped = (str?: string): boolean => !!str && new RegExp(`(series|parallel)`).test(str)
+
         // buildSet is gulp task function
         if (typeof buildSet === 'function') {
-            if (/(series|parallel)/.test(buildSet.toString())) return buildSet
-            if (gulp.task(buildSet.name)) return buildSet
-            gulp.task(buildSet)
-            return buildSet
+            return this.resolveBuildSet({ name: 'tron-anonymous-' + buildSet.name, build: <unknown>buildSet as BuildFunction })
         }
 
         // buildSet is series set
@@ -138,19 +141,30 @@ export class Tron {
                 return gulpTask
             }
 
-            const deps = this.resolveBuildSet(dependsOn)
-            const trig = this.resolveBuildSet(triggers)
-
-            const bs = new BuildStream(name, opts)
-            this._buildStreams.push(bs)
-            const mainTask = async () => {
-                if (!build) return Promise.resolve()
-                await build(bs)
-                return bs.flush()
+            let tasks: GulpTaskFunction[] = []
+            let deps = this.resolveBuildSet(dependsOn)
+            let trigs = this.resolveBuildSet(triggers)
+            if (deps) tasks.push(deps)
+            if (build || (!deps && !trigs)) {
+                // create mainTask if no deps and no triges, regardless of build property value
+                const mainTask = async () => {
+                    if (!build) return Promise.resolve()
+                    const bs = new BuildStream(name, opts)
+                    await build(bs)
+                    return bs.flush()
+                }
+                mainTask.displayName = (build && !deps && !trigs) ? name : name + ':main'
+                tasks.push(mainTask)
             }
-            mainTask.displayName = (deps) ? name + ':main' : name
-            const tasks = [deps, mainTask, trig].filter(task => !!task) as GulpTaskFunction[]
-            gulp.task(name, (tasks.length === 1) ? tasks[0] as GulpTaskFunction : gulp.series(...tasks))
+            if (trigs) tasks.push(trigs)
+
+            if (tasks.length === 1) {
+                let gulpTaskFunc = tasks[0] as GulpTaskFunction
+                if (gulpTaskFunc.name != 'mainTask' && !isWrapped(gulpTaskFunc.name)) gulpTaskFunc = gulp.series(gulpTaskFunc)
+                gulp.task(name, gulpTaskFunc)
+            }
+            else
+                gulp.task(name, gulp.series(...tasks))
             return gulp.task(name)
         }
 

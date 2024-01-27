@@ -1,11 +1,13 @@
 import type { SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback } from 'gulp'
 import type { BuildStream } from './buildSream.js'
+import { ExecSyncOptionsWithBufferEncoding, ExecSyncOptionsWithStringEncoding } from 'child_process'
 
 //--- common types
 export type GulpStream = ReturnType<SrcMethod>
 export type GulpTaskFunction = TaskFunction
 export type GulpTaskFunctionCallback = TaskFunctionCallback
 export type LogOptions = { logLevel?: 'normal' | 'verbose' | 'silent' }
+export type ExecOptions = ExecSyncOptionsWithBufferEncoding | ExecSyncOptionsWithStringEncoding
 
 //--- build types
 export type BuildFunction = (bs: BuildStream, opts?: BuildOptions) => void | Promise<any>
@@ -41,7 +43,7 @@ export type TaskOptions = Omit<TaskConfig, 'name' | 'build'>
 //--- BuildSet
 export type BuildName = string
 // export type BuildNameSelector = string | string[] | RegExp | RegExp[]
-export type BuildSet = BuildName | GulpTaskFunction | TaskConfig | BuildSetSeries | BuildSetParallel
+export type BuildSet = BuildName | BuildFunction | TaskConfig | BuildSetSeries | BuildSetParallel
 export type BuildSetSeries = BuildSet[]
 export type BuildSetParallel = { set: BuildSet[] }
 

@@ -1,5 +1,5 @@
 /__*
-.vscode
+.vscode/
 node_modules/
 *.map
 .turbo/

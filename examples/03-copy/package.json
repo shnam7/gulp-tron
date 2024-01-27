@@ -4,8 +4,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "gulp 03-copy:@build",
-        "clean": "gulp 03-copy:@clean"
+        "build": "gulp @build",
+        "clean": "gulp @clean"
     },
     "devDependencies": {
         "gulp-tron": "workspace:*",
