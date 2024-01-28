@@ -7,8 +7,8 @@
         "build": "gulp @build"
     },
     "devDependencies": {
-        "gulp": "^4.0.2",
         "gulp-tron": "workspace:*",
+        "gulp": "^4.0.2",
         "upath": "^2.0.1"
     }
 }

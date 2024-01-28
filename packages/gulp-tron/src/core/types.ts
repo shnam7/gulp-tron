@@ -14,7 +14,7 @@ export type BuildFunction = (bs: BuildStream, opts?: BuildOptions) => void | Pro
 export type BuildOptions = {
     // [key: string]: any
 }
-export type TaskConfig = LogOptions & {
+export type TaskConfig = {
     name: string                            // build name
     build?: BuildFunction                   // main build function
     dependsOn?: BuildSet                    // buildSet to be executed before main build function
@@ -26,14 +26,14 @@ export type TaskConfig = LogOptions & {
     addWatch?: string | string[]            // additional watch in addition to watch or default watch
     clean?: string | string[]               // clean targets
     // reloadOnChange?: boolean                // Reload on change when watcher is running. default is true.
+} & TaskGroupOptions & LogOptions
+
+export type TaskGroupOptions = {
+    group?: string                          // task group name
+    groupPrefix?: boolean                   // if true, group name is prefixed to the task name
 }
 
 export type TaskOptions = Omit<TaskConfig, 'name' | 'build'>
-
-// export type TaskGroup = {
-//     name: string,
-
-// }
 
 
 // //--- BuildItem
@@ -42,10 +42,10 @@ export type TaskOptions = Omit<TaskConfig, 'name' | 'build'>
 
 //--- BuildSet
 export type BuildName = string
-// export type BuildNameSelector = string | string[] | RegExp | RegExp[]
 export type BuildSet = BuildName | BuildFunction | TaskConfig | BuildSetSeries | BuildSetParallel
 export type BuildSetSeries = BuildSet[]
 export type BuildSetParallel = { set: BuildSet[] }
+export type TaskSelector = string | string[] | RegExp | RegExp[]
 
 //--- plugin types
 export type PluginFunction = (bs: BuildStream, opts: PluginOptions) => BuildStream

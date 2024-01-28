@@ -1,6 +1,6 @@
 import gulp from 'gulp'
 import { BuildStream, BuildStreamOptions } from './buildSream.js'
-import type { BuildSet, BuildSetParallel, BuildSetSeries, GulpTaskFunction, GulpTaskFunctionCallback, TaskConfig, TaskOptions } from './types.js'
+import type { BuildSet, BuildSetParallel, BuildSetSeries, GulpTaskFunction, GulpTaskFunctionCallback, TaskConfig, TaskGroupOptions, TaskOptions } from './types.js'
 import is from '../utils/is.js'
 
 export interface BuildOptions {
@@ -12,20 +12,20 @@ export type BuildFunction = (bs: BuildStream, opts?: BuildOptions) => void | Pro
 
 //--- GBuildManager
 export class Tron {
-    protected _buildStreams: BuildStream[]
+    protected _taskConfigs: TaskConfig[]
     protected static annonCount = 0
 
     constructor() {
-        this._buildStreams = []
+        this._taskConfigs = []
     }
 
-    get buildStreams() { return this._buildStreams }
+    get taskConfigs() { return this._taskConfigs }
 
     /**
      * Create a gulp task with TaskConfig object
      * @param conf TaskConfig object
      */
-    task(conf: TaskConfig): GulpTaskFunction
+    task(conf: TaskConfig, options?: TaskOptions): GulpTaskFunction
 
     /**
      *
@@ -36,8 +36,11 @@ export class Tron {
     task(name: string, build?: BuildFunction, opts?: TaskOptions): GulpTaskFunction
 
     // overloading implementation for task() function
-    task(arg1: TaskConfig | string, build?: BuildFunction, opts?: TaskOptions): GulpTaskFunction {
-        const conf = (typeof arg1 === 'string') ? { name: arg1, build, ...opts } : arg1
+    task(arg1: TaskConfig | string, arg2?: BuildFunction | TaskOptions, opts: TaskOptions = {}): GulpTaskFunction {
+        const conf: TaskConfig = is.String(arg1)
+            ? { name: arg1, build: arg2 as BuildFunction, ...opts }
+            : { ...arg1, ...arg2 as TaskOptions }
+
         const gulpTask = this.resolveBuildSet(conf)
         if (!gulpTask) throw Error(`Tron:task: failed to create task "${conf.name}"`)
         return gulpTask
@@ -49,10 +52,17 @@ export class Tron {
      * @param tasks list of TaskConfig objects
      * @returns
      */
-    createTasks(...tasks: TaskConfig[]): GulpTaskFunction | GulpTaskFunction[] {
-        let gulpTasks = tasks.reduce((list, task) => {
+    // createTasks(...tasks: TaskConfig[], options: TaskGroupOptions = {}): GulpTaskFunction | GulpTaskFunction[] {
+    createTasks(...tasks: (TaskConfig | TaskOptions)[]): GulpTaskFunction | GulpTaskFunction[] {
+        let { length, [length - 1]: options } = tasks
+        if (!options) options = {}
+        if (!options.hasOwnProperty('name')) tasks.pop()
 
-            list.push(this.task(task))
+        let gulpTasks = tasks.reduce((list, task) => {
+            if (task.hasOwnProperty('name')) {
+                task = Object.assign(task, options)
+                list.push(this.task(task as TaskConfig))
+            }
             return list
         }, [] as GulpTaskFunction[])
 
@@ -78,7 +88,8 @@ export class Tron {
     /**
      * Convert buildSet to gulp task tree
      *
-     * @param buildSet
+     * @param buildSet buildSet currently being resolved
+     * @param conf original TaskConfig
      * @returns gulp task function of the gulp task tree constructed from buildSet. undefined there's no task.
      */
     resolveBuildSet(buildSet?: BuildSet): GulpTaskFunction | undefined {
@@ -96,7 +107,8 @@ export class Tron {
 
         // buildSet is gulp task function
         if (typeof buildSet === 'function') {
-            return this.resolveBuildSet({ name: 'tron-anonymous-' + buildSet.name, build: <unknown>buildSet as BuildFunction })
+            const name = `tron-anonymous#${++Tron.annonCount}-${buildSet.name}`
+            return this.resolveBuildSet({ name, build: <unknown>buildSet as BuildFunction })
         }
 
         // buildSet is series set
@@ -129,7 +141,8 @@ export class Tron {
 
         // buildSet is TaskConfig object
         if (typeof buildSet === 'object') {
-            const { name, build, dependsOn, triggers, ...opts } = buildSet as TaskConfig
+            const tc = buildSet as TaskConfig
+            const name = (tc.group && tc.groupPrefix) ? tc.group + ':' + tc.name : tc.name
             if (!name) throw Error(`resolveBuildSet: invalid task name: ${name}`)
 
             const gulpTask = gulp.task(name)
@@ -137,23 +150,23 @@ export class Tron {
                 // duplicated buil1d name may not be error in case it was resolved multiple time due to deps or triggers
                 // So, info message is displayed only when verbose mode is turned on.
                 // However, it's recommended to avoid it by using buildNames in deppendencies and triggers field of BuildConfig
-                if (opts.logLevel == 'verbose') console.log(`resolveBuildSet:taskName=${name} already registered.`)
+                if (tc.logLevel == 'verbose') console.log(`resolveBuildSet:taskName=${name} already registered.`)
                 return gulpTask
             }
 
             let tasks: GulpTaskFunction[] = []
-            let deps = this.resolveBuildSet(dependsOn)
-            let trigs = this.resolveBuildSet(triggers)
+            let deps = this.resolveBuildSet(tc.dependsOn)
+            let trigs = this.resolveBuildSet(tc.triggers)
             if (deps) tasks.push(deps)
-            if (build || (!deps && !trigs)) {
+            if (tc.build || (!deps && !trigs)) {
                 // create mainTask if no deps and no triges, regardless of build property value
                 const mainTask = async () => {
-                    if (!build) return Promise.resolve()
-                    const bs = new BuildStream(name, opts)
-                    await build(bs)
+                    if (!tc.build) return Promise.resolve()
+                    const bs = new BuildStream(name)
+                    await tc.build(bs)
                     return bs.flush()
                 }
-                mainTask.displayName = (build && !deps && !trigs) ? name : name + ':main'
+                mainTask.displayName = (tc.build && !deps && !trigs) ? name : name + ':main'
                 tasks.push(mainTask)
             }
             if (trigs) tasks.push(trigs)
@@ -165,6 +178,9 @@ export class Tron {
             }
             else
                 gulp.task(name, gulp.series(...tasks))
+
+            tc.name = name
+            this._taskConfigs.push(buildSet as TaskConfig)
             return gulp.task(name)
         }
 
