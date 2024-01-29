@@ -2,7 +2,7 @@ import { describe, expect, it, test, vi } from 'vitest'
 import tron from '../src/index.js'
 import gulp from 'gulp'
 
-describe('tell if function is GulpTaskFunction orBuildFunction', () => {
+describe('tell if function is GulpTaskFunction or BuildFunction', () => {
     test('does not accept null or undefined name in task config.', () => {
         expect(1).toBe(1)
     })

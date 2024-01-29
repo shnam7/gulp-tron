@@ -1,28 +1,22 @@
-/**
- *  Builder Base Class
- */
-
 import gulp, { DestMethod, SrcMethod } from 'gulp'
 import debug from 'gulp-debug'
 import filter from 'gulp-filter'
 import rename from 'gulp-rename'
 import streamToPromise from 'stream-to-promise'
 import child_process from 'child_process'
+import arrayify from '../utils/arrayify.js'
+import { deleteSync } from 'del'
 import { CopyOptions, CopyParam, copy, copyBatch } from '../utils/copy.js'
-import { DelOptions, del } from '../utils/del.js'
-import type { ExecOptions, GulpStream, PluginFunction, TaskOptions } from './types.js'
-import is from '../utils/is.js'
-
-export type BuildStreamOptions = Omit<TaskOptions, 'build' | 'dependOn' | 'triggers'>
+import type { CleanOptions, DelOptions, ExecOptions, GulpStream, PluginFunction, TaskOptions } from './types.js'
 
 //--- GBuilder
 export class BuildStream {
     protected _name: string
     protected _stream: GulpStream = gulp.src('./initial-dummy/**/*.dummy')
     protected _promiseSync: Promise<any> = Promise.resolve();
-    protected _opts: BuildStreamOptions
+    protected _opts: TaskOptions
 
-    constructor(name: string, opts: BuildStreamOptions = {}) {
+    constructor(name: string, opts: TaskOptions = {}) {
         this._name = name
         this._opts = { ...opts }
     }
@@ -87,9 +81,25 @@ export class BuildStream {
         return this
     }
 
-    del(patterns: string | string[], opts: DelOptions = {}): this {
-        del(patterns, opts)
+    del(patterns: string | string[], options: DelOptions = {}): this {
+        const opts: DelOptions = { ...this.opts, ...options }
+        const logger = opts.logger || console.log
+
+        if (opts.logLevel !== 'silent') logger(`deleting:[${arrayify(patterns).join(', ')}]`)
+        deleteSync(patterns, opts)
         return this
+    }
+
+    /**
+     * Clean targets specified in TasConfig.clean, and cleans cleanExtra additionally
+     *
+     * @param cleanExtra additional clean target
+     * @param options clean options including delOptions to be delivered to this.del()
+     * @returns this
+     */
+    clean(cleanExtra: string | string[] = [], options: CleanOptions = {}): this {
+        const cleanList = arrayify(this.opts.clean).concat(arrayify(cleanExtra))
+        return this.del(cleanList, options)
     }
 
     exec(command: string, options: ExecOptions): this {

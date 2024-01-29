@@ -1,5 +1,5 @@
 import tron from 'gulp-tron'
-import upath from 'upath'
+import upath from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = upath.dirname(fileURLToPath(import.meta.url))
@@ -7,60 +7,67 @@ const basePath = upath.relative(process.cwd(), __dirname)
 const projectName = upath.basename(__dirname)
 const prefix = projectName + ':'
 
-const groupOptions = {
+const taskOptions = {
     group: projectName,
-    groupPrefix: true,
-}
-const taskNameOf = name => groupOptions.group + ':' + name
-
-const build1 = {
-    name: 'build1',
-    build: bs => console.log(`${bs.name} executed.`),
-    ...groupOptions,
+    prefix: true,
 }
 
-const build2 = {
-    ...groupOptions,
-    name: 'build2',
-    build: bs => console.log(`${bs.name}:main executed.`),
-    dependsOn: build1,
-    ...groupOptions,
-}
+// standard TaskConfig form
+const b1 = { name: 'b1', build: bs => console.log(`${bs.name} executed.`) }
 
-const build3 = {
-    name: 'build3',
-    build: bs => console.log(`${bs.name}:main executed.`),
-    dependsOn: tron.parallel(build1, build2),
-    ...groupOptions,
-}
+// internal null function is assigned to b2 and task is created.
+const b2 = { name: 'b2' }
 
-const build4 = {
-    name: 'build4',
-    ...groupOptions,
-}
+// b3 is effectively an alias for b1, b4 is alias for b2
+const b3 = { name: 'b3', dependsOn: b1 }
+const b4 = { name: 'b4', triggers: b2 }
+const b5 = { name: 'b5', dependsOn: b1, triggers: b2 }
 
-const build5 = {
-    name: 'build5',
-    // Having tron.task() on dependencies is not recommended way, even though it's working correctly.
-    dependsOn: tron.task('build6', bs => console.log(`${bs.name} executed.`), groupOptions),
-    ...groupOptions,
-}
+// g0 has group prefix
+const g0 = { name: 'g0', dependsOn: b1, triggers: b2, ...taskOptions }
 
-tron.createTasks(build1) // test for single item
-tron.createTasks(build2, build3, build4, build5) // test for multiple items
+tron.createTasks(b1, b2, b3, b4, b5, g0)
 
-tron.task('build7', bs => console.log(`${bs.name}: className=${bs.className}`), groupOptions)
+//--- task grouping. check the gulp tree shape with "npx gulp --tasks" command
+const g1 = { name: 'g1', build: bs => console.log(`${bs.name} executed.`), dependsOn: g0 }
+const g2 = { name: 'g2', build: bs => console.log(`${bs.name} executed.`), dependsOn: tron.parallel(b1) }
+const g3 = { name: 'g3', build: bs => console.log(`${bs.name} executed.`), dependsOn: tron.parallel(b1, b2) }
 
-tron.task('build8', bs => console.log(`${bs.name}: className=${bs.className}`), { dependsOn: build1, ...groupOptions })
+tron.createTasks(g1, g2, g3, taskOptions)
+
+tron.task('b6', bs => console.log(`${bs.name}: className=${bs.className}`))
+tron.task('g5', bs => console.log(`${bs.name}: className=${bs.className}`), taskOptions)
+tron.task('g6', bs => console.log(`${bs.name}: className=${bs.className}`), { dependsOn: b1, ...taskOptions })
 
 tron.task({
     name: '@build',
-    dependsOn: tron.series(build1, tron.parallel(build2, build3, build4), build5, taskNameOf('build6'), taskNameOf('build7'), taskNameOf('build8')),
-    triggers: tron.series(build1, tron.parallel(build2, build3, build4), build5, taskNameOf('build6'), taskNameOf('build7'), taskNameOf('build8')),
-    ...groupOptions,
+    dependsOn: tron.series(b1, tron.parallel(b2, b3, b4), b5, tron.taskName('g6')),
+    triggers: tron.series(b1, tron.parallel(b2, b3, b4), b5, tron.taskName('g6')),
 })
 
-console.log(
-    tron.taskConfigs.map(conf => conf.name),
-    build5.dependsOn.unwrap().toString(),
-)
+// console.log(`---1.0:`, tron.findTask('g1').name)
+// console.log(`---1.1:`, tron.findTask('01-conf:g1').name)
+// console.log(
+//     tron.taskConfigs.map(conf => conf.name),
+//     // tron.filterTasks(tron.taskConfigs, [/build[15]/, 'build8']).map(conf => conf.name),
+//     // tron.selectTasks([/build[15]/, 'build8']).map(conf => conf.name),
+//     // tron.selectTasksByGroup().map(conf => conf.name),
+// )
+
+// gulp.task('t1', cb => cb())
+// gulp.task('t2', cb => cb())
+// gulp.task('t3', gulp.series(gulp.task('t1')))
+
+// const t1 = gulp.task('t1')
+// const t2 = gulp.task('t2')
+// const t3 = gulp.task('t3')
+
+// const s1 = gulp.series(t1, t2)
+// const s2 = gulp.parallel(t1, t2)
+
+// console.log('---2:t1=', t1)
+// console.log('---2:t2=', t2)
+// console.log('---2:s1=', s1)
+// console.log('---2:s1=', s1)
+// console.log('---2:t3=', t3)
+// console.log('---3', t1.toString(), t2.toString(), t3.toString(), s1.toString(), s2.toString(), '---')

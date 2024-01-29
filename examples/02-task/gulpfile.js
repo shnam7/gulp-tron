@@ -1,21 +1,16 @@
 import tron from 'gulp-tron'
-import upath from 'upath'
+import path from 'path'
 import gulp from 'gulp'
 import { fileURLToPath } from 'url'
 
-const __dirname = upath.dirname(fileURLToPath(import.meta.url))
-const basePath = upath.relative(process.cwd(), __dirname)
-const projectName = upath.basename(__dirname)
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const basePath = path.relative(process.cwd(), __dirname)
+const projectName = path.basename(__dirname)
 const prefix = projectName + ':'
 
 //--- build item type #1: BuildConfig items
-const build1 = {
-    name: 'build1',
-}
-const build2 = {
-    name: 'build2',
-    build: bs => console.log(`${bs.name} executed`),
-}
+const build1 = { name: 'build1' }
+const build2 = { name: 'build2', build: bs => console.log(`${bs.name} executed`) }
 
 //--- build item type #2: native gulp task function
 function buildFunc(bs) {

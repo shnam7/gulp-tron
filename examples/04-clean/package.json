@@ -1,10 +1,11 @@
 {
-    "name": "02-task",
+    "name": "04-clean",
     "version": "0.0.0",
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "gulp @build"
+        "build": "gulp @build",
+        "clean": "gulp @clean"
     },
     "devDependencies": {
         "gulp-tron": "workspace:*",

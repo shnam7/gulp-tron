@@ -1,71 +1,74 @@
+import gulp from 'gulp'
 import type { SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback } from 'gulp'
 import type { BuildStream } from './buildSream.js'
 import { ExecSyncOptionsWithBufferEncoding, ExecSyncOptionsWithStringEncoding } from 'child_process'
+import { Options as delOptions } from 'del'
+import { WatchOptions } from 'fs'
+
 
 //--- common types
 export type GulpStream = ReturnType<SrcMethod>
+export type GulpTaskName = string
 export type GulpTaskFunction = TaskFunction
 export type GulpTaskFunctionCallback = TaskFunctionCallback
-export type LogOptions = { logLevel?: 'normal' | 'verbose' | 'silent' }
+export type GulpTaskFunctionWrapped = ReturnType<typeof gulp.task>
+export type LogOptions = { logLevel?: 'verbose' | 'normal' | 'silent', logger?: (...args: any[]) => void }
 export type ExecOptions = ExecSyncOptionsWithBufferEncoding | ExecSyncOptionsWithStringEncoding
+export type CleanOptions = delOptions & LogOptions
+export type DelOptions = delOptions & LogOptions
 
 //--- build types
-export type BuildFunction = (bs: BuildStream, opts?: BuildOptions) => void | Promise<any>
-export type BuildOptions = {
-    // [key: string]: any
-}
+export type BuildFunction = (bs: BuildStream) => void | Promise<any>
+
+//--- Tron Task types
 export type TaskConfig = {
     name: string                            // build name
+    taskName?: string                       // this will be automaticallty set by Tron when gulp the task is actually created.
     build?: BuildFunction                   // main build function
     dependsOn?: BuildSet                    // buildSet to be executed before main build function
     triggers?: BuildSet                     // buildSet to be executed after main build function
+    group?: string                          // task group name
+    prefix?: boolean | string               // if false, no prefix for taskName. if true, group is used as prefix. if string, it becoms the prefix.
+} & CleanerConfig & WatcherConfig
 
+export type TaskOptions = {
     src?: Parameters<SrcMethod>[0]          // source for build operation
     dest?: Parameters<DestMethod>[0]        // output(destination) directory of the build operation
-    watch?: string | string[]               // override default watch, 'src' if defined
-    addWatch?: string | string[]            // additional watch in addition to watch or default watch
-    clean?: string | string[]               // clean targets
-    // reloadOnChange?: boolean                // Reload on change when watcher is running. default is true.
-} & TaskGroupOptions & LogOptions
+    // reloadOnChange?: boolean             // Reload on change when watcher is running. default is true.
+}
+    & Pick<TaskConfig, 'group' | 'prefix'>
+    & CleanerOptions & WatcherOptions & LogOptions
 
-export type TaskGroupOptions = {
-    group?: string                          // task group name
-    groupPrefix?: boolean                   // if true, group name is prefixed to the task name
+
+//--- Cleaner types
+export type CleanerConfig = {
+    name?: string,                          // Cleaner task name. default value is '@clean'
+    target?: TaskConfig | TaskConfig[]      // target TaskConfig list to look for clean properties
+} & CleanerOptions
+
+export type CleanerOptions = {
+    clean?: string | string[]               // additional clean list
+} & CleanOptions
+
+
+//--- Watcher types
+export type WatcherConfig = {
+    name?: string                           // Watcher task name. default value is '@watch'
+} & WatchOptions
+
+export type WatcherOptions = {
+    watch?: string | string[]               // override default watch, which is TaskOptions.src
+    addWatch?: string | string[]            // additional watch in addition to watch or default watch
 }
 
-export type TaskOptions = Omit<TaskConfig, 'name' | 'build'>
-
-
-// //--- BuildItem
-// export type BuildItem = BuildConfig | WatcherConfig | CleanerConfig
-// export type BuildItems = { [key: string]: BuildItem }
-
 //--- BuildSet
-export type BuildName = string
-export type BuildSet = BuildName | BuildFunction | TaskConfig | BuildSetSeries | BuildSetParallel
+export type BuildSet = GulpTaskName | BuildFunction | TaskConfig | BuildSetSeries | BuildSetParallel
 export type BuildSetSeries = BuildSet[]
 export type BuildSetParallel = { set: BuildSet[] }
-export type TaskSelector = string | string[] | RegExp | RegExp[]
 
 //--- plugin types
 export type PluginFunction = (bs: BuildStream, opts: PluginOptions) => BuildStream
 export type PluginOptions = { [key: string]: any }
-
-
-// export type CopyParam = { src: string | string[], dest: string }
-
-//--- BuilderType
-// export type BuilderClassName = string
-// export type BuilderType = BuilderClassName | BuildFunction | ExternalCommand | BuildStream | 'cleaner' | 'watcher'
-// export type BuilderClassType = typeof BuildStream
-
-
-
-
-// type SRC = Parameters<SrcMethod>
-
-
-//--- BuildConfig
 
 // //--- WatcherConfig (Watcher task config)
 // export interface WatcherConfig extends Pick<BuildConfig, "watch"> {
@@ -74,16 +77,4 @@ export type PluginOptions = { [key: string]: any }
 //     filter?: BuildNameSelector,     // filter for buildNames (inside the project) to be watched
 //     browserSync?: ReloaderOptions  // browserSync initializer options
 //     livereload?: ReloaderOptions   // livereload initializer options
-// }
-
-// //--- CleanerConfig (Cleaner task config)
-// export interface CleanerConfig extends Pick<BuildConfig, "clean">, CleanOptions {
-//     name?: string                  // optional buildName. if undefined, defaults to '@clean'
-//     builder: 'cleaner',             // MUST be literal constant 'cleaner'
-//     filter?: BuildNameSelector,     // filter for buildNames (inside the project) to be cleaned
-// }
-
-
-// export interface CleanOptions extends del.Options {
-//     clean?: string | string[]
 // }

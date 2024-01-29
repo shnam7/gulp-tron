@@ -27,7 +27,7 @@ export const copy = (patterns: string | string[], destPath: string, opts: CopyOp
             const rd = fs.createReadStream(file)
             const wr = fs.createWriteStream(dest)
             let copyInfo = `[${file}] => ${dest}`
-            if (opts.logLevel === 'verbose') console.log(`[copying: ${copyInfo}`)
+            if (opts.logLevel !== 'silent') console.log(`copying:${copyInfo}`)
             rd.pipe(wr)
             count += 1
         }))
@@ -48,7 +48,7 @@ export const copyBatch = (param?: CopyParam | CopyParam[], opts: CopyOptions = {
     let count = 0
     arrayify(param).forEach(target => {
         let copyInfo = `[${target.src}] => ${target.dest}`
-        if (opts.logLevel === 'verbose') logger(`[copying: ${copyInfo}`)
+        // if (opts.logLevel !== 'silent') logger(`[copying: ${copyInfo}`)
         count += copy(target.src, target.dest, opts)
     })
     return count

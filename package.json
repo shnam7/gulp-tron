@@ -2,10 +2,12 @@
     "name": "gulp-tron-repo",
     "private": true,
     "scripts": {
+        "dev": "turbo dev --filter=01-conf...",
         "build": "turbo build",
-        "clean": "turbo clean --filter=...^gulp-tron",
-        "clean:all": "pnpm run clean && turbo clean",
-        "dev": "turbo dev --filter=gulp-tron",
+        "clean": "pnpm run clean:apps && pnpm run clean:examples && pnpm run  clean:packages",
+        "clean:apps": "turbo clean --filter=./apps/*",
+        "clean:examples": "turbo clean --filter=./examples/*",
+        "clean:packages": "turbo clean --filter=./packages/*",
         "lint": "turbo lint",
         "format": "prettier --write \"**/*.{ts,tsx,md}\""
     },

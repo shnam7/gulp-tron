@@ -16,9 +16,6 @@ importers:
       gulp-tron:
         specifier: workspace:*
         version: link:../../packages/gulp-tron
-      upath:
-        specifier: ^2.0.1
-        version: 2.0.1
 
   examples/02-task:
     devDependencies:
@@ -28,9 +25,6 @@ importers:
       gulp-tron:
         specifier: workspace:*
         version: link:../../packages/gulp-tron
-      upath:
-        specifier: ^2.0.1
-        version: 2.0.1
 
   examples/03-copy:
     devDependencies:
@@ -40,9 +34,15 @@ importers:
       gulp-tron:
         specifier: workspace:*
         version: link:../../packages/gulp-tron
-      upath:
-        specifier: ^2.0.1
-        version: 2.0.1
+
+  examples/04-clean:
+    devDependencies:
+      gulp:
+        specifier: ^4.0.2
+        version: 4.0.2
+      gulp-tron:
+        specifier: workspace:*
+        version: link:../../packages/gulp-tron
 
   packages/gulp-tron:
     dependencies:
@@ -102,8 +102,8 @@ importers:
         specifier: ^2.0.6
         version: 2.0.6
       '@types/node':
-        specifier: ^20.11.8
-        version: 20.11.8
+        specifier: ^20.11.10
+        version: 20.11.10
       '@types/stream-to-promise':
         specifier: ^2.2.4
         version: 2.2.4
@@ -124,7 +124,7 @@ importers:
         version: 3.0.0
       vitest:
         specifier: ^1.2.2
-        version: 1.2.2(@types/node@20.11.8)
+        version: 1.2.2(@types/node@20.11.10)
 
   packages/gulp-tron-plugin-imagemin:
     devDependencies:
@@ -172,7 +172,7 @@ importers:
         version: 5.3.3
       vitest:
         specifier: ^1.2.2
-        version: 1.2.2(@types/node@20.11.8)
+        version: 1.2.2(@types/node@20.11.10)
 
   packages/mutex:
     devDependencies:
@@ -180,8 +180,8 @@ importers:
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
-        specifier: ^20.11.8
-        version: 20.11.8
+        specifier: ^20.11.10
+        version: 20.11.10
       '@vitest/coverage-v8':
         specifier: ^1.2.2
         version: 1.2.2(vitest@1.2.2)
@@ -196,7 +196,7 @@ importers:
         version: 5.3.3
       vitest:
         specifier: ^1.2.2
-        version: 1.2.2(@types/node@20.11.8)
+        version: 1.2.2(@types/node@20.11.10)
 
   packages/typescript-config: {}
 
@@ -657,7 +657,7 @@ packages:
     resolution: {integrity: sha512-d2V8FDX/LbDCSm343N2VChzDxvll0h76I8oSigYpdLgPDmcdcR6fywTggKBkUiDM3qAbHOq7NZvepj/HJM5e2g==}
     dependencies:
       '@types/micromatch': 2.3.35
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
       '@types/serve-static': 1.15.5
       chokidar: 3.5.3
     dev: true
@@ -669,7 +669,7 @@ packages:
   /@types/cors@2.8.17:
     resolution: {integrity: sha512-8CGDvrBj1zgo2qE+oS3pOCyYNqCPryMWY2bGfwA0dcfopWGgxs+78df0Rs3rc9THP4JkOhLsAa+15VdpAqkcUA==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: false
 
   /@types/estree@1.0.5:
@@ -686,7 +686,7 @@ packages:
   /@types/glob-stream@8.0.2:
     resolution: {integrity: sha512-kyuRfGE+yiSJWzSO3t74rXxdZNdYfLcllO0IUha4eX1fl40pm9L02Q/TEc3mykTLjoWz4STBNwYnUWdFu3I0DA==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
       '@types/picomatch': 2.3.3
       '@types/streamx': 2.9.5
     dev: true
@@ -694,14 +694,14 @@ packages:
   /@types/gulp-debug@2.0.36:
     resolution: {integrity: sha512-i+/DHsyzbUavmvLGukmy/xZp1JRnQ1a/iwdSM4iUhJR7UaRmaF/Pln3Ic0oF3WfiqumAFb9HSrTy5tOvarLkNQ==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: true
 
   /@types/gulp-filter@3.0.39:
     resolution: {integrity: sha512-CmjD9Y90+uFl0sHODOcAwSif2DXkCCkneItIifgbRgzSPTQ0wePzxPkLQPT377Hur+2SvAl4u3jyLitbNRiSkg==}
     dependencies:
       '@types/minimatch': 5.1.2
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
       '@types/vinyl': 2.0.11
     dev: true
 
@@ -713,20 +713,20 @@ packages:
       '@types/imagemin-mozjpeg': 8.0.4
       '@types/imagemin-optipng': 5.2.4
       '@types/imagemin-svgo': 10.0.5
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: true
 
   /@types/gulp-rename@2.0.6:
     resolution: {integrity: sha512-pvZdJ004TpC4Ohk9l0CxEXzS9E0L72b5n6lkIEIaWUIy/RlqnkDMHVtEC6InDjd4rt0jZKcvTrDKxeT96WUYnw==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
       '@types/vinyl': 2.0.11
     dev: true
 
   /@types/gulp@4.0.17:
     resolution: {integrity: sha512-+pKQynu2C/HS16kgmDlAicjtFYP8kaa86eE9P0Ae7GB5W29we/E2TIdbOWtEZD5XkpY+jr8fyqfwO6SWZecLpQ==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
       '@types/undertaker': 1.2.11
       '@types/vinyl-fs': 3.0.5
       chokidar: 3.5.3
@@ -770,7 +770,7 @@ packages:
   /@types/imagemin@8.0.5:
     resolution: {integrity: sha512-tah3dm+5sG+fEDAz6CrQ5evuEaPX9K6DF3E5a01MPOKhA2oGBoC+oA5EJzSugB905sN4DE19EDzldT2Cld2g6Q==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: true
 
   /@types/istanbul-lib-coverage@2.0.6:
@@ -780,7 +780,7 @@ packages:
   /@types/keyv@3.1.4:
     resolution: {integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: true
 
   /@types/micromatch@2.3.35:
@@ -797,8 +797,8 @@ packages:
     resolution: {integrity: sha512-K0VQKziLUWkVKiRVrx4a40iPaxTUefQmjtkQofBkYRcoaaL/8rhwDWww9qWbrgicNOgnpIsMxyNIUM4+n6dUIA==}
     dev: true
 
-  /@types/node@20.11.8:
-    resolution: {integrity: sha512-i7omyekpPTNdv4Jb/Rgqg0RU8YqLcNsI12quKSDkRXNfx7Wxdm6HhK1awT3xTgEkgxPn3bvnSpiEAc7a7Lpyow==}
+  /@types/node@20.11.10:
+    resolution: {integrity: sha512-rZEfe/hJSGYmdfX9tvcPMYeYPW2sNl50nsw4jZmRcaG0HIAb0WYEpsB05GOb53vjqpyE9GUhlDQ4jLSoB5q9kg==}
     dependencies:
       undici-types: 5.26.5
 
@@ -813,7 +813,7 @@ packages:
   /@types/responselike@1.0.3:
     resolution: {integrity: sha512-H/+L+UkTV33uf49PH5pCAUBVPNj2nDBXTN+qS1dOwyyg24l3CcicicCA7ca+HMvJBZcFgl5r8e+RR6elsb4Lyw==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: true
 
   /@types/serve-static@1.15.5:
@@ -821,31 +821,31 @@ packages:
     dependencies:
       '@types/http-errors': 2.0.4
       '@types/mime': 3.0.4
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: true
 
   /@types/stream-to-promise@2.2.4:
     resolution: {integrity: sha512-7exTEA6d7ueW0rARZyGvNgIdRF5q+dNP0DidK01hXNrY7AdxLzHmnYvCCbaaBHtKKXzLWMw/BMjhftks3fC0UQ==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: true
 
   /@types/streamx@2.9.5:
     resolution: {integrity: sha512-IHYsa6jYrck8VEdSwpY141FTTf6D7boPeMq9jy4qazNrFMA4VbRz/sw5LSsfR7jwdDcx0QKWkUexZvsWBC2eIQ==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: true
 
   /@types/svgo@2.6.4:
     resolution: {integrity: sha512-l4cmyPEckf8moNYHdJ+4wkHvFxjyW6ulm9l4YGaOxeyBWPhBOT0gvni1InpFPdzx1dKf/2s62qGITwxNWnPQng==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: true
 
   /@types/through2@2.0.41:
     resolution: {integrity: sha512-ryQ0tidWkb1O1JuYvWKyMLYEtOWDqF5mHerJzKz/gQpoAaJq2l/dsMPBF0B5BNVT34rbARYJ5/tsZwLfUi2kwQ==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
     dev: true
 
   /@types/undertaker-registry@1.0.4:
@@ -855,7 +855,7 @@ packages:
   /@types/undertaker@1.2.11:
     resolution: {integrity: sha512-j1Z0V2ByRHr8ZK7eOeGq0LGkkdthNFW0uAZGY22iRkNQNL9/vAV0yFPr1QN3FM/peY5bxs9P+1f0PYJTQVa5iA==}
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
       '@types/undertaker-registry': 1.0.4
       async-done: 1.3.2
     dev: true
@@ -864,7 +864,7 @@ packages:
     resolution: {integrity: sha512-ckYz9giHgV6U10RFuf9WsDQ3X86EFougapxHmmoxLK7e6ICQqO8CE+4V/3lBN148V5N1pb4nQMmMjyScleVsig==}
     dependencies:
       '@types/glob-stream': 8.0.2
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
       '@types/vinyl': 2.0.11
     dev: true
 
@@ -872,7 +872,7 @@ packages:
     resolution: {integrity: sha512-vPXzCLmRp74e9LsP8oltnWKTH+jBwt86WgRUb4Pc9Lf3pkMVGyvIo2gm9bODeGfCay2DBB/hAWDuvf07JcK4rw==}
     dependencies:
       '@types/expect': 1.20.4
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
 
   /@vitest/coverage-v8@1.2.2(vitest@1.2.2):
     resolution: {integrity: sha512-IHyKnDz18SFclIEEAHb9Y4Uxx0sPKC2VO1kdDCs1BF6Ip4S8rQprs971zIsooLUn7Afs71GRxWMWpkCGZpRMhw==}
@@ -892,7 +892,7 @@ packages:
       std-env: 3.7.0
       test-exclude: 6.0.0
       v8-to-istanbul: 9.2.0
-      vitest: 1.2.2(@types/node@20.11.8)
+      vitest: 1.2.2(@types/node@20.11.10)
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -2217,7 +2217,7 @@ packages:
     dependencies:
       '@types/cookie': 0.4.1
       '@types/cors': 2.8.17
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
       accepts: 1.3.8
       base64id: 2.0.0
       cookie: 0.4.2
@@ -6328,6 +6328,7 @@ packages:
   /upath@2.0.1:
     resolution: {integrity: sha512-1uEe95xksV1O0CYKXo8vQvN1JEbtJp7lb7C5U9HMsIp6IVwntkH/oNUzyVNQSd4S1sYk2FpSSW44FqMc8qee5w==}
     engines: {node: '>=4'}
+    dev: false
 
   /urix@0.1.0:
     resolution: {integrity: sha512-Am1ousAhSLBeB9cG/7k7r2R0zj50uDRlZHPGbazid5s9rlF1F/QKYObEKSIunSjIOkJZqwRRLpvewjEkM7pSqg==}
@@ -6456,7 +6457,7 @@ packages:
       teex: 1.0.1
     dev: true
 
-  /vite-node@1.2.2(@types/node@20.11.8):
+  /vite-node@1.2.2(@types/node@20.11.10):
     resolution: {integrity: sha512-1as4rDTgVWJO3n1uHmUYqq7nsFgINQ9u+mRcXpjeOMJUmviqNKjcZB7UfRZrlM7MjYXMKpuWp5oGkjaFLnjawg==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -6465,7 +6466,7 @@ packages:
       debug: 4.3.4
       pathe: 1.1.1
       picocolors: 1.0.0
-      vite: 5.0.11(@types/node@20.11.8)
+      vite: 5.0.11(@types/node@20.11.10)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -6477,7 +6478,7 @@ packages:
       - terser
     dev: true
 
-  /vite@5.0.11(@types/node@20.11.8):
+  /vite@5.0.11(@types/node@20.11.10):
     resolution: {integrity: sha512-XBMnDjZcNAw/G1gEiskiM1v6yzM4GE5aMGvhWTlHAYYhxb7S3/V1s3m2LDHa8Vh6yIWYYB0iJwsEaS523c4oYA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -6505,7 +6506,7 @@ packages:
       terser:
         optional: true
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
       esbuild: 0.19.11
       postcss: 8.4.33
       rollup: 4.9.4
@@ -6513,7 +6514,7 @@ packages:
       fsevents: 2.3.3
     dev: true
 
-  /vitest@1.2.2(@types/node@20.11.8):
+  /vitest@1.2.2(@types/node@20.11.10):
     resolution: {integrity: sha512-d5Ouvrnms3GD9USIK36KG8OZ5bEvKEkITFtnGv56HFaSlbItJuYr7hv2Lkn903+AvRAgSixiamozUVfORUekjw==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -6538,7 +6539,7 @@ packages:
       jsdom:
         optional: true
     dependencies:
-      '@types/node': 20.11.8
+      '@types/node': 20.11.10
       '@vitest/expect': 1.2.2
       '@vitest/runner': 1.2.2
       '@vitest/snapshot': 1.2.2
@@ -6557,8 +6558,8 @@ packages:
       strip-literal: 1.3.0
       tinybench: 2.5.1
       tinypool: 0.8.2
-      vite: 5.0.11(@types/node@20.11.8)
-      vite-node: 1.2.2(@types/node@20.11.8)
+      vite: 5.0.11(@types/node@20.11.10)
+      vite-node: 1.2.2(@types/node@20.11.10)
       why-is-node-running: 2.2.2
     transitivePeerDependencies:
       - less
