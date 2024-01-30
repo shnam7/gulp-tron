@@ -1,10 +1,10 @@
 import tron from 'gulp-tron'
-import upath from 'path'
+import path from 'path'
 import { fileURLToPath } from 'url'
 
-const __dirname = upath.dirname(fileURLToPath(import.meta.url))
-const basePath = upath.relative(process.cwd(), __dirname)
-const projectName = upath.basename(__dirname)
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const basePath = path.relative(process.cwd(), __dirname)
+const projectName = path.basename(__dirname)
 const prefix = projectName + ':'
 
 const taskOptions = {

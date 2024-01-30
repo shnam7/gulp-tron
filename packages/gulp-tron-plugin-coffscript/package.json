@@ -1,0 +1,27 @@
+{
+    "name": "gulp-tron-plugin-coffeescript",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": "./dist/index.js",
+    "scripts": {
+        "dev": "tsc --watch",
+        "build": "tsc",
+        "build:trubo": "turbo build --filter=gulp-tron-plugin-coffeescript",
+        "test": "vitest run --coverage",
+        "test:watch": "vitest watch --coverage",
+        "clean": "rimraf ./dist ./coverage",
+        "rebuild": "npm-run-all -s clean build",
+        "prepare-to-commit": "npm-run-all rebuild test",
+        "npm-dry-run": "npm publish --dry-run"
+    },
+    "devDependencies": {
+        "@repo/typescript-config": "workspace:*",
+        "@vitest/coverage-v8": "^1.2.2",
+        "gulp-tron": "workspace:*",
+        "typescript": "^5.3.3",
+        "vitest": "^1.2.2"
+    }
+}

@@ -1,0 +1,5 @@
+@use 'mylib';
+
+body {
+    color: mylib.my-color();
+}

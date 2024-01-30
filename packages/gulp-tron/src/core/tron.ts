@@ -116,7 +116,7 @@ export class Tron {
         if (conf.clean) cleanList = cleanList.concat(arrayify(conf.clean))
 
         const __cleanerFunction__: BuildFunction = (bs: BuildStream) => {
-            bs.del(cleanList)
+            bs.clean(cleanList)
         }
         this.task({ name: conf.name || '@clean', build: __cleanerFunction__ })
         return this
@@ -175,7 +175,7 @@ export class Tron {
                 const bs = new BuildStream(taskName, conf)
                 const ret = await build(bs)
                 if (ret instanceof Promise) await ret
-                return bs.flush()
+                return bs.flushStream()
             }
             done()
         }

@@ -2,7 +2,7 @@
     "name": "gulp-tron-repo",
     "private": true,
     "scripts": {
-        "dev": "turbo dev --filter=01-conf...",
+        "dev": "turbo dev --filter=gulp-tron",
         "build": "turbo build",
         "clean": "pnpm run clean:apps && pnpm run clean:examples && pnpm run  clean:packages",
         "clean:apps": "turbo clean --filter=./apps/*",

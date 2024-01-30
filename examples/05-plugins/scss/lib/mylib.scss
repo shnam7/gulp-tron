@@ -1,0 +1,5 @@
+$st-tropaz:                 #294E80 !default;
+
+@function my-color() {
+    @return $st-tropaz
+}
