@@ -1,7 +1,7 @@
 import tron from 'gulp-tron'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import concat from 'gulp-concat'
+import { bsUtils } from '@gulp-tron/plugin-utils'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const basePath = path.relative(process.cwd(), __dirname)
@@ -11,33 +11,7 @@ const prefix = projectName + ':'
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, 'www')
 const port = 3500
-const sourceMap = true
-
-// // build configurations
-// const coffee = {
-//     name: 'coffee',
-//     builder: 'GCoffeeScriptBuilder',
-//     src: [path.join(srcRoot, 'coffee/**/*.coffee')],
-//     order: ['*main.coffee'], // use order property to set outFile orders
-//     dest: path.join(destRoot, 'js'), // dest: (file) => file.base,
-//     outFile: 'sample-coffee.js',
-//     buildOptions: {
-//         babel: true,
-//         lint: true,
-//         sourceMap,
-//         minify: true,
-//     },
-//     moduleOptions: {
-//         // to enable uglify, coffee output need to be transpiled to es5 using babel by passing the options below
-//         // TODO May 6, 2018
-//         // If transpile option is given, gulp-coffee fails when sourcemaps are enabled.
-//         // No solution found, so this option is blocked until the solution is found.
-//         // gulp-coffee: v3.0.2, issue #91
-//         // coffee: {transpile: {presets: ['@babel/env']}, sourceMap: true, inlineMap: true}
-//     },
-//     flushStream: true,
-//     // npmInstall: ['@babel/preset-env']
-// }
+const sourcemaps = true
 
 const jsModuleOptions = {
     eslint: {
@@ -51,26 +25,17 @@ const jsModuleOptions = {
 const javascript = {
     name: 'javascript',
     build: async bs => {
-        const bs2 = bs.clone()
-        bs.src().filter('*main*.js').debug()
-        bs2.src().filter(['!*main*.js']).debug()
-        bs.merge(bs2).filter([]).debug()
-
-        // const first = bs.src(bs.opts.src).filter('*main*.js').cloneStream().pipe(debug())
-        // const second = bs.src(bs.opts.src).filter('!*main*.js').cloneStream()
-        // bs.clearStream().debug().merge(first).merge(second).debug()
-
-        // .merge(bs.opts.src).debug().pipe(concat(bs.opts.outFile)).dest()
+        bs = bsUtils(bs)
+        bs.src().debug().concat(bs.opts.outFile).debug().dest()
     },
 
     src: [path.join(srcRoot, 'js/**/*.js')],
     dest: path.join(destRoot, 'js'),
-    // order: ['*main.js'],
+    order: ['sub-2*.js'],
     outFile: 'sample-js.js',
-    // lint: true,
-    minify: true,
-    sourceMap,
     outFileOnly: true, // default value of outFileOnly is true
+    minify: true,
+    sourcemaps,
 }
 
 // const babel = {
@@ -131,13 +96,13 @@ const javascript = {
 //     npmInstall: ['@types/jquery'],
 // }
 
-// const build = {
-//     name: '@build',
-//     triggers: tron.parallel(coffee, javaScript, babel, typeScript),
-//     clean: [path.join(destRoot, 'js'), `!${destRoot}`, `!${path.join(destRoot, 'index.html')}`],
-// }
+const build = {
+    name: '@build',
+    triggers: tron.parallel(javascript),
+    clean: [path.join(destRoot, 'js'), `!${destRoot}`, `!${path.join(destRoot, 'index.html')}`],
+}
 
-tron.task(javascript)
+tron.task(build).addCleaner()
 
 // tron.createProject(build, { prefix })
 //     .addCleaner()

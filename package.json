@@ -2,18 +2,22 @@
     "name": "gulp-tron-repo",
     "private": true,
     "scripts": {
-        "dev": "turbo dev --filter=gulp-tron",
+        "dev": "turbo dev",
         "build": "turbo build",
-        "clean": "pnpm run clean:apps && pnpm run clean:examples && pnpm run  clean:packages",
-        "clean:apps": "turbo clean --filter=./apps/*",
-        "clean:examples": "turbo clean --filter=./examples/*",
-        "clean:packages": "turbo clean --filter=./packages/*",
+        "clean": "run-s __clean:build_deps __clean:apps __clean:examples __clean:packages",
+        "__clean:apps": "turbo clean --filter=./apps/*",
+        "__clean:examples": "turbo clean --filter=./examples/*",
+        "__clean:packages": "turbo clean --filter=./packages/*",
+        "__clean:build_deps": "turbo build --filter=gulp-tron... --filter={./packages/plugin-*}...",
         "lint": "turbo lint",
         "format": "prettier --write \"**/*.{ts,tsx,md}\""
     },
     "license": "MIT",
-    "packageManager": "pnpm@8.15.0",
+    "packageManager": "pnpm@8.15.1",
     "engines": {
-        "node": ">=18"
+        "node": ">=16.14"
+    },
+    "devDependencies": {
+        "npm-run-all": "^4.1.5"
     }
 }

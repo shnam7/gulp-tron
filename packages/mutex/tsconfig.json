@@ -1,5 +1,5 @@
 {
-    "extends": "@repo/typescript-config/tsconfig.json",
+    "extends": "@gulp-tron/typescript-config/tsconfig.json",
     "compilerOptions": {
         "outDir": "./dist",
         "sourceMap": false,

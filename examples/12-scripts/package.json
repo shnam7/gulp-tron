@@ -8,9 +8,9 @@
         "clean": "gulp @clean"
     },
     "devDependencies": {
+        "@gulp-tron/plugin-utils": "workspace:*",
         "gulp": "^4.0.2",
-        "gulp-concat": "^2.6.1",
         "gulp-tron": "workspace:*",
-        "gulp-tron-plugin-javascript": "workspace:*"
+        "rimraf": "^5.0.5"
     }
 }

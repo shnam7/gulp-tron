@@ -54,6 +54,11 @@ export class BuildStream {
         return this.pipe(gulp.dest(folder || '.', opt))
     }
 
+    promise(promise: Promise<any>): this {
+        this._promiseSync = this._promiseSync.then(() => promise)
+        return this
+    }
+
     clearStream(): this {
         this._stream = _nullStream()
         return this
@@ -162,7 +167,7 @@ export class BuildStream {
     merge(target: string | string[] | GulpStream | BuildStream) {
         if (target instanceof BuildStream) {
             this._stream = mergeStream(this._stream, target.stream)
-            this._promiseSync = this._promiseSync.then(resolve => target._promiseSync)
+            this.promise(this._promiseSync)
             this._opts = { ...this._opts, ...target.opts }
             return this
         }

@@ -1,0 +1,11 @@
+{
+    "extends": "@gulp-tron/typescript-config/tsconfig.json",
+    "compilerOptions": {
+        "declaration": true,
+        "outDir": "./dist",
+        "sourceMap": true,
+        "declarationMap": false,
+        "strict": false // this is required to for using 'this' inside the plugin function
+    },
+    "include": ["./src/**/*.ts"]
+}

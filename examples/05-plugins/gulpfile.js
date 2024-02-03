@@ -1,7 +1,7 @@
 import tron from 'gulp-tron'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import myScss from './build/gulp-tron-plugin-my-scss.js'
+import myScss from './gulp-tron-plugins/my-scss.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const basePath = path.relative(process.cwd(), __dirname)

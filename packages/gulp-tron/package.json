@@ -12,8 +12,8 @@
         "test": "vitest run --coverage",
         "test:watch": "vitest watch --coverage",
         "clean": "rimraf ./dist ./coverage",
-        "rebuild": "npm run clean && npm run build",
-        "prepare-to-commit": "npm run rebuild && npm run test",
+        "rebuild": "run-s clean build",
+        "prepare-to-commit": "run-s rebuild test",
         "npm-dry-run": "npm publish --dry-run"
     },
     "repository": {
@@ -33,8 +33,6 @@
     },
     "homepage": "https://github.com/shnam7/gulp-tron#readme",
     "dependencies": {
-        "@repo/mutex": "workspace:*",
-        "browser-sync": "^3.0.2",
         "del": "^7.1.0",
         "fast-glob": "^3.3.2",
         "gulp-debug": "^5.0.1",
@@ -47,17 +45,18 @@
         "gulp": "^4.0.2"
     },
     "devDependencies": {
-        "@repo/typescript-config": "workspace:*",
+        "@gulp-tron/typescript-config": "workspace:*",
         "@types/browser-sync": "^2.29.0",
         "@types/gulp": "^4.0.17",
         "@types/gulp-debug": "^2.0.36",
         "@types/gulp-filter": "^3.0.39",
         "@types/gulp-rename": "^2.0.6",
         "@types/merge-stream": "^1.1.5",
-        "@types/node": "^20.11.10",
+        "@types/node": "^20.11.16",
         "@types/stream-to-promise": "^2.2.4",
         "@types/through2": "^2.0.41",
         "@vitest/coverage-v8": "^1.2.2",
+        "npm-run-all": "^4.1.5",
         "merge-stream": "^2.0.0",
         "through2": "^4.0.2",
         "typescript": "^5.3.3",
