@@ -10,6 +10,7 @@ import { CopyOptions, CopyParam, copy, copyBatch } from '../utils/copy.js'
 import type { CleanOptions, DelOptions, ExecOptions, GulpStream, PluginFunction, TaskOptions } from './types.js'
 import through2 from 'through2'
 import mergeStream from 'merge-stream'
+import order from 'gulp-order'
 import is from '../utils/is.js'
 
 const cloneStream = () => through2.obj(function(file, enc, cb) { cb(null, file.clone()) })
@@ -43,7 +44,12 @@ export class BuildStream {
         if (!opt.sourcemaps) opt.sourcemaps = !!this._opts.sourcemaps
 
         this._stream = gulp.src(globs, opt)
-        return this
+        return this.order()
+    }
+
+    order(...args: Parameters<typeof order>) {
+        if (!args[0]) args[0] = this.opts.order
+        return this.pipe(order(...args))
     }
 
     dest(): this        // call with no argument falls back to '.', which is current directory.

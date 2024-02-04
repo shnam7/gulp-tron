@@ -1,7 +1,9 @@
 import tron from 'gulp-tron'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { bsUtils } from '@gulp-tron/plugin-utils'
+import concat from 'gulp-concat'
+import { default as babelG } from 'gulp-babel'
+import terser from 'gulp-terser'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const basePath = path.relative(process.cwd(), __dirname)
@@ -11,49 +13,40 @@ const prefix = projectName + ':'
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, 'www')
 const port = 3500
-const sourcemaps = true
+const sourcemaps = '.'
 
-const jsModuleOptions = {
-    eslint: {
-        // "extends": "eslint:recommended",
-        parserOptions: { ecmaVersion: 6 },
-        rules: { strict: 1 },
-    },
-}
-
-//
+// concat input files into single output file.
 const javascript = {
     name: 'javascript',
     build: async bs => {
-        bs = bsUtils(bs)
-        bs.src().debug().concat(bs.opts.outFile).debug().dest()
+        bs.src().order().debug().pipe(concat(bs.opts.outFile)).debug().dest()
     },
 
     src: [path.join(srcRoot, 'js/**/*.js')],
     dest: path.join(destRoot, 'js'),
     order: ['sub-2*.js'],
-    outFile: 'sample-js.js',
-    outFileOnly: true, // default value of outFileOnly is true
-    minify: true,
     sourcemaps,
+    outFile: 'sample-js.js',
 }
 
-// const babel = {
-//     name: 'babel',
-//     builder: 'GJavaScriptBuilder',
-//     src: [path.join(srcRoot, 'es6/**/*.es6')],
-//     order: ['*main.es6'],
-//     dest: path.join(destRoot, 'js'),
-//     outFile: 'sample-es6.js',
-//     buildOptions: {
-//         babel: true,
-//         // TODO gulp-eslint seems to have bug on dependencies
-//         lint: true,
-//         sourceMap,
-//         minify: true,
-//     },
-//     moduleOptions: { eslint },
-// }
+const eslintOptions = {
+    // "extends": "eslint:recommended",
+    parserOptions: { ecmaVersion: 6 },
+    rules: { strict: 1 },
+}
+
+const babel = {
+    name: 'babel',
+    build: bs => {
+        bs.src().debug().pipe(babelG()).debug().pipe(concat(bs.opts.outFile)).debug()
+        bs.pipe(terser()).rename({ extname: '.min.js' }).debug().dest()
+    },
+    src: [path.join(srcRoot, 'es6/**/*.es6')],
+    order: ['*main.es6'],
+    dest: path.join(destRoot, 'js'),
+    sourcemaps,
+    outFile: 'sample-es6.js',
+}
 
 // const typeScript = {
 //     name: 'typeScript',
@@ -98,7 +91,7 @@ const javascript = {
 
 const build = {
     name: '@build',
-    triggers: tron.parallel(javascript),
+    triggers: tron.parallel(javascript, babel),
     clean: [path.join(destRoot, 'js'), `!${destRoot}`, `!${path.join(destRoot, 'index.html')}`],
 }
 

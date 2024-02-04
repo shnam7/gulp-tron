@@ -33,6 +33,7 @@
     },
     "homepage": "https://github.com/shnam7/gulp-tron#readme",
     "dependencies": {
+        "gulp-order": "workspace:*",
         "del": "^7.1.0",
         "fast-glob": "^3.3.2",
         "gulp-debug": "^5.0.1",

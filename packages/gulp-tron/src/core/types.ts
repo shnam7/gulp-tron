@@ -33,6 +33,7 @@ export type TaskOptions = {
     group?: string                          // task group name
     prefix?: boolean | string               // if false, no prefix for taskName. if true, group is used as prefix. if string, it becoms the prefix.
     src?: Parameters<SrcMethod>[0]          // source for build operation
+    order?: string | string[]              // input file(src) ordering
     dest?: Parameters<DestMethod>[0]        // output(destination) directory of the build operation
     sourcemaps?: boolean | string           // sourcemaps option to gulp.src() and gulp.dest()
     // reloadOnChange?: boolean             // Reload on change when watcher is running. default is true.

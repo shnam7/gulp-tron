@@ -7,8 +7,12 @@
         "build": "gulp @build",
         "clean": "gulp @clean"
     },
+    "dependencies": {
+        "gulp-concat": "^2.6.1",
+        "gulp-babel": "^8.0.0",
+        "gulp-terser": "^2.1.0"
+    },
     "devDependencies": {
-        "@gulp-tron/plugin-utils": "workspace:*",
         "gulp": "^4.0.2",
         "gulp-tron": "workspace:*",
         "rimraf": "^5.0.5"
