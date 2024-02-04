@@ -3,6 +3,7 @@ import path from 'path'
 import fs from 'fs'
 import arrayify from './arrayify.js'
 import streamToPromise from 'stream-to-promise'
+import { error } from 'console'
 
 export type CopyParam = { src: string | string[], dest: string }
 export type CopyOptions = { logLevel?: 'verbose' | 'normal' | 'silent', logger?: (...args: any[]) => void }
@@ -17,23 +18,52 @@ export type CopyOptions = { logLevel?: 'verbose' | 'normal' | 'silent', logger?:
 export const copy = (patterns: string | string[], destPath: string, opts: CopyOptions = {}): number => {
     patterns = arrayify(patterns)
     if (patterns.length === 0) return 0
+    const logger = opts.logger || console.log
 
     // ensure destination directory exists
     if (!fs.existsSync(destPath)) fs.mkdirSync(destPath, { recursive: true })
 
     let count = 0
     patterns.forEach(pattern =>
-        fg.globSync(pattern).forEach(async (file: string) => {
+        fg.globSync(pattern).forEach((file: string) => {
             const dest = path.join(destPath, path.basename(file))
-            const rd = fs.createReadStream(file)
-            const wr = fs.createWriteStream(dest)
             let copyInfo = `[${file}] => ${dest}`
-            if (opts.logLevel !== 'silent') console.log(`copying:${copyInfo}`)
-            await streamToPromise(rd.pipe(wr))
+            if (opts.logLevel !== 'silent') logger(`copying:${copyInfo}`)
+            fs.copyFileSync(file, dest)
             count += 1
         }))
     return count
 }
+// export const copy = (patterns: string | string[], destPath: string, opts: CopyOptions = {}): number => {
+//     patterns = arrayify(patterns)
+//     if (patterns.length === 0) return 0
+
+//     // ensure destination directory exists
+//     if (!fs.existsSync(destPath)) fs.mkdirSync(destPath, { recursive: true })
+
+//     let count = 0
+//     patterns.forEach(pattern =>
+//         fg.globSync(pattern).forEach(async (file: string) => {
+//             const dest = path.join(destPath, path.basename(file))
+//             // const rd = fs.createReadStream(file)
+//             // const wr = fs.createWriteStream(dest).on('close', () => {
+//             //     if (opts.logLevel !== 'silent') console.log(`copying:${copyInfo}`)
+//             //     // console.log(`------ Copy done.`)
+//             // })
+//             let copyInfo = `[${file}] => ${dest}`
+//             if (opts.logLevel !== 'silent') console.log(`copying:${copyInfo}`)
+//             // await streamToPromise(rd.pipe(wr))
+//             fs.copyFileSync(file, dest)
+
+//             // fs.cp(file, dest, (error) => {
+//             //     console.log(`Error in copying:${copyInfo}:${error}`)
+//             // })
+//             if (opts.logLevel !== 'silent') console.log(`copying:${copyInfo}-->done`)
+
+//             count += 1
+//         }))
+//     return count
+// }
 
 /**
  * Copy Files in batch mode
@@ -45,11 +75,11 @@ export const copy = (patterns: string | string[], destPath: string, opts: CopyOp
 export const copyBatch = (param?: CopyParam | CopyParam[], opts: CopyOptions = {}): number => {
     if (!param) return 0   // allow null argument
 
-    const logger = opts.logger || console.log
+    // const logger = opts.logger || console.log
     let count = 0
-    arrayify(param).forEach(target => {
+    arrayify(param).forEach(async target => {
         let copyInfo = `[${target.src}] => ${target.dest}`
-        // if (opts.logLevel !== 'silent') logger(`[copying: ${copyInfo}`)
+        // if (opts.logLevel !== 'silent') logger(`[copying: ${copyInfo}`) --> this will be handled in
         count += copy(target.src, target.dest, opts)
     })
     return count

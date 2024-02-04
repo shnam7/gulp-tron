@@ -1,6 +1,7 @@
 import tron from 'gulp-tron'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'node:fs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const basePath = path.relative(process.cwd(), __dirname)
@@ -14,7 +15,15 @@ console.log('======cwd:', process.cwd())
 
 const copyer = {
     name: 'copyer',
-    build: bs => bs.copy({ src: [path.join(destRoot, 'do-not-delete/sample.txt')], dest: destRoot }),
+    build: async bs => {
+        bs.copy({ src: [path.join(destRoot, 'do-not-delete/sample.txt')], dest: destRoot })
+        try {
+            fs.accessSync(bs.opts.clean[0])
+        } catch (err) {
+            bs.log(`==>Error:file copy failed`)
+            throw err
+        }
+    },
     clean: [path.join(destRoot, 'sample.txt')],
 }
 
@@ -32,6 +41,9 @@ const dummyCleaner = {
     ],
 }
 
-const build = { name: '@build', triggers: tron.parallel(copyer, dummyCleaner) }
+const build = {
+    name: '@build',
+    triggers: tron.parallel(copyer, dummyCleaner),
+}
 
 tron.createTask(build).addCleaner()

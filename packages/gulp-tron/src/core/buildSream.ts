@@ -95,15 +95,15 @@ export class BuildStream {
 
     copy(arg1?: string | string[] | CopyParam | CopyParam[], arg2?: string | CopyOptions, arg3: CopyOptions = {}): this {
         if (typeof arg1 === 'string' || Array.isArray(arg1) && typeof arg1[0] === 'string')
-            copy(arg1 as string | string[], arg2 as string, { logLevel: this._opts.logLevel, ...arg3 })
+            copy(arg1 as string | string[], arg2 as string, { logLevel: this._opts.logLevel, logger: this.logger, ...arg3 })
         else
-            copyBatch(arg1 as CopyParam | CopyParam[], { logLevel: this._opts.logLevel, ...arg2 as CopyOptions })
+            copyBatch(arg1 as CopyParam | CopyParam[], { logLevel: this._opts.logLevel, logger: this.logger, ...arg2 as CopyOptions })
         return this
     }
 
     del(patterns: string | string[], options: DelOptions = {}): this {
         const opts: DelOptions = { ...this.opts, ...options }
-        const logger = opts.logger || console.log
+        const logger = opts.logger || this.logger
 
         if (opts.logLevel !== 'silent') logger(`deleting:[${arrayify(patterns).join(', ')}]`)
         deleteSync(patterns, opts)
@@ -120,16 +120,16 @@ export class BuildStream {
     clean(cleanExtra: string | string[] = [], options: CleanOptions = {}): this {
         const cleanList = arrayify(this.opts.clean).concat(arrayify(cleanExtra))
 
-        const logger = options.logger || console.log
+        const logger = options.logger || this.logger
         if (options.logLevel !== 'silent') logger(`cleaning:[${arrayify(cleanList).join(', ')}]`)
         options.logLevel = 'silent'
         return this.del(cleanList, options)
     }
 
     exec(command: string, options: ExecOptions): this {
-        if (this.opts.logLevel === 'verbose') console.log(`Executing command: '${command}'`)
+        if (this.opts.logLevel === 'verbose') this.log(`Executing command: '${command}'`)
         child_process.execSync(command, options)
-        if (this.opts.logLevel === 'verbose') console.log(`Executing command: '${command}' finished.`)
+        if (this.opts.logLevel === 'verbose') this.log(`Executing command: '${command}' finished.`)
         return this
     }
 
@@ -175,5 +175,20 @@ export class BuildStream {
             this._stream = mergeStream(this._stream, is.String(target) || is.Array(target) ? gulp.src(target) : target)
         }
         return this
+    }
+
+    log(...args: Parameters<typeof console.log>): this {
+        const logger =
+            this._promiseSync.then(() => {
+                console.log(...args)
+            })
+        return this
+    }
+
+    get logger(): typeof console.log {
+        const _logger = (...args: Parameters<typeof console.log>) => {
+            this.log(...args)
+        }
+        return _logger
     }
 }
