@@ -1,13 +1,13 @@
 
-import { BuildStream } from 'gulp-tron'
+import { BuildStream, PluginFunction } from 'gulp-tron'
 import concatG from 'gulp-concat'
 
-export type Options = { [key: string]: any }
+export type IOptions = { newLine: string }
+export type IVinylOptions = Parameters<typeof concatG>[0]
 
-const concat = (file: string | Object, options: any) => (bs: BuildStream) => {
+const concat = (file: string | IVinylOptions, options?: IOptions): PluginFunction => (bs: BuildStream) => {
     if (typeof file === 'string') return bs.pipe(concatG(file, options))
-    return bs.pipe(concatG(options))
+    return bs.pipe(concatG(file))
 }
-
 
 export default concat

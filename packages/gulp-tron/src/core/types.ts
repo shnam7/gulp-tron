@@ -66,8 +66,7 @@ export type BuildSetSeries = BuildSet[]
 export type BuildSetParallel = { set: BuildSet[] }
 
 //--- plugin types
-export type PluginFunction = (bs: BuildStream, opts: PluginOptions) => BuildStream
-export type PluginOptions = { [key: string]: any }
+export type PluginFunction = (bs: BuildStream) => BuildStream
 
 // //--- WatcherConfig (Watcher task config)
 // export interface WatcherConfig extends Pick<BuildConfig, "watch"> {

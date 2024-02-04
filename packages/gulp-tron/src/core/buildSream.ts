@@ -35,9 +35,9 @@ export class BuildStream {
     get stream() { return this._stream }
     get opts() { return this._opts }
 
-    /**----------------------------------------------------------------
-     * Build API: Returns value should be 'this'
-     *----------------------------------------------------------------*/
+    //-------------------------------------------------------------------------
+    // Build API: Returns value should be 'this'
+    //-------------------------------------------------------------------------
     src(...args: Parameters<SrcMethod>): this {
         const [globs = this.opts.src || '', opt = {}] = args
         if (!opt.sourcemaps) opt.sourcemaps = !!this._opts.sourcemaps
@@ -59,16 +59,11 @@ export class BuildStream {
         return this
     }
 
-    clearStream(): this {
-        this._stream = _nullStream()
-        return this
-    }
-
     pipe(func: PluginFunction): this
     pipe(destination: GulpStream, options?: { end?: boolean | undefined }): this
     pipe(destination: PluginFunction | GulpStream, options?: { end?: boolean | undefined }): this {
         if (typeof destination == 'function')
-            destination(this, {})
+            destination(this)
         else
             this._stream = this._stream.pipe(destination, options)
         return this
@@ -90,9 +85,7 @@ export class BuildStream {
     }
 
     copy(patterns: string | string[], destPath: string, opts: CopyOptions): this
-
     copy(param?: CopyParam | CopyParam[], opts?: CopyOptions): this
-
     copy(arg1?: string | string[] | CopyParam | CopyParam[], arg2?: string | CopyOptions, arg3: CopyOptions = {}): this {
         if (typeof arg1 === 'string' || Array.isArray(arg1) && typeof arg1[0] === 'string')
             copy(arg1 as string | string[], arg2 as string, { logLevel: this._opts.logLevel, logger: this.logger, ...arg3 })
@@ -130,17 +123,6 @@ export class BuildStream {
         if (this.opts.logLevel === 'verbose') this.log(`Executing command: '${command}'`)
         child_process.execSync(command, options)
         if (this.opts.logLevel === 'verbose') this.log(`Executing command: '${command}' finished.`)
-        return this
-    }
-
-    //--- stream API
-    createStream(): GulpStream { return _nullStream() }
-
-    cloneStream(): GulpStream { return this.pipe(cloneStream())._stream }
-
-    async flushStream(): Promise<this> {
-        await this._promiseSync
-        await streamToPromise(this._stream)
         return this
     }
 
@@ -185,6 +167,27 @@ export class BuildStream {
         return this
     }
 
+    clearStream(): this {
+        this._stream = _nullStream()
+        return this
+    }
+
+    //-------------------------------------------------------------------------
+    // Stream API
+    //-------------------------------------------------------------------------
+    createStream(): GulpStream { return _nullStream() }
+
+    cloneStream(): GulpStream { return this.pipe(cloneStream())._stream }
+
+    async flushStream(): Promise<this> {
+        await this._promiseSync
+        await streamToPromise(this._stream)
+        return this
+    }
+
+    //-------------------------------------------------------------------------
+    // Utilities
+    //-------------------------------------------------------------------------
     get logger(): typeof console.log {
         const _logger = (...args: Parameters<typeof console.log>) => {
             this.log(...args)
