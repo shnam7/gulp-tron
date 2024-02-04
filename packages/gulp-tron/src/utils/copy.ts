@@ -2,6 +2,7 @@ import fg from 'fast-glob'
 import path from 'path'
 import fs from 'fs'
 import arrayify from './arrayify.js'
+import streamToPromise from 'stream-to-promise'
 
 export type CopyParam = { src: string | string[], dest: string }
 export type CopyOptions = { logLevel?: 'verbose' | 'normal' | 'silent', logger?: (...args: any[]) => void }
@@ -22,13 +23,13 @@ export const copy = (patterns: string | string[], destPath: string, opts: CopyOp
 
     let count = 0
     patterns.forEach(pattern =>
-        fg.globSync(pattern).forEach((file: string) => {
+        fg.globSync(pattern).forEach(async (file: string) => {
             const dest = path.join(destPath, path.basename(file))
             const rd = fs.createReadStream(file)
             const wr = fs.createWriteStream(dest)
             let copyInfo = `[${file}] => ${dest}`
             if (opts.logLevel !== 'silent') console.log(`copying:${copyInfo}`)
-            rd.pipe(wr)
+            await streamToPromise(rd.pipe(wr))
             count += 1
         }))
     return count
