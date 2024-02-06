@@ -51,6 +51,7 @@ const babel = {
 const typescript = {
     name: 'typescript',
     build: bs => bs.exec('tsc'),
+    watch: [path.join(srcRoot, 'ts/**/*.ts')],
 }
 
 const build = {
@@ -59,15 +60,13 @@ const build = {
     clean: [path.join(destRoot, 'js'), `!${destRoot}`, `!${path.join(destRoot, 'index.html')}`],
 }
 
-tron.task(build).addCleaner()
-
-// tron.createProject(build, { prefix })
-//     .addCleaner()
-//     .addWatcher({
-//         watch: [path.join(destRoot, '**/*.html')],
-//         browserSync: {
-//             server: path.resolve(destRoot),
-//             port: port + parseInt(prefix),
-//             ui: { port: port + 100 + parseInt(prefix) },
-//         },
-//     })
+tron.task(build)
+    .addCleaner()
+    .addWatcher({
+        watch: [path.join(destRoot, '**/*.html')],
+        browserSync: {
+            server: path.resolve(destRoot),
+            port: port + parseInt(prefix),
+            ui: { port: port + 100 + parseInt(prefix) },
+        },
+    })

@@ -5,10 +5,10 @@
         "dev": "turbo dev",
         "build": "turbo build",
         "build:examples": "turbo build --filter=./examples/*",
-        "clean": "run-s __clean:build_deps __clean:apps __clean:examples __clean:packages",
+        "clean": "run-s __clean:tools clean:examples __clean:packages",
         "clean:examples": "turbo clean --filter=./examples/*",
         "__clean:packages": "turbo clean --filter=./packages/*",
-        "__clean:build_deps": "turbo build --filter=gulp-tron... --filter={./packages/plugin-*}...",
+        "__clean:tools": "turbo build --filter=gulp-tron... --filter={./packages/plugin-*}...",
         "lint": "turbo lint",
         "format": "prettier --write \"**/*.{ts,tsx,md}\""
     },

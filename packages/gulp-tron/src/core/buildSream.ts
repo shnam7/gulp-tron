@@ -1,4 +1,5 @@
 import gulp, { DestMethod, SrcMethod } from 'gulp'
+import browserSync from 'browser-sync'
 import debug from 'gulp-debug'
 import filter from 'gulp-filter'
 import rename from 'gulp-rename'
@@ -175,6 +176,11 @@ export class BuildStream {
 
     clearStream(): this {
         this._stream = _nullStream()
+        return this
+    }
+
+    reload(options?: browserSync.StreamOptions): this {
+        if (browserSync.active) this.pipe(browserSync.stream(options))
         return this
     }
 

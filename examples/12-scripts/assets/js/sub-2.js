@@ -1,3 +1,3 @@
-console.log('This is sub-2');
+console.log('This is sub-2')
 
-console.log(new JSGreeter("JS").greet());
+console.log(new JSGreeter().greet(`Greetings from Javascript example.`))

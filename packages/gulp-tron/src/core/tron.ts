@@ -1,8 +1,9 @@
 import gulp from 'gulp'
 import { BuildStream } from './buildSream.js'
-import type { BuildFunction, BuildSet, BuildSetParallel, BuildSetSeries, CleanerConfig, CleanerOptions, GulpTaskFunction, TaskConfig, TaskOptions } from './types.js'
+import type { BuildFunction, BuildSet, BuildSetParallel, BuildSetSeries, CleanerConfig, CleanerOptions, GulpTaskFunction, TaskConfig, TaskOptions, WatcherConfig, WatcherOptions } from './types.js'
 import is from '../utils/is.js'
 import arrayify from '../utils/arrayify.js'
+import browserSync from 'browser-sync'
 
 //--- test if wrapped by gulp.serial() or gulp.parallel()
 // const isGulpSeriesOrParallelTask = (t: any): boolean => /(series|parallel)/.test(t.toString())
@@ -122,6 +123,39 @@ export class Tron {
         return this
     }
 
+    addWatcher(conf?: WatcherConfig): this
+    addWatcher(nameOrConfig?: string | WatcherConfig, options: WatcherOptions = {}): this {
+        const config: WatcherConfig = is.String(nameOrConfig) ? { name: nameOrConfig, ...options } : nameOrConfig as WatcherConfig || {}
+        const target = config.target || this._taskConfigs   // defaults to all tasks
+
+        const __watcherFunction__: BuildFunction = (bs: BuildStream) => {
+            const promises: Promise<unknown>[] = []
+
+            browserSync.init(config.browserSync || {})
+            arrayify(target).forEach(conf => {
+                const watched: string[] = arrayify(conf.watch || conf.src).concat(arrayify(conf.addWatch))
+                if (watched.length > 0) {
+                    bs.log(`Watching '${conf.taskName}':[${watched}]`)
+                    if (conf.taskName) {
+                        const watcher = gulp.watch(watched, gulp.task(conf.taskName))
+                        watcher.on('change', browserSync.reload)
+                        promises.push(new Promise((res) => { watcher.on('error', () => res) }))
+                    }
+                }
+            })
+
+            if (config.watch) {
+                bs.log(`Watching:[${config.watch}]`)
+                const watcher = gulp.watch(config.watch)
+                watcher.on('change', browserSync.reload)
+                promises.push(new Promise((res) => { watcher.on('error', () => res) }))
+            }
+            return Promise.all(promises)
+        }
+        this.task({ name: config.name || '@watch', build: __watcherFunction__ })
+        return this
+    }
+
     /**
      * Convert the series of buildSet items into buildSet series object
      *
@@ -158,8 +192,12 @@ export class Tron {
     resolveTaskConfg(conf: TaskConfig): GulpTaskFunction {
         const { name, build, dependsOn, triggers, logLevel, group } = conf
         if (!name) throw Error(`Tron:resolveTaskConfig: invalid task name: ${name}`)
-        if ((name === '@clean' || name === '@watch') && conf.build?.name !== '__cleanerFunction__')
+        if (
+            (name === '@clean' && conf.build?.name !== '__cleanerFunction__') ||
+            (name === '@watch' && conf.build?.name !== '__watcherFunction__')
+        ) {
             throw Error(`Tron:resolveTaskConfig:invalid task name:'${name}' is a reserved task name.`)
+        }
 
         const prefix = (conf.prefix === true) ? group : (conf.prefix === false) ? undefined : conf.prefix
         let taskName = (prefix) ? `${prefix}:${name}` : name

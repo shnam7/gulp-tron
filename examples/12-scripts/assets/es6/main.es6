@@ -1,11 +1,17 @@
 /*
  * Sample.js
  */
+;(() => {
+    const msg = `Greetings from ES6/Babel script.`
 
-console.log('main.es6:Message from es6 script:')
+    // test es6 function
+    const greetings = msg => {
+        console.log(`Hello, ${msg}`)
+    }
+    greetings(msg)
 
-const greetings = msg => {
-    console.log(`Hello ${msg}`)
-}
+    const p1 = document.createElement('p')
+    p1.innerText = `${msg}`
 
-greetings('ES6/Babel!')
+    document.body.appendChild(p1)
+})()

@@ -1,10 +1,9 @@
 import gulp from 'gulp'
-import type { SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback } from 'gulp'
-import type { BuildStream } from './buildSream.js'
 import { ExecSyncOptionsWithBufferEncoding, ExecSyncOptionsWithStringEncoding } from 'child_process'
 import { Options as delOptions } from 'del'
-import { WatchOptions } from 'fs'
-
+import type { SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback } from 'gulp'
+import type { BuildStream } from './buildSream.js'
+import type { Options as browserSyncOptions } from 'browser-sync'
 
 //--- common types
 export type GulpStream = ReturnType<SrcMethod>
@@ -33,10 +32,10 @@ export type TaskOptions = {
     group?: string                          // task group name
     prefix?: boolean | string               // if false, no prefix for taskName. if true, group is used as prefix. if string, it becoms the prefix.
     src?: Parameters<SrcMethod>[0]          // source for build operation
-    order?: string | string[]              // input file(src) ordering
+    order?: string | string[]               // input file(src) ordering
     dest?: Parameters<DestMethod>[0]        // output(destination) directory of the build operation
     sourcemaps?: boolean | string           // sourcemaps option to gulp.src() and gulp.dest()
-    // reloadOnChange?: boolean             // Reload on change when watcher is running. default is true.
+    // reloadOnChange?: boolean                // Reload on change when watcher is running. default is true.
 } & CleanerOptions & WatcherOptions & LogOptions
 
 
@@ -54,7 +53,9 @@ export type CleanerOptions = {
 //--- Watcher types
 export type WatcherConfig = {
     name?: string                           // Watcher task name. default value is '@watch'
-} & WatchOptions
+    target?: TaskConfig | TaskConfig[]      // target TaskConfig list to look for watch properties
+    browserSync?: browserSyncOptions        // browser-options
+} & WatcherOptions
 
 export type WatcherOptions = {
     watch?: string | string[]               // override default watch, which is TaskOptions.src
