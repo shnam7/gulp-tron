@@ -126,9 +126,9 @@ export class BuildStream {
     }
 
     exec(command: string, options: ExecOptions): this {
-        if (this.opts.logLevel === 'verbose') this.log(`Executing command: '${command}'`)
+        if (this.opts.logLevel !== 'silent') this.log(`Executing command:'${command}'`)
         child_process.execSync(command, options)
-        if (this.opts.logLevel === 'verbose') this.log(`Executing command: '${command}' finished.`)
+        if (this.opts.logLevel === 'verbose') this.log(`Executing command:'${command}' finished.`)
         return this
     }
 

@@ -24,7 +24,7 @@ const javascript = {
 
     src: [path.join(srcRoot, 'js/**/*.js')],
     dest: path.join(destRoot, 'js'),
-    order: ['sub-2*.js'],
+    order: ['sub-1*.js'],
     sourcemaps,
     outFile: 'sample-js.js',
 }
@@ -48,50 +48,14 @@ const babel = {
     outFile: 'sample-es6.js',
 }
 
-// const typeScript = {
-//     name: 'typeScript',
-//     builder: 'GTypeScriptBuilder',
-//     src: [path.join(srcRoot, 'ts/**/!(*.d).ts')],
-//     dest: path.join(destRoot, 'js'), // (file) => file.base,
-//     outFile: 'app.js',
-//     preBuild: rtb => {
-//         rtb.copy({
-//             src: path.join(srcRoot, 'ts/**/*.js'),
-//             dest: path.join(destRoot, 'js'),
-//         })
-//     },
-
-//     buildOptions: {
-//         // lint: true,
-//         // printConfig: true,
-//         minify: true,
-//         sourceMap,
-//         // outFileOnly: false, --> this option is not supported in TypeScript builder
-//         // You can specify tsconfig.json file here. To create a default one, run 'tsc -init'
-//         tsConfig: path.join(basePath, 'tsconfig.json'),
-//     },
-//     moduleOptions: {
-//         // this will override the tsConfig property settings in buildOptions
-//         typescript: {
-//             // "target": "es5",
-//             // "noImplicitAny": true,
-//             // "noEmitOnError": true,
-//             // "declaration": true,
-//             // "lib": ['DOM', 'ES6', 'DOM.Iterable', 'ScriptHost']
-//         },
-//         tslint: {
-//             configuration: {
-//                 extends: 'tslint:recommended',
-//             },
-//         },
-//     },
-//     addWatch: [path.join(srcRoot, 'ts/**/*.js')],
-//     npmInstall: ['@types/jquery'],
-// }
+const typescript = {
+    name: 'typescript',
+    build: bs => bs.exec('tsc'),
+}
 
 const build = {
     name: '@build',
-    triggers: tron.parallel(javascript, babel),
+    triggers: tron.parallel(javascript, babel, typescript),
     clean: [path.join(destRoot, 'js'), `!${destRoot}`, `!${path.join(destRoot, 'index.html')}`],
 }
 

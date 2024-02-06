@@ -5,16 +5,18 @@
     "type": "module",
     "scripts": {
         "build": "gulp @build",
+        "build:ts": "tsc",
         "clean": "gulp @clean"
     },
     "dependencies": {
-        "gulp-concat": "^2.6.1",
         "gulp-babel": "^8.0.0",
+        "gulp-concat": "^2.6.1",
         "gulp-terser": "^2.1.0"
     },
     "devDependencies": {
         "gulp": "^4.0.2",
         "gulp-tron": "workspace:*",
-        "rimraf": "^5.0.5"
+        "rimraf": "^5.0.5",
+        "typescript": "^5.3.3"
     }
 }

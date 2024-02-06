@@ -2,11 +2,10 @@
  * Sample.js
  */
 
-console.log("ES6/Babel example...");
+console.log('main.es6:Message from es6 script:')
 
-let greetings = (msg) => {
-    'use strict';
-    console.log(`Hello ${msg}`);
-};
+const greetings = msg => {
+    console.log(`Hello ${msg}`)
+}
 
-greetings('ES6/Babel');
+greetings('ES6/Babel!')

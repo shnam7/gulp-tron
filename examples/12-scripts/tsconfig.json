@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "ES2015",
+        "module": "NodeNext", // this is default
+        "moduleResolution": "NodeNext",
+        "strict": true,
+        "declaration": false,
+        "noImplicitAny": true,
+        "lib": ["dom", "es6", "es2015", "dom.iterable", "scripthost"],
+        "noEmitOnError": true,
+        "outDir": "www/js"
+    },
+    "include": ["assets/ts/**/*.ts"]
+}

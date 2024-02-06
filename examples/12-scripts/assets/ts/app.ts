@@ -1,12 +1,10 @@
-import Greeter from "./Greeter";
+import Greeter from "./Greeter.js"
 
-const greeter = new Greeter();
-console.log('Greeter loaded:', greeter.greet());
 
-$(() => {
-    $('body').append(`<p>${greeter.greet()}</p>`);
-});
+const greeter = new Greeter()
+console.log('Greeter loaded:', greeter.greet())
 
-export function xx() {
-    return 123;
-}
+const p1 = document.createElement("p")
+p1.innerText = `${greeter.greet()}`
+
+document.body.appendChild(p1)
