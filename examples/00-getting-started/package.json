@@ -4,15 +4,14 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "gulp 00-getting-started:@build",
-        "clean": "gulp 00-getting-started:@clean"
+        "build": "gulp @build",
+        "clean": "gulp @clean"
     },
     "devDependencies": {
-        "gulp": "^4.0.2",
         "gulp-tron": "workspace:*",
+        "gulp": "^4.0.2",
         "gulp-babel": "^8.0.0",
         "gulp-sass": "^5.1.0",
-        "sass": "^1.70.0",
-        "upath": "^2.0.1"
+        "sass": "^1.70.0"
     }
 }

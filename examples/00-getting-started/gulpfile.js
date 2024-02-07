@@ -1,49 +1,45 @@
 import tron from 'gulp-tron'
-import upath from 'upath'
+import path from 'path'
 import gulpSass from 'gulp-sass'
 import * as dartSass from 'sass'
 import babel from 'gulp-babel'
-
 import { fileURLToPath } from 'url'
 
-const __dirname = upath.dirname(fileURLToPath(import.meta.url))
-const basePath = upath.relative(process.cwd(), __dirname)
-const projectName = upath.basename(__dirname)
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const basePath = path.relative(process.cwd(), __dirname)
+const projectName = path.basename(__dirname)
 const prefix = projectName + ':'
 
-const srcRoot = upath.join(basePath, 'assets')
-const destRoot = upath.join(basePath, 'www')
+const srcRoot = path.join(basePath, 'assets')
+const destRoot = path.join(basePath, 'www')
 
 const sass = gulpSass(dartSass)
 
 const scss = {
     name: 'scss',
-    builder: builder => builder.src().pipe(sass().on('error', sass.logError)).dest(),
-    src: upath.join(srcRoot, 'scss/**/*.scss'),
-    dest: upath.join(destRoot, 'css'),
+    build: bs => bs.src().pipe(sass().on('error', sass.logError)).dest(),
+
+    src: path.join(srcRoot, 'scss/**/*.scss'),
+    dest: path.join(destRoot, 'css'),
 }
 
 const scripts = {
-    name: 'babel',
-    builder: builder => builder.src().pipe(babel()).dest(),
-    src: upath.join(srcRoot, 'js/**/*.js'),
-    dest: upath.join(destRoot, 'js'),
-    npmInstall: ['@babel/core'],
+    name: 'scripts',
+    build: bs => bs.src().pipe(babel()).dest(),
+
+    src: path.join(srcRoot, 'js/**/*.js'),
+    dest: path.join(destRoot, 'js'),
 }
 
 const build = {
     name: '@build',
     triggers: tron.parallel(scss, scripts),
-    clean: upath.join(destRoot, '{css,js}'),
+    clean: path.join(destRoot, '{css,js}'),
 }
 
-const watcher = {
-    name: '@watch',
-    builder: 'watcher',
-    watch: upath.join(destRoot, '**/*.html'),
-    browserSync: { server: destRoot },
-}
-
-const cleaner = { name: '@clean', builder: 'cleaner' }
-
-tron.createProject({ build, watcher, cleaner }, { prefix })
+tron.task(build)
+    .addCleaner()
+    .addWatcher({
+        watch: path.join(destRoot, '**/*.html'),
+        browserSync: { server: destRoot },
+    })
