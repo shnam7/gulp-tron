@@ -1,0 +1,47 @@
+{
+    "name": "@gulp-tron/plugin-styles",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": "./dist/index.js",
+    "scripts": {
+        "dev": "tsc --watch",
+        "build": "tsc",
+        "test": "vitest run --coverage",
+        "test:watch": "vitest watch --coverage",
+        "clean": "rimraf ./dist ./coverage",
+        "rebuild": "runs-s clean build",
+        "prepare-to-commit": "run-p rebuild test",
+        "npm-dry-run": "npm publish --dry-run"
+    },
+    "dependencies": {
+        "gulp-autoprefixer": "^9.0.0",
+        "gulp-less": "^5.0.0",
+        "gulp-postcss": "^10.0.0",
+        "gulp-rtlcss": "^2.0.0",
+        "gulp-sass": "^5.1.0",
+        "postcss-preset-env": "^9.3.0",
+        "sass": "^1.70.0"
+    },
+    "devDependencies": {
+        "@gulp-tron/typescript-config": "workspace:*",
+        "@types/clean-css": "^4.2.11",
+        "@types/gulp-autoprefixer": "^0.0.37",
+        "@types/gulp-less": "^0.0.36",
+        "@types/gulp-postcss": "^8.0.6",
+        "@types/gulp-sass": "^5.0.4",
+        "@types/postcss-reporter": "^7.0.5",
+        "@types/rtlcss": "^3.5.4",
+        "@vitest/coverage-v8": "^1.2.2",
+        "clean-css": "^5.3.3",
+        "gulp-tron": "workspace:*",
+        "postcss": "^8.4.35",
+        "postcss-reporter": "^7.1.0",
+        "rimraf": "^5.0.5",
+        "stylelint": "^16.2.1",
+        "typescript": "^5.3.3",
+        "vitest": "^1.2.2"
+    }
+}

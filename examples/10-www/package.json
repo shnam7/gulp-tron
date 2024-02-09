@@ -1,0 +1,20 @@
+{
+    "name": "10-www",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "gulp @build",
+        "clean": "gulp @clean"
+    },
+    "devDependencies": {
+        "gulp": "^4.0.2",
+        "gulp-concat": "^2.6.1",
+        "gulp-imagemin": "^9.0.0",
+        "gulp-sass": "^5.1.0",
+        "gulp-tron": "workspace:*",
+        "gulp-zip": "^6.0.0",
+        "imagemin-jpegtran": "^7.0.0",
+        "sass": "^1.70.0"
+    }
+}

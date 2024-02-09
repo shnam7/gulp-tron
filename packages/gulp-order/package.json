@@ -39,7 +39,7 @@
     "devDependencies": {
         "@gulp-tron/typescript-config": "workspace:*",
         "@types/minimatch": "^5.1.2",
-        "@types/node": "^20.11.16",
+        "@types/node": "^20.11.17",
         "@types/through2": "^2.0.41",
         "@types/vinyl": "^2.0.11",
         "@vitest/coverage-v8": "^1.2.2",

@@ -21,45 +21,43 @@ export type BuildFunction = (bs: BuildStream) => void | Promise<any>
 
 //--- Tron Task types
 export type TaskConfig = {
-    name: string                            // build name
-    taskName?: string                       // this will be automaticallty set by Tron when gulp the task is actually created.
-    build?: BuildFunction                   // main build function
-    dependsOn?: BuildSet                    // buildSet to be executed before main build function
-    triggers?: BuildSet                     // buildSet to be executed after main build function
+    readonly name: string                           // build name
+    readonly taskName?: string                               // this will be automaticallty set by Tron when gulp the task is actually created.
+    readonly build?: BuildFunction                  // main build function
+    readonly dependsOn?: BuildSet                   // buildSet to be executed before main build function
+    readonly triggers?: BuildSet                    // buildSet to be executed after main build function
 } & TaskOptions & CleanerConfig & WatcherConfig
 
 export type TaskOptions = {
-    group?: string                          // task group name
-    prefix?: boolean | string               // if false, no prefix for taskName. if true, group is used as prefix. if string, it becoms the prefix.
-    src?: Parameters<SrcMethod>[0]          // source for build operation
-    order?: string | string[]               // input file(src) ordering
-    dest?: Parameters<DestMethod>[0]        // output(destination) directory of the build operation
-    sourcemaps?: boolean | string           // sourcemaps option to gulp.src() and gulp.dest()
-    // reloadOnChange?: boolean                // Reload on change when watcher is running. default is true.
+    readonly group?: string                          // task group name
+    readonly prefix?: boolean | string               // if false, no prefix for taskName. if true, group is used as prefix. if string, it becoms the prefix.
+    readonly src?: Parameters<SrcMethod>[0]          // source for build operation
+    readonly order?: string | string[]               // input file(src) ordering
+    readonly dest?: Parameters<DestMethod>[0]        // output(destination) directory of the build operation
+    readonly sourcemaps?: boolean | string           // sourcemaps option to gulp.src() and gulp.dest()
 } & CleanerOptions & WatcherOptions & LogOptions
-
 
 //--- Cleaner types
 export type CleanerConfig = {
-    name?: string,                          // Cleaner task name. default value is '@clean'
-    target?: TaskConfig | TaskConfig[]      // target TaskConfig list to look for clean properties
+    readonly name?: string,                          // Cleaner task name. default value is '@clean'
+    readonly target?: TaskConfig | TaskConfig[]      // target TaskConfig list to look for clean properties
 } & CleanerOptions
 
 export type CleanerOptions = {
-    clean?: string | string[]               // additional clean list
+    readonly clean?: string | string[]               // additional clean list
 } & CleanOptions
 
 
 //--- Watcher types
 export type WatcherConfig = {
-    name?: string                           // Watcher task name. default value is '@watch'
-    target?: TaskConfig | TaskConfig[]      // target TaskConfig list to look for watch properties
-    browserSync?: browserSyncOptions        // browser-options
+    readonly name?: string                           // Watcher task name. default value is '@watch'
+    readonly target?: TaskConfig | TaskConfig[]      // target TaskConfig list to look for watch properties
+    readonly browserSync?: browserSyncOptions        // browser-options
 } & WatcherOptions
 
 export type WatcherOptions = {
-    watch?: string | string[]               // override default watch, which is TaskOptions.src
-    addWatch?: string | string[]            // additional watch in addition to watch or default watch
+    readonly watch?: string | string[]               // override default watch, which is TaskOptions.src
+    readonly addWatch?: string | string[]            // additional watch in addition to watch or default watch
 }
 
 //--- BuildSet

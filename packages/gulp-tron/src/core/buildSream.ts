@@ -61,6 +61,11 @@ export class BuildStream {
         return this.pipe(gulp.dest(folder || '.', opt))
     }
 
+    on(...args: Parameters<typeof this._stream.on>): this {
+        this.stream.on(...args)
+        return this
+    }
+
     promise(promise: Promise<any>): this {
         this._promiseSync = this._promiseSync.then(() => promise)
         return this

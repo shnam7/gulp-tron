@@ -1,0 +1,11 @@
+{
+    "extends": ["//"],
+    "pipeline": {
+        "build": {
+            "outputs": ["www/{js,css,images}"]
+        },
+        "clean": {
+            "dependsOn": ["gulp-tron#build"]
+        }
+    }
+}

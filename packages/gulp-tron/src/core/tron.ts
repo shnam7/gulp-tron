@@ -8,6 +8,9 @@ import browserSync from 'browser-sync'
 //--- test if wrapped by gulp.serial() or gulp.parallel()
 // const isGulpSeriesOrParallelTask = (t: any): boolean => /(series|parallel)/.test(t.toString())
 
+type TaskConfigWithMutableTaskName = Omit<TaskConfig, 'taskName'> & {
+    -readonly [key in keyof Pick<TaskConfig, 'taskName'>]: TaskConfig[key]
+}
 
 //--- GBuildManager
 export class Tron {
@@ -189,7 +192,7 @@ export class Tron {
      * @param conf TaskConfig object
      * @returns task funtion created by gulp. Value returned from gulp.task(taskName).
      */
-    resolveTaskConfg(conf: TaskConfig): GulpTaskFunction {
+    resolveTaskConfg(conf: TaskConfigWithMutableTaskName): GulpTaskFunction {
         const { name, build, dependsOn, triggers, logLevel, group } = conf
         if (!name) throw Error(`Tron:resolveTaskConfig: invalid task name: ${name}`)
         if (
