@@ -1,6 +1,9 @@
 /*
  * Sample.js
  */
+
+'use strict'
+
 ;(() => {
     const msg = `Greetings from ES6/Babel script.`
 

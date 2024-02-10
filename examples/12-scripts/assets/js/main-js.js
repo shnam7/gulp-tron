@@ -2,6 +2,8 @@
  * Sample.js
  */
 
+'use strict'
+
 const msg = 'Greetings from plain JavaScript.'
 console.log(msg)
 

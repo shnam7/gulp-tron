@@ -3,7 +3,7 @@
  *
  */
 
-import { BuildStream } from 'gulp-tron'
+import { BuildStream, PluginFunction } from 'gulp-tron'
 import CleanCSS from 'clean-css'
 
 export type CleanCssOptions = CleanCSS.OptionsOutput
@@ -12,9 +12,9 @@ export type CleanCssOptions = CleanCSS.OptionsOutput
  * CleanCss Plugin - wrapper for culp-clean-css
  *
  * @param options - CleanCss options
- * @returns BuildStream in progress
+ * @returns PluginFunction
  */
-export const cleanCssP = (options: CleanCssOptions = {}) => (bs: BuildStream) => {
+export const cleanCssP = (options: CleanCssOptions = {}): PluginFunction => (bs: BuildStream) => {
 
     const opts = { ...options }
     if (!opts.format) opts.format = 'beautify'

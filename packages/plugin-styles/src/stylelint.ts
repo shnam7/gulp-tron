@@ -3,24 +3,7 @@
  *
  */
 
-import { BuildStream } from 'gulp-tron'
-// import stylelintG, { GulpStylelintOptions } from '@ronilaukkarinen/gulp-stylelint'
-// import stylelintG, { Options } from '@ronilaukkarinen/gulp-stylelint'
-
-// // export type StylelintOptions = GulpStylelintOptions
-// export type StylelintOptions = Options
-
-// /**
-//  * Stylelint Plugin - wrapper for gulp-stylelint
-//  *
-//  * @param options - Stylelint options
-//  * @returns BuildStream in prog
-//  */
-// export const stylelintP = (options: StylelintOptions) => (bs: BuildStream) => {
-//     console.log(`---1:`, options)
-//     return bs.filter().pipe(stylelintG(options))
-// }
-
+import { BuildStream, PluginFunction } from 'gulp-tron'
 
 import pcssG from 'gulp-postcss'
 import pcssReporter from 'postcss-reporter'
@@ -30,14 +13,15 @@ export type StylelintOptions = PostcssPluginOptions
 export type StylelintReporterOptions = pcssReporter.Options
 
 /**
- * Stylelint Plugin - wrapper for gulp-stylelint
+ * Stylelint Plugin - use postcss for linting.
  *
  * @param options - Stylelint options
- * @returns BuildStream in prog
+ * @returns PluginFunction
  */
-export const stylelintP = (options?: StylelintOptions, reporterOptions: StylelintReporterOptions = {}) => (bs: BuildStream) => {
-    return bs.pipe(pcssG([stylelint(options), pcssReporter(reporterOptions)])) // use postcss for linting
-}
+export const stylelintP = (options?: StylelintOptions, reporterOptions: StylelintReporterOptions = {})
+    : PluginFunction => (bs: BuildStream) => {
+        return bs.pipe(pcssG([stylelint(options), pcssReporter(reporterOptions)]))
+    }
 
 export default stylelintP
 

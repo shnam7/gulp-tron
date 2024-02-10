@@ -67,12 +67,3 @@ export type BuildSetParallel = { set: BuildSet[] }
 
 //--- plugin types
 export type PluginFunction = (bs: BuildStream) => BuildStream
-
-// //--- WatcherConfig (Watcher task config)
-// export interface WatcherConfig extends Pick<BuildConfig, "watch"> {
-//     name?: string                  // optional buildName. if undefined, defaults to '@watch'
-//     builder: 'watcher',             // MUST be literal constant 'watcher'
-//     filter?: BuildNameSelector,     // filter for buildNames (inside the project) to be watched
-//     browserSync?: ReloaderOptions  // browserSync initializer options
-//     livereload?: ReloaderOptions   // livereload initializer options
-// }

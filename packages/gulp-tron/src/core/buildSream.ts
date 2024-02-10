@@ -74,7 +74,7 @@ export class BuildStream {
     pipe(func: PluginFunction): this
     pipe(destination: GulpStream, options?: { end?: boolean | undefined }): this
     pipe(destination: PluginFunction | GulpStream, options?: { end?: boolean | undefined }): this {
-        if (typeof destination == 'function')
+        if (typeof destination == 'function')   // PluginFunctipn
             destination(this)
         else
             this._stream = this._stream.pipe(destination, options)

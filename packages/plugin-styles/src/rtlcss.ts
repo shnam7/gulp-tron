@@ -3,7 +3,7 @@
  *
  */
 
-import { BuildStream } from 'gulp-tron'
+import { BuildStream, PluginFunction } from 'gulp-tron'
 import rtlcssG, { ConfigureOptions } from 'gulp-rtlcss'
 
 export type RtlCssConfigureOptions = ConfigureOptions
@@ -12,9 +12,9 @@ export type RtlCssConfigureOptions = ConfigureOptions
  * Less Plugin - wrapper for gulp-less
  *
  * @param options - less options
- * @returns BuildStream in progress
+ * @returns PluginFunction
  */
-export const rtlcssP = (options: RtlCssConfigureOptions = {}) => (bs: BuildStream) => {
+export const rtlcssP = (options: RtlCssConfigureOptions = {}): PluginFunction => (bs: BuildStream) => {
     const opts = { ...options }
     return bs.pipe(rtlcssG(options))
 }
