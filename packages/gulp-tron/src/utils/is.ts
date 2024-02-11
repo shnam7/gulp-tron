@@ -3,7 +3,7 @@ const _is = (a: any, name: string): boolean => toString.call(a) === '[object ' +
 /**
  * Collectin of type-checking functions
  */
-const is = {
+export const is = {
     // Array: (a: unknown): a is (typeof a)[] => Array.isArray(a),
     Array: (a: unknown): a is (typeof a)[] => _is(a, 'Array'),
     // Object: (a: unknown): a is object => a === Object(a),

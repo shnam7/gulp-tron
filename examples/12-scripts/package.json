@@ -9,9 +9,7 @@
         "clean": "gulp @clean"
     },
     "dependencies": {
-        "@gulp-tron/plugin-scripts": "workspace:*",
-        "gulp-concat": "^2.6.1",
-        "gulp-terser": "^2.1.0"
+        "@gulp-tron/plugin-scripts": "workspace:*"
     },
     "devDependencies": {
         "gulp": "^4.0.2",

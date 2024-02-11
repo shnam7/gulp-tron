@@ -129,31 +129,24 @@ export class Tron {
     addWatcher(conf?: WatcherConfig): this
     addWatcher(nameOrConfig?: string | WatcherConfig, options: WatcherOptions = {}): this {
         const config: WatcherConfig = is.String(nameOrConfig) ? { name: nameOrConfig, ...options } : nameOrConfig as WatcherConfig || {}
-        const target = config.target || this._taskConfigs   // defaults to all tasks
+        const target = arrayify(config.target || this._taskConfigs)   // defaults to all tasks
 
         const __watcherFunction__: BuildFunction = (bs: BuildStream) => {
-            const promises: Promise<unknown>[] = []
 
             browserSync.init(config.browserSync || {})
-            arrayify(target).forEach(conf => {
+            target.forEach(conf => {
                 const watched: string[] = arrayify(conf.watch || conf.src).concat(arrayify(conf.addWatch))
                 if (watched.length > 0) {
                     bs.log(`Watching '${conf.taskName}':[${watched}]`)
-                    if (conf.taskName) {
-                        const watcher = gulp.watch(watched, gulp.task(conf.taskName))
-                        watcher.on('change', browserSync.reload)
-                        promises.push(new Promise((res) => { watcher.on('error', () => res) }))
-                    }
+                    gulp.watch(watched, gulp.task(conf.taskName || '')).on('change', browserSync.reload)
                 }
             })
 
             if (config.watch) {
-                bs.log(`Watching:[${config.watch}]`)
-                const watcher = gulp.watch(config.watch)
-                watcher.on('change', browserSync.reload)
-                promises.push(new Promise((res) => { watcher.on('error', () => res) }))
+                const watched: string[] = arrayify(config.watch).concat(arrayify(config.addWatch))
+                bs.log(`Watching '${config.name}':[${watched}]`)
+                gulp.watch(watched).on('change', browserSync.reload)
             }
-            return Promise.all(promises)
         }
         this.task({ name: config.name || '@watch', build: __watcherFunction__ })
         return this
@@ -223,7 +216,7 @@ export class Tron {
         main.displayName = `${taskName}:main`
 
         // sanity check: taskName must be unique.
-        if (this.findTask(taskName)) throw Error('Tron:resolveTaskConfig:taskName ${taskName} already registerd.')
+        if (this.findTask(taskName)) throw Error(`Tron:resolveTaskConfig:taskName ${taskName} already registerd.`)
 
         let tasks: GulpTaskFunction[] = []
         let deps = this.resolveBuildSet(dependsOn)

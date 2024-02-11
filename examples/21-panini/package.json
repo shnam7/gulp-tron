@@ -1,0 +1,15 @@
+{
+    "name": "21-panini",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "gulp @build",
+        "clean": "gulp @clean"
+    },
+    "devDependencies": {
+        "gulp-tron": "workspace:*",
+        "gulp": "^4.0.2",
+        "panini": "^1.7.2"
+    }
+}

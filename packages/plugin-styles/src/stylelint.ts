@@ -7,7 +7,7 @@ import { BuildStream, PluginFunction } from 'gulp-tron'
 
 import pcssG from 'gulp-postcss'
 import pcssReporter from 'postcss-reporter'
-import stylelint, { PostcssPluginOptions } from 'stylelint'
+import stylelint, { PostcssPluginOptions, Config, LinterOptions } from 'stylelint'
 
 export type StylelintOptions = PostcssPluginOptions
 export type StylelintReporterOptions = pcssReporter.Options
@@ -20,6 +20,7 @@ export type StylelintReporterOptions = pcssReporter.Options
  */
 export const stylelintP = (options?: StylelintOptions, reporterOptions: StylelintReporterOptions = {})
     : PluginFunction => (bs: BuildStream) => {
+        if (!options) options = { rules: {} }   // depress 'No configuration provided' error
         return bs.pipe(pcssG([stylelint(options), pcssReporter(reporterOptions)]))
     }
 

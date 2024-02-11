@@ -5,7 +5,10 @@
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
-    "exports": "./dist/index.js",
+    "exports": {
+        ".": "./dist/index.js",
+        "./*": "./dist/*.js"
+    },
     "scripts": {
         "dev": "tsc --watch",
         "build": "tsc",
@@ -17,17 +20,17 @@
         "npm-dry-run": "npm publish --dry-run"
     },
     "dependencies": {
+        "clean-css": "^5.3.3",
         "gulp-autoprefixer": "^9.0.0",
         "gulp-less": "^5.0.0",
         "gulp-postcss": "^10.0.0",
         "gulp-rtlcss": "^2.0.0",
         "gulp-sass": "^5.1.0",
-        "sass": "^1.70.0",
-        "stylelint": "^16.2.1",
-        "postcss-preset-env": "^9.3.0",
         "postcss": "^8.4.35",
+        "postcss-preset-env": "^9.3.0",
         "postcss-reporter": "^7.1.0",
-        "clean-css": "^5.3.3"
+        "sass": "^1.70.0",
+        "stylelint": "^16.2.1"
     },
     "devDependencies": {
         "@gulp-tron/typescript-config": "workspace:*",
@@ -38,6 +41,7 @@
         "@types/gulp-sass": "^5.0.4",
         "@types/postcss-reporter": "^7.0.5",
         "@types/rtlcss": "^3.5.4",
+        "@types/vinyl": "^2.0.11",
         "@vitest/coverage-v8": "^1.2.2",
         "gulp-tron": "workspace:*",
         "rimraf": "^5.0.5",

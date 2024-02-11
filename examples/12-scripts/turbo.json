@@ -2,7 +2,7 @@
     "extends": ["//"],
     "pipeline": {
         "build": {
-            "outputs": ["www/{js,css}"]
+            "outputs": ["www/{js,css}/**"]
         },
         "clean": {
             "dependsOn": ["gulp-tron#build"]

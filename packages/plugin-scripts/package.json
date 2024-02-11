@@ -5,7 +5,10 @@
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
-    "exports": "./dist/index.js",
+    "exports": {
+        ".": "./dist/index.js",
+        "./*": "./dist/*.js"
+    },
     "scripts": {
         "dev": "tsc --watch",
         "build": "tsc",
@@ -19,7 +22,6 @@
     "dependencies": {
         "@babel/core": "^7.23.9",
         "@babel/preset-env": "^7.23.9",
-        "@types/gulp-coffeelint": "^0.0.35",
         "gulp-babel": "^8.0.0",
         "gulp-coffee": "^3.0.3",
         "gulp-coffeelint": "^0.6.0",
@@ -29,7 +31,7 @@
     },
     "devDependencies": {
         "@gulp-tron/typescript-config": "workspace:*",
-        "@types/coffeescript": "^2.5.7",
+        "@types/gulp-coffeelint": "^0.0.35",
         "@types/gulp-babel": "^6.1.33",
         "@types/gulp-concat": "^0.0.37",
         "@types/gulp-rename": "^2.0.6",

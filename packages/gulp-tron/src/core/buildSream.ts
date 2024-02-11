@@ -172,10 +172,8 @@ export class BuildStream {
     }
 
     log(...args: Parameters<typeof console.log>): this {
-        const logger =
-            this._promiseSync.then(() => {
-                console.log(...args)
-            })
+        const logger = this.opts.logger || console.log
+        this._promiseSync.then(() => { logger(...args) })
         return this
     }
 

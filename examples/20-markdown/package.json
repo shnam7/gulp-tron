@@ -1,0 +1,18 @@
+{
+    "name": "20-markdown",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "gulp @build",
+        "clean": "gulp @clean"
+    },
+    "devDependencies": {
+        "@gulp-tron/plugin-styles": "workspace:*",
+        "gulp-tron": "workspace:*",
+        "gulp-htmlclean": "^2.7.22",
+        "gulp-markdown": "^8.0.0",
+        "gulp-prettier": "^6.0.0",
+        "gulp": "^4.0.2"
+    }
+}
