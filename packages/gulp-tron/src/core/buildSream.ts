@@ -48,6 +48,12 @@ export class BuildStream {
         return this.order()
     }
 
+    addSrc(...args: Parameters<SrcMethod>): this {
+        const [globs = '', opt = {}] = args
+        this._stream = this._stream.pipe(gulp.src(globs, opt))
+        return this
+    }
+
     order(...args: Parameters<typeof order>) {
         if (!args[0]) args[0] = this.opts.order
         return this.pipe(order(...args))
