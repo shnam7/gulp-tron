@@ -27,7 +27,7 @@
         "gulp-imagemin": "^9.0.0"
     },
     "devDependencies": {
-        "@gulp-tron/typescript-config": "workspace:*",
+        "@gulp-tron/tsconfig": "workspace:*",
         "@types/gulp-concat": "^0.0.37",
         "@types/gulp-imagemin": "^8.0.6",
         "@types/imagemin": "^8.0.5",

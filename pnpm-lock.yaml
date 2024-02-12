@@ -226,9 +226,9 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
     devDependencies:
-      '@gulp-tron/typescript-config':
+      '@gulp-tron/tsconfig':
         specifier: workspace:*
-        version: link:../typescript-config
+        version: link:../tsconfig
       '@types/minimatch':
         specifier: ^5.1.2
         version: 5.1.2
@@ -290,9 +290,9 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
     devDependencies:
-      '@gulp-tron/typescript-config':
+      '@gulp-tron/tsconfig':
         specifier: workspace:*
-        version: link:../typescript-config
+        version: link:../tsconfig
       '@types/browser-sync':
         specifier: ^2.29.0
         version: 2.29.0
@@ -347,9 +347,9 @@ importers:
 
   packages/mutex:
     devDependencies:
-      '@gulp-tron/typescript-config':
+      '@gulp-tron/tsconfig':
         specifier: workspace:*
-        version: link:../typescript-config
+        version: link:../tsconfig
       '@types/node':
         specifier: ^20.11.17
         version: 20.11.17
@@ -396,9 +396,9 @@ importers:
         specifier: ^2.1.0
         version: 2.1.0
     devDependencies:
-      '@gulp-tron/typescript-config':
+      '@gulp-tron/tsconfig':
         specifier: workspace:*
-        version: link:../typescript-config
+        version: link:../tsconfig
       '@types/gulp-babel':
         specifier: ^6.1.33
         version: 6.1.33
@@ -466,9 +466,9 @@ importers:
         specifier: ^16.2.1
         version: 16.2.1(typescript@5.3.3)
     devDependencies:
-      '@gulp-tron/typescript-config':
+      '@gulp-tron/tsconfig':
         specifier: workspace:*
-        version: link:../typescript-config
+        version: link:../tsconfig
       '@types/clean-css':
         specifier: ^4.2.11
         version: 4.2.11
@@ -527,9 +527,9 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
     devDependencies:
-      '@gulp-tron/typescript-config':
+      '@gulp-tron/tsconfig':
         specifier: workspace:*
-        version: link:../typescript-config
+        version: link:../tsconfig
       '@types/gulp-concat':
         specifier: ^0.0.37
         version: 0.0.37
@@ -564,7 +564,7 @@ importers:
         specifier: ^1.2.2
         version: 1.2.2(sass@1.70.0)
 
-  packages/typescript-config: {}
+  packages/tsconfig: {}
 
 packages:
 

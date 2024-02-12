@@ -33,7 +33,7 @@
         "stylelint": "^16.2.1"
     },
     "devDependencies": {
-        "@gulp-tron/typescript-config": "workspace:*",
+        "@gulp-tron/tsconfig": "workspace:*",
         "@types/clean-css": "^4.2.11",
         "@types/gulp-autoprefixer": "^0.0.37",
         "@types/gulp-less": "^0.0.36",

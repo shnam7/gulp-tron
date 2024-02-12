@@ -30,7 +30,7 @@
         "gulp-terser": "^2.1.0"
     },
     "devDependencies": {
-        "@gulp-tron/typescript-config": "workspace:*",
+        "@gulp-tron/tsconfig": "workspace:*",
         "@types/gulp-coffeelint": "^0.0.35",
         "@types/gulp-babel": "^6.1.33",
         "@types/gulp-concat": "^0.0.37",

@@ -17,7 +17,7 @@
         "npm-dry-run": "npm publish --dry-run"
     },
     "devDependencies": {
-        "@gulp-tron/typescript-config": "workspace:*",
+        "@gulp-tron/tsconfig": "workspace:*",
         "@types/node": "^20.11.17",
         "@vitest/coverage-v8": "^1.2.2",
         "npm-run-all": "^4.1.5",

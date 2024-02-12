@@ -46,7 +46,7 @@
         "gulp": "^4.0.2"
     },
     "devDependencies": {
-        "@gulp-tron/typescript-config": "workspace:*",
+        "@gulp-tron/tsconfig": "workspace:*",
         "@types/browser-sync": "^2.29.0",
         "@types/gulp": "^4.0.17",
         "@types/gulp-debug": "^2.0.36",

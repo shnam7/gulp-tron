@@ -37,7 +37,7 @@
         "vinyl": "^3.0.0"
     },
     "devDependencies": {
-        "@gulp-tron/typescript-config": "workspace:*",
+        "@gulp-tron/tsconfig": "workspace:*",
         "@types/minimatch": "^5.1.2",
         "@types/node": "^20.11.17",
         "@types/through2": "^2.0.41",
