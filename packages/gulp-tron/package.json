@@ -37,7 +37,7 @@
         "fast-glob": "^3.3.2",
         "gulp-debug": "^5.0.1",
         "gulp-filter": "^9.0.1",
-        "gulp-order": "workspace:*",
+        "gulp-order3": "^1.0.0",
         "gulp-rename": "^2.0.0",
         "rimraf": "^5.0.5",
         "stream-to-promise": "^3.0.0"

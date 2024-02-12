@@ -12,8 +12,8 @@
     "scripts": {
         "dev": "tsc --watch",
         "build": "tsc",
-        "test": "vitest run --coverage",
-        "test:watch": "vitest watch --coverage",
+        "xtest": "vitest run --coverage",
+        "xtest:watch": "vitest watch --coverage",
         "clean": "rimraf ./dist ./coverage",
         "rebuild": "runs-s clean build",
         "prepare-to-commit": "run-p rebuild test",
@@ -27,7 +27,6 @@
         "gulp-rtlcss": "^2.0.0",
         "gulp-sass": "^5.1.0",
         "postcss": "^8.4.35",
-        "postcss-preset-env": "^9.3.0",
         "postcss-reporter": "^7.1.0",
         "sass": "^1.70.0",
         "stylelint": "^16.2.1"

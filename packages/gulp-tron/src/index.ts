@@ -1,7 +1,6 @@
 /**
- *  gulp-tron - Build Manager
+ * Gulp-Tron
  */
-
 import { Tron } from './core/tron.js'
 export { BuildStream } from './core/buildSream.js'
 export * from './utils/index.js'

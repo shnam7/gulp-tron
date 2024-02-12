@@ -27,7 +27,6 @@ export class Tron {
      * Create a gulp task with TaskConfig object
      * @param conf TaskConfig object
      */
-    task(conf: TaskConfig, options?: TaskOptions): this
 
     /**
      *
@@ -36,12 +35,19 @@ export class Tron {
      * @param opts TaskConfig object for additional task options
      */
     task(name: string, build: BuildFunction, opts?: TaskOptions): this
+    task(conf: TaskConfig, options?: TaskOptions): this
 
     // overloading implementation for task() function
     task(arg1: TaskConfig | string, arg2?: BuildFunction | TaskOptions, opts: TaskOptions = {}): this {
-        const conf: TaskConfig = is.String(arg1)
-            ? { name: arg1, build: arg2 as BuildFunction, ...opts }
-            : { ...arg1, ...arg2 as TaskOptions }
+        let conf: TaskConfig
+        if (is.String(arg1)) {
+            if (!is.Function(arg2)) throw Error(`Tron:task:${arg1}:second argument should be BuildFunction.`)
+            conf = { name: arg1, build: arg2, ...opts }
+        }
+        else {
+            if (!arg2) arg2 = {}
+            conf = { ...arg1, ...arg2 as TaskOptions }
+        }
 
         const gulpTask = this.resolveBuildSet(conf)
         if (!gulpTask) throw Error(`Tron:task: failed to create task "${conf.name}"`)
@@ -52,56 +58,56 @@ export class Tron {
      * Alias for calling task() or createTasks() with single TaskConfig object
      */
     createTask(conf: TaskConfig, options: TaskOptions = {}): this {
-        return this.createTasks(conf, options)
+        return this.task(conf, options)
     }
 
     /**
      * Create multiple tasks sequencially
+     *
+     * Usage:
+     *  tron.task(taskConfig)
+     *  tron.task([taskConfig,...], taskOptions)
+     *  tron.task(taskConfig1, taskConfig2, ..., taskConfigN, taskOptions) --> recommend form
+     *  tron.task(taskConfig1, (taskOptions or Task taskConfig)...)
+     *  tron.task([taskConfig,...], (taskOptions or Task taskConfig)...)
+     *
+     * Note: options parameter is optional, and recommended to be the last argument.
+     *  If multiple options are passed in, then their properties are all assigned from right to left, resulting in single options argument.
+     *  All the tasks will be configured with this resulting single options argument.
      *
      * @param tasks array of TaskConfig objects. usage: tron.task([task1, task2], options)
      * @param options task options
      */
     createTasks(task: TaskConfig, options?: TaskOptions): this
     createTasks(tasks: TaskConfig[], options?: TaskOptions): this
+    createTasks(task: TaskConfig, ...args: (TaskConfig | TaskOptions)[]): this
 
     /**
      * Overloading to allow this form: createTasks(...tasks: TaskConfig[], options: TaskConfig): GulpTaskFunction | GulpTaskFunction[];
      *
-     * Usage: tron.task(task1, task2), tron.task(task1, task2, options)
-     *
-     * Note: options parameter is optional, but should come as the last argument if needed.
      *
      * @param args
      * @returns
      */
-    createTasks(...args: any[]): this {
-        let tasks: TaskConfig[] = args
-        let options: TaskOptions = {}
+    createTasks(task: TaskConfig | TaskConfig[], ...args: (TaskConfig | TaskOptions)[]): this {
+        const { length, [length - 1]: last } = args
+        if (length == 0) return this
 
+        let tasks: TaskConfig[] = arrayify(task)
+        let opts: TaskOptions = {}
         if (is.Array(args[0])) {
-            tasks = args[0] as TaskConfig[]
-            if (args.length >= 2 && args[1]) options = args[1]
+            tasks = args.slice(0, -1) as TaskConfig[]
+            opts = last as TaskConfig
         }
-        else {
-            const { length, [length - 1]: last } = args
-            if (length == 0) return this
-            if (!last.hasOwnProperty('name')) {
-                tasks = tasks.slice(0, -1)
-                options = last
-            }
-        }
-        arrayify(tasks).forEach(task => {
-            task = Object.assign(task, options)
-            this.task(task as TaskConfig)
+        else args.forEach(arg => {
+            if (arg.hasOwnProperty('name'))
+                tasks.push(arg as TaskConfig)
+            else
+                opts = { ...opts, ...arg as TaskOptions }
         })
-        return this
 
-        // let gulpTasks = arrayify(tasks).reduce((list, task) => {
-        //     task = Object.assign(task, options)
-        //     list.push(this.task(task as TaskConfig))
-        //     return list
-        // }, [] as GulpTaskFunction[])
-        // return  (gulpTasks.length > 1) ? gulpTasks : gulpTasks[0] as GulpTaskFunction
+        tasks.forEach(task => this.task(task, opts))
+        return this
     }
 
     /**
@@ -130,6 +136,7 @@ export class Tron {
     addWatcher(nameOrConfig?: string | WatcherConfig, options: WatcherOptions = {}): this {
         const config: WatcherConfig = is.String(nameOrConfig) ? { name: nameOrConfig, ...options } : nameOrConfig as WatcherConfig || {}
         const target = arrayify(config.target || this._taskConfigs)   // defaults to all tasks
+        const taskName = config.name || '@watch'
 
         const __watcherFunction__: BuildFunction = (bs: BuildStream) => {
 
@@ -144,11 +151,11 @@ export class Tron {
 
             if (config.watch) {
                 const watched: string[] = arrayify(config.watch).concat(arrayify(config.addWatch))
-                bs.log(`Watching '${config.name}':[${watched}]`)
+                bs.log(`Watching '${taskName}':[${watched}]`)
                 gulp.watch(watched).on('change', browserSync.reload)
             }
         }
-        this.task({ name: config.name || '@watch', build: __watcherFunction__ })
+        this.task({ name: taskName, build: __watcherFunction__ })
         return this
     }
 
@@ -320,6 +327,10 @@ export class Tron {
         return this.filterTasks(this._taskConfigs, filter)
     }
 
+    selectTasksAll(): TaskConfig[] {
+        return this._taskConfigs
+    }
+
     filterTasks(tasks: TaskConfig[], filter?: string | string[] | RegExp | RegExp[]): TaskConfig[] {
         if (!filter) return tasks
         return tasks.filter(task => arrayify(filter).some(f => task.name.match(f) || task.taskName?.match(f)))
@@ -330,7 +341,9 @@ export class Tron {
      *
      * @param name task name looking for. It can be build name or task name prefixed with group name.
      */
-    findTask(name: string): TaskConfig | undefined {
+    findTask(name?: string): TaskConfig | undefined {
+        if (!name) return undefined
+
         const tasks = this.selectTasks(`^${name}$`)
 
         if (tasks.length > 1) throw Error('Tron:findTask:Internal error. duplicat task name.')

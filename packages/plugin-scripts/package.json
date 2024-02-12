@@ -12,8 +12,8 @@
     "scripts": {
         "dev": "tsc --watch",
         "build": "tsc",
-        "test": "vitest run --coverage",
-        "test:watch": "vitest watch --coverage",
+        "xtest": "vitest run --coverage",
+        "xtest:watch": "vitest watch --coverage",
         "clean": "rimraf ./dist ./coverage",
         "rebuild": "runs-s clean build",
         "prepare-to-commit": "run-p rebuild test",
@@ -26,7 +26,7 @@
         "gulp-coffee": "^3.0.3",
         "gulp-coffeelint": "^0.6.0",
         "gulp-concat": "^2.6.1",
-        "gulp-eslint-new": "^1.9.0",
+        "gulp-eslint-new": "^1.9.1",
         "gulp-terser": "^2.1.0"
     },
     "devDependencies": {

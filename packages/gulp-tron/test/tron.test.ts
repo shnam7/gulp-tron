@@ -1,5 +1,5 @@
 import { describe, expect, it, test, vi } from 'vitest'
-import tron from '../src/index.js'
+import tron, { BuildFunction, BuildStream, TaskConfig } from '../src/index.js'
 import gulp from 'gulp'
 
 describe('tell if function is GulpTaskFunction or BuildFunction', () => {
@@ -13,50 +13,53 @@ describe('.task', () => {
     it('does not accept null or undefined name in task config.', () => {
         expect(() => { tron.task('', () => {}) }).toThrowError()
         expect(() => { tron.task({ name: '' }) }).toThrowError()
+
+        const taskCount = tron.selectTasksAll().length
+        expect(() => { tron.createTasks({ name: 'aa' }, {}, {}) }).not.toThrowError()
+        expect(tron.selectTasksAll().length).toBe(taskCount + 1)
     })
+
     it('can create task with build function.', () => {
         const taskName = 'build1'
         expect(gulp.task(taskName)).toBeUndefined()
         tron.task(taskName, (bs) => {})
         expect(gulp.task(taskName)).toBeTypeOf('function')
     })
+
     it('can create task with build TaskConfig object.', () => {
         const taskName = 'build2'
         expect(gulp.task(taskName)).toBeUndefined()
         tron.task({ name: taskName, build: (bs) => {} })
         expect(gulp.task(taskName)).toBeTypeOf('function')
     })
-    it('can create task with single item dependency.', () => {
-        const taskName = 'build3'
-        const dep1 = (cb) => cb()
-
-        expect(gulp.task(taskName)).toBeUndefined()
-        expect(gulp.task('dep1')).toBeUndefined()
-
-        let callCount = 0
-        const series = gulp.series
-        const mockGulp = vi.spyOn(gulp, 'series').mockImplementation((...args: any[]) => {
-            if (args.indexOf(dep1) >= 0) callCount++
-            return series(args)
-        })
-        tron.task(taskName, (bs) => {}, dep1)
-        mockGulp.mockRestore()
-
-        expect(gulp.task(taskName)).toBeTypeOf('function')
-        // expect(callCount).toBe(1)
-    })
-    it('does not create task when both build and dependsOn properties are missing.', () => {
+    it('can create task without build fuction and with no dependsOn/triggers properties.', () => {
         const taskName = 'dummy'
         expect(gulp.task(taskName)).toBeUndefined()
         tron.task({ name: taskName })
-        expect(gulp.task(taskName)).toBeUndefined()
-
-    })
-    it('can create task with missing build property, but wit valud dependsOn valuse.', () => {
-        const taskName = 'build4'
-        expect(gulp.task(taskName)).toBeUndefined()
-        const dep1 = (cb) => cb()
-        tron.task({ name: taskName, dependsOn: dep1 })
         expect(gulp.task(taskName)).toBeTypeOf('function')
+    })
+
+    it('can create task with dependents.', () => {
+        const task1 = (bs: BuildStream) => {}
+        const task2 = (bs: BuildStream) => {}
+        const task3 = (bs: BuildStream) => {}
+        const task4 = (bs: BuildStream) => {}
+        const task5 = (bs: BuildStream) => {}
+
+        const taskConfig: TaskConfig = {
+            name: 'build4',
+            dependsOn: task1,
+            triggers: tron.series(task2, tron.parallel(task3, task4), task5),
+        }
+        tron.task(taskConfig)
+
+        const b4: TaskConfig | undefined = tron.findTask(taskConfig.name)
+        expect(b4).not.toBeUndefined()
+        const taskName = b4?.taskName
+        expect(taskName).toBe(taskConfig.name)
+        expect(gulp.task(taskName || '')).toBeInstanceOf(Function)
+
+        const annonTasks = tron.selectTasks(/-task[1-5]$/)
+        expect(annonTasks.length).toBe(5)
     })
 })

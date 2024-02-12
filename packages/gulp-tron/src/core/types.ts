@@ -1,6 +1,6 @@
-import gulp from 'gulp'
-import { ExecSyncOptionsWithBufferEncoding, ExecSyncOptionsWithStringEncoding } from 'child_process'
-import { Options as delOptions } from 'del'
+import type { task } from 'gulp'
+import type { ExecSyncOptionsWithBufferEncoding, ExecSyncOptionsWithStringEncoding } from 'child_process'
+import type { Options as delOptions } from 'del'
 import type { SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback } from 'gulp'
 import type { BuildStream } from './buildSream.js'
 import type { Options as browserSyncOptions } from 'browser-sync'
@@ -10,7 +10,7 @@ export type GulpStream = ReturnType<SrcMethod>
 export type GulpTaskName = string
 export type GulpTaskFunction = TaskFunction
 export type GulpTaskFunctionCallback = TaskFunctionCallback
-export type GulpTaskFunctionWrapped = ReturnType<typeof gulp.task>
+export type GulpTaskFunctionWrapped = ReturnType<typeof task>
 export type LogOptions = { logLevel?: 'verbose' | 'normal' | 'silent', logger?: (...args: any[]) => void }
 export type ExecOptions = ExecSyncOptionsWithBufferEncoding | ExecSyncOptionsWithStringEncoding
 export type CleanOptions = delOptions & LogOptions

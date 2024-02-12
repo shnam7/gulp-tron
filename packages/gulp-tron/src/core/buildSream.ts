@@ -9,12 +9,9 @@ import arrayify from '../utils/arrayify.js'
 import { deleteSync } from 'del'
 import { CopyOptions, CopyParam, copy, copyBatch } from '../utils/copy.js'
 import type { CleanOptions, DelOptions, ExecOptions, GulpStream, PluginFunction, TaskOptions } from './types.js'
-import through2 from 'through2'
 import mergeStream from 'merge-stream'
-import order from 'gulp-order'
-import is from '../utils/is.js'
-
-const cloneStream = () => through2.obj(function(file, enc, cb) { cb(null, file.clone()) })
+import order from 'gulp-order3'
+import { is, cloneStream } from '../utils/index.js'
 
 const _nullStream = () => gulp.src('./initial-dummy/**/*.dummy')
 
@@ -25,8 +22,8 @@ export class BuildStream {
     protected _promiseSync: Promise<any> = Promise.resolve();
     protected _opts: TaskOptions
 
-    constructor(name: string, opts: TaskOptions = {}, stream?: GulpStream, promiseSync?: Promise<any>) {
-        this._name = name
+    constructor(name?: string, opts: TaskOptions = {}, stream?: GulpStream, promiseSync?: Promise<any>) {
+        this._name = name || "<annonymous>"
         this._opts = { ...opts }
         if (stream) this._stream = stream
         if (promiseSync) this._promiseSync = promiseSync
@@ -40,9 +37,16 @@ export class BuildStream {
     //-------------------------------------------------------------------------
     // Build API: Returns value should be 'this'
     //-------------------------------------------------------------------------
-    src(...args: Parameters<SrcMethod>): this {
-        const [globs = this.opts.src || '', opt = {}] = args
-        if (!opt.sourcemaps) opt.sourcemaps = !!this._opts.sourcemaps
+    src(options: Parameters<SrcMethod>[1]): this
+    src(globs: Parameters<SrcMethod>[0], options?: Parameters<SrcMethod>[1]): this
+    src(globsOrOpts: Parameters<SrcMethod>[0] | Parameters<SrcMethod>[1], options: Parameters<SrcMethod>[1] = {}): this {
+
+        let globs = this._opts.src || ''
+        let opt = { sourcemaps: !!this._opts.sourcemaps, ...options }
+        if (is.String(globsOrOpts) || is.Array(globsOrOpts))
+            globs = globsOrOpts
+        else
+            opt = { ...opt, ...globsOrOpts }
 
         this._stream = gulp.src(globs, opt)
         return this.order()
