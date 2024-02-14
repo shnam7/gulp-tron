@@ -140,22 +140,33 @@ export class Tron {
 
         const __watcherFunction__: BuildFunction = (bs: BuildStream) => {
 
-            browserSync.init(config.browserSync || {})
+            function _handleChangeEvent(watcher: ReturnType<typeof gulp.watch>, logLevel?: string) {
+                if (config.browserSync) watcher.on('change', browserSync.reload)
+                watcher.on('change', (path: string) => {
+                    if (logLevel === 'verbose') {
+                        let msg = `change detected:'${path}`
+                        if (config.browserSync) msg += ' reloaded.'
+                        bs.log(msg)
+                    }
+                })
+            }
+
+            if (config.browserSync) browserSync.init(config.browserSync || {})
             target.forEach(conf => {
                 const watched: string[] = arrayify(conf.watch || conf.src).concat(arrayify(conf.addWatch))
                 if (watched.length > 0) {
                     bs.log(`Watching '${conf.taskName}':[${watched}]`)
-                    gulp.watch(watched, gulp.task(conf.taskName || '')).on('change', browserSync.reload)
+                    _handleChangeEvent(gulp.watch(watched, gulp.task(conf.taskName || '')), conf.logLevel)
                 }
             })
 
-            if (config.watch) {
+            if (config.watch || config.addWatch) {
                 const watched: string[] = arrayify(config.watch).concat(arrayify(config.addWatch))
-                bs.log(`Watching '${taskName}':[${watched}]`)
-                gulp.watch(watched).on('change', browserSync.reload)
+                bs.log(`Watching '${taskName}': [${watched}]`)
+                _handleChangeEvent(gulp.watch(watched), config.logLevel)
             }
         }
-        this.task({ name: taskName, build: __watcherFunction__ })
+        this.task({ ...config, name: taskName, build: __watcherFunction__ })
         return this
     }
 
