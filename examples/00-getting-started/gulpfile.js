@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const basePath = path.relative(process.cwd(), __dirname)
 const projectName = path.basename(__dirname)
-const prefix = projectName + ':'
+const prefix = projectName
 
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, 'www')

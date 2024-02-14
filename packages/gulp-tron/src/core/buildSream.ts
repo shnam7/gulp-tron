@@ -143,8 +143,24 @@ export class BuildStream {
 
     exec(command: string, options: ExecOptions): this {
         if (this.opts.logLevel !== 'silent') this.log(`Executing command:'${command}'`)
-        child_process.execSync(command, options)
-        if (this.opts.logLevel === 'verbose') this.log(`Executing command:'${command}' finished.`)
+        const [cmd, ...args] = command.split(' ')
+        if (!cmd) return this
+
+        const opts: ExecOptions = { shell: true, stdio: 'pipe', ...options }
+        const childProcess = child_process.spawn(cmd, args, opts)
+        if (childProcess.stdout) childProcess.stdout.on('data', (data) => console.log(data.toString()))
+        if (childProcess.stderr) childProcess.stderr.on('data', (data) => console.log(data.toString()))
+
+        this.promise(new Promise((resolve, reject) => {
+            childProcess.on('exit', (error: any) => {
+                if (error) {
+                    reject(new Error(`Tron:exec:"${cmd} ${args.join(' ')}" exited with error:${error}`))
+                } else
+                    resolve(0)
+            })
+        }).catch((error: Error) => {
+            this.log(error.message)
+        }))
         return this
     }
 

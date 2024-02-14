@@ -55,7 +55,7 @@ const cmd1 = {
 const cmd2 = {
     name: 'cmd2',
     build: bs => {
-        bs.exec(`node - v`)
+        bs.exec(`node -v`)
     },
 }
 
