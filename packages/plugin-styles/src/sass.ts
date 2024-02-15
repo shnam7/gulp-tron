@@ -17,7 +17,7 @@ export type SassOptions = Parameters<ReturnType<typeof gulpSass>>[0]
  * @returns PluginFunction
  */
 export const sassP = (options?: SassOptions): PluginFunction => (bs: BuildStream) => {
-    return bs.pipe(sassG(options)).on('error', sassG.logError)
+    return bs.pipe(sassG(options).on('error', sassG.logError))
 }
 
 export default sassP

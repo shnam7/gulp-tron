@@ -2,6 +2,7 @@
     "extends": ["//"],
     "pipeline": {
         "build": {
+            "inputs": ["assets/**"],
             "outputs": ["www/{css}/**"]
         },
         "clean": {

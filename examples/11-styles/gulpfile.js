@@ -7,11 +7,8 @@ const basePath = path.relative(process.cwd(), __dirname)
 const projectName = path.basename(__dirname)
 const prefix = projectName
 
-//-- sass/less moduiles
-import { sassP, lessP } from '@gulp-tron/plugin-styles'
-
-//--- lint modules
-import { stylelintP } from '@gulp-tron/plugin-styles'
+//--- stylelint
+import { stylelintP, stylelintScssP, stylelintLessP } from '@gulp-tron/plugin-styles'
 const stylelintOptions = {
     // extends: ['stylelint-config-recommended', './.stylelintrc'],
     extends: ['stylelint-config-recommended'],
@@ -24,16 +21,20 @@ const stylelintOptions = {
     fix: true,
 }
 
-//--- postcss modules
+//-- sass/less moduiles
+import { sassP, lessP } from '@gulp-tron/plugin-styles'
+
+//--- autoprefixer
+import { autoPrefixerP } from '@gulp-tron/plugin-styles'
+
+//-- postcss
 import { pcssP } from '@gulp-tron/plugin-styles'
 import pcssPresetEnv from 'postcss-preset-env'
 import pcssUtils from 'postcss-utilities'
 import lost from 'lost'
 import pcssGray from 'postcss-color-gray'
-const pcssPlugins = [pcssPresetEnv, pcssUtils, lost, pcssGray({ reserve: true })]
-
-//--- autoPrefixer
-import { autoPrefixerP } from '@gulp-tron/plugin-styles'
+import pcssParserComment from 'postcss-comment' // convert inline comments
+const pcssPlugins = [pcssPresetEnv(), pcssUtils(), lost(), pcssGray({ reserve: true })]
 
 //--- css minify
 import { cleanCssP } from '@gulp-tron/plugin-styles'
@@ -51,13 +52,16 @@ const destRoot = path.join(basePath, 'www')
 const port = 5000
 const sourcemaps = '.'
 
+//-----------------------------------------------------------------------------
+
 const scss = {
     name: 'scss',
     build: bs => {
         bs.src()
+            .pipe(stylelintScssP(stylelintOptions))
+            .debug()
             .pipe(sassP({ includePaths: ['assets/scss'] }))
             .pipe(pcssP(pcssPlugins))
-            .pipe(stylelintP(stylelintOptions))
             .pipe(autoPrefixerP()) // defaults: > 0.5%, last 2 versions, Firefox ESR, not dead.
             .dest()
             .filter() // remove .map files for minification
@@ -70,15 +74,16 @@ const scss = {
     src: [path.join(srcRoot, 'scss/**/*.scss')],
     dest: path.join(destRoot, 'css'),
     sourcemaps,
+    parser: 'scss',
 }
 
 const less = {
     name: 'less',
     build: bs => {
         bs.src()
+            .debug()
+            .pipe(stylelintLessP(stylelintOptions))
             .pipe(lessP({ paths: ['assets/less'] }))
-            .pipe(pcssP(pcssPlugins))
-            .pipe(stylelintP(stylelintOptions))
             .pipe(autoPrefixerP()) // defaults: > 0.5%, last 2 versions, Firefox ESR, not dead.
             .dest()
             .filter() // remove .map files for minification
@@ -96,10 +101,11 @@ const postcss = {
     name: 'postcss',
     build: bs => {
         bs.src()
-            .pipe(sassP({ includePaths: ['assets/scss'] }))
-            .pipe(pcssP(pcssPlugins))
-            .pipe(cleanCssP(cleanCssoptions))
+            .pipe(pcssP(pcssPlugins, { parser: pcssParserComment }))
+            .debug()
             .pipe(stylelintP(stylelintOptions))
+            // .pipe(sassP({ includePaths: ['assets/scss'] }))
+            .pipe(cleanCssP(cleanCssoptions))
             .pipe(autoPrefixerP()) // defaults: > 0.5%, last 2 versions, Firefox ESR, not dead.
             .dest()
             .filter() // remove .map files for minification

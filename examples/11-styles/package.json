@@ -11,10 +11,11 @@
         "@gulp-tron/plugin-styles": "workspace:*",
         "gulp": "^4.0.2",
         "gulp-tron": "workspace:*",
-        "postcss-preset-env": "^9.3.0",
-        "postcss-utilities": "^0.8.4",
         "lost": "^9.0.2",
         "postcss-color-gray": "^5.0.0",
+        "postcss-comment": "^2.0.0",
+        "postcss-preset-env": "^9.3.0",
+        "postcss-utilities": "^0.8.4",
         "stylelint-config-recommended": "^14.0.0"
     }
 }
