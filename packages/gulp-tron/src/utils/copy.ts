@@ -20,6 +20,7 @@ export const copy = (patterns: string | string[], destPath: string, opts: CopyOp
     if (patterns.length === 0) return 0
     const logger = opts.logger || console.log
 
+    if (opts.logLevel !== 'silent') logger(`copying:['${patterns}' => '${destPath}']:`)
     // ensure destination directory exists
     if (!fs.existsSync(destPath)) fs.mkdirSync(destPath, { recursive: true })
 
@@ -27,11 +28,16 @@ export const copy = (patterns: string | string[], destPath: string, opts: CopyOp
     patterns.forEach(pattern =>
         fg.globSync(pattern).forEach((file: string) => {
             const dest = path.join(destPath, path.basename(file))
-            let copyInfo = `[${file}] => ${dest}`
-            if (opts.logLevel !== 'silent') logger(`copying:${copyInfo}`)
+            // let copyInfo = `[${file}] => ${dest}]`
+            // if (opts.logLevel !== 'silent') logger(`copying:${copyInfo}`)
+            let copyInfo = `'${file}' => '${dest}'`
+            if (opts.logLevel !== 'silent') logger(`  ${copyInfo}`)
             fs.copyFileSync(file, dest)
             count += 1
         }))
+
+    // if (opts.logLevel === 'verbose') logger(`copying:[${patterns} => ${destPath}]:${count} file(s) were copied.`)
+    if (opts.logLevel !== 'silent') logger(`${count} file(s) were copied.`)
     return count
 }
 // export const copy = (patterns: string | string[], destPath: string, opts: CopyOptions = {}): number => {

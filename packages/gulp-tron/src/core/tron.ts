@@ -14,6 +14,7 @@ type TaskConfigWithMutableTaskName = Omit<TaskConfig, 'taskName'> & {
 
 //--- GBuildManager
 export class Tron {
+    protected _gulp = gulp
     protected _taskConfigs: TaskConfig[]
     protected static annonCount = 0
 
@@ -21,6 +22,8 @@ export class Tron {
         this._taskConfigs = []
     }
 
+    get gulp() { return this._gulp }
+    set gulp(gulpInst: typeof gulp) { this._gulp = gulpInst }
     get taskConfigs() { return this._taskConfigs }
 
     /**
