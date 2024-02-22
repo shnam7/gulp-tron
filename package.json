@@ -17,7 +17,7 @@
         "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +"
     },
     "license": "MIT",
-    "packageManager": "pnpm@8.15.1",
+    "packageManager": "pnpm@8.15.3",
     "engines": {
         "node": ">=16.14"
     },

@@ -140,8 +140,10 @@ export class Tron {
         const config: WatcherConfig = is.String(nameOrConfig) ? { name: nameOrConfig, ...options } : nameOrConfig as WatcherConfig || {}
         const target = arrayify(config.target || this._taskConfigs)   // defaults to all tasks
         const taskName = config.name || '@watch'
+        let isWatching = false
 
         const __watcherFunction__: BuildFunction = (bs: BuildStream) => {
+            if (isWatching) return  // watch task should not run repeatedly on change detection.
 
             function _handleChangeEvent(watcher: ReturnType<typeof gulp.watch>, logLevel?: string) {
                 if (config.browserSync) watcher.on('change', browserSync.reload)
@@ -162,12 +164,7 @@ export class Tron {
                     _handleChangeEvent(gulp.watch(watched, gulp.task(conf.taskName || '')), conf.logLevel)
                 }
             })
-
-            if (config.watch || config.addWatch) {
-                const watched: string[] = arrayify(config.watch).concat(arrayify(config.addWatch))
-                bs.log(`Watching '${taskName}': [${watched}]`)
-                _handleChangeEvent(gulp.watch(watched), config.logLevel)
-            }
+            isWatching = true
         }
         this.task({ ...config, name: taskName, build: __watcherFunction__ })
         return this
