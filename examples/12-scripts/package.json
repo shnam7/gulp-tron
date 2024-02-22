@@ -12,6 +12,8 @@
         "@gulp-tron/plugin-scripts": "workspace:*"
     },
     "devDependencies": {
+        "@babel/preset-react": "^7.23.3",
+        "eslint-plugin-react": "^7.33.2",
         "gulp": "^4.0.2",
         "gulp-tron": "workspace:*",
         "rimraf": "^5.0.5",

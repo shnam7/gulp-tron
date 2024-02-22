@@ -1,4 +1,4 @@
-'use strict'
+
 
 console.log('This is sub-2')
 

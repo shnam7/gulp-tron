@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
@@ -13,8 +13,38 @@
         <p>Can you see the greetings below?</p>
 
         <h3>Open up the console window to see the output from the CoffeeScript, JavaScript, ES6/Babel builders.</h3>
-        <script src="js/sample-js.js"></script>
-        <script src="js/sample-es6.min.js"></script>
-        <script type="module" src="js/app.js"></script>
+
+        <hr />
+        <div id="jsTest">
+            <h2>Plain Javascript Output</h2>
+            <script src="js/plain-js.js"></script>
+        </div>
+
+        <hr />
+        <div id="coffeeTest">
+            <h2>CoffeeScript Output</h2>
+            <script src="js/sample-coffee.js"></script>
+        </div>
+
+        <hr />
+        <div id="babelTest">
+            <h2>Babel with React Output</h2>
+            <div id="app" style="border: 1px solid brown; background: #eee; padding: 0.5rem"></div>
+            <script type="importmap">
+                {
+                    "imports": {
+                        "react": "https://esm.sh/react?dev",
+                        "react-dom/client": "https://esm.sh/react-dom/client?dev"
+                    }
+                }
+            </script>
+            <script type="module" src="js/babel-test.js"></script>
+        </div>
+
+        <hr />
+        <div id="tsTest">
+            <h2>Typescript Output</h2>
+            <script type="module" src="js/app.js"></script>
+        </div>
     </body>
 </html>

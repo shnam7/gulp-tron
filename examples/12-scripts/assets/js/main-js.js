@@ -1,13 +1,8 @@
-/*
- * Sample.js
- */
-
-'use strict'
+console.log(`----- Plain Javascript test.`)
 
 const msg = 'Greetings from plain JavaScript.'
-console.log(msg)
-
 const p1 = document.createElement('p')
 p1.innerText = msg
 
-document.body.appendChild(p1)
+const root = document.getElementById('jsTest')
+root.appendChild(p1)

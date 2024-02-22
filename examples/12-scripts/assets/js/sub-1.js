@@ -1,5 +1,3 @@
-'use strict'
-
 console.log('This is sub-1')
 
 class JSGreeter {

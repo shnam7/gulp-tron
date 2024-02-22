@@ -11,16 +11,24 @@ const prefix = projectName
 import { eslintP } from '@gulp-tron/plugin-scripts'
 const eslintOptions = {
     overrideConfig: {
-        extends: 'eslint:recommended',
+        extends: ['eslint:recommended', 'plugin:react/recommended'],
         parserOptions: {
             ecmaVersion: 6,
+            sourceType: 'module',
         },
         rules: {
             strict: 1,
+            'no-unused-vars': 0,
+            'react/react-in-jsx-scope': 'off',
         },
         env: {
             browser: true,
             node: true, // disable 'console not defined error'
+        },
+        settings: {
+            react: {
+                version: 'detect',
+            },
         },
     },
     fix: true,
@@ -49,10 +57,10 @@ const javascript = {
     name: 'javascript',
     build: async bs => {
         bs.src() //
-            .debug()
-            .pipe(concatP(bs.opts.outFile))
+            // .debug()
             .pipe(eslintP(eslintOptions))
-            .debug()
+            .pipe(concatP(bs.opts.outFile))
+            // .debug()
             .dest()
     },
 
@@ -60,34 +68,14 @@ const javascript = {
     dest: path.join(destRoot, 'js'),
     order: ['sub-1*.js'],
     sourcemaps,
-    outFile: 'sample-js.js',
-}
-
-const babel = {
-    name: 'babel',
-    build: bs => {
-        bs.src()
-            .pipe(eslintP(eslintOptions)) // lint first
-            .debug()
-            .pipe(babelP())
-            .pipe(concatP(bs.opts.outFile))
-            .debug()
-            .pipe(terserP())
-            .rename({ extname: '.min.js' })
-            .debug()
-            .dest()
-    },
-    src: [path.join(srcRoot, 'es6/**/*.es6')],
-    order: ['*main.es6'],
-    dest: path.join(destRoot, 'js'),
-    sourcemaps,
-    outFile: 'sample-es6.js',
+    outFile: 'plain-js.js',
 }
 
 const coffee = {
     name: 'coffee',
     build: bs => {
         bs.src()
+            // .debug()
             .pipe(coffeelintP()) // lint first
             .pipe(coffeeP())
             .pipe(babelP())
@@ -103,6 +91,31 @@ const coffee = {
     dest: path.join(destRoot, 'js'), // dest: (file) => file.base,
     outFile: 'sample-coffee.js',
     sourcemaps,
+}
+
+const babel = {
+    name: 'babel',
+    build: bs => {
+        bs.src()
+            .order(['hello.jsx'])
+            .pipe(eslintP(eslintOptions)) // lint first
+            // .debug()
+            .pipe(babelP({ presets: [['@babel/preset-react', {}]] }))
+            // .pipe(babelP({ presets: [['@babel/preset-react', { runtime: 'automatic', importSource: 'custom-jsx-library' }]] }))
+            .dest()
+
+        // .pipe(concatP(bs.opts.outFile))
+        // .debug()
+        // .pipe(terserP())
+        // .rename({ extname: '.min.js' })
+        // .debug()
+        // .dest()
+    },
+    src: [path.join(srcRoot, 'babel/**/*.{es6,jsx}')],
+    order: ['*main.es6'],
+    dest: path.join(destRoot, 'js'),
+    sourcemaps,
+    outFile: 'babel-test.js',
 }
 
 const typescript = {
@@ -128,4 +141,6 @@ tron.task(build)
                 port: port + 100 + parseInt(prefix),
             },
         },
+        triggers: build,
+        logLevel: 'verbose',
     })

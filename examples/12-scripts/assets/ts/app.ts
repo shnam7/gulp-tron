@@ -1,5 +1,7 @@
 import Greeter from "./Greeter.js"
 
+console.log(`----- Typescript test.`)
+
 
 const greeter = new Greeter()
 console.log('Greeter loaded:', greeter.greet())
