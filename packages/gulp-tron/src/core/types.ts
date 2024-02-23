@@ -22,7 +22,7 @@ export type BuildFunction = (bs: BuildStream) => void | Promise<any>
 //--- Tron Task types
 export type TaskConfig = {
     readonly name: string                           // build name
-    readonly taskName?: string                               // this will be automaticallty set by Tron when gulp the task is actually created.
+    readonly taskName?: string                      // this will be automaticallty set by Tron when gulp the task is actually created.
     readonly build?: BuildFunction                  // main build function
     readonly dependsOn?: BuildSet                   // buildSet to be executed before main build function
     readonly triggers?: BuildSet                    // buildSet to be executed after main build function

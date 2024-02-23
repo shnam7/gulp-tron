@@ -16,10 +16,12 @@ type TaskConfigWithMutableTaskName = Omit<TaskConfig, 'taskName'> & {
 export class Tron {
     protected _gulp = gulp
     protected _taskConfigs: TaskConfig[]
+    protected _watchTaskNames: string[]
     protected static annonCount = 0
 
     constructor() {
         this._taskConfigs = []
+        this._watchTaskNames = []
     }
 
     get gulp() { return this._gulp }
@@ -158,6 +160,9 @@ export class Tron {
 
             if (config.browserSync) browserSync.init(config.browserSync || {})
             target.forEach(conf => {
+                // skip the other watchers (watcher should not monitor the other wacthers)
+                if (this._watchTaskNames.includes(conf.taskName as string) && conf.taskName !== taskName) return
+
                 const watched: string[] = arrayify(conf.watch || conf.src).concat(arrayify(conf.addWatch))
                 if (watched.length > 0) {
                     bs.log(`Watching '${conf.taskName}':[${watched}]`)
@@ -167,6 +172,7 @@ export class Tron {
             isWatching = true
         }
         this.task({ ...config, name: taskName, build: __watcherFunction__ })
+        this._watchTaskNames.push(taskName)
         return this
     }
 
@@ -334,17 +340,16 @@ export class Tron {
         return this._taskConfigs.filter(task => arrayify(groups).some(g => task.name.match(g)))
     }
 
+
     selectTasks(filter: string | string[] | RegExp | RegExp[]): TaskConfig[] {
-        return this.filterTasks(this._taskConfigs, filter)
+        return this.taskConfigs.filter(task => arrayify(filter).some(f => {
+            if (is.String(f)) return task.name === f || task.taskName === f
+            return task.name.match(f) || task.taskName?.match(f)
+        }))
     }
 
     selectTasksAll(): TaskConfig[] {
         return this._taskConfigs
-    }
-
-    filterTasks(tasks: TaskConfig[], filter?: string | string[] | RegExp | RegExp[]): TaskConfig[] {
-        if (!filter) return tasks
-        return tasks.filter(task => arrayify(filter).some(f => task.name.match(f) || task.taskName?.match(f)))
     }
 
     /**

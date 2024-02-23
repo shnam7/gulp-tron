@@ -144,3 +144,10 @@ tron.task(build)
         triggers: build,
         logLevel: 'verbose',
     })
+    .addWatcher({
+        name: '@dev',
+        watch: [path.join(destRoot, '**/*.html')],
+        target: tron.selectTasksAll(),
+        triggers: build,
+        logLevel: 'verbose',
+    })

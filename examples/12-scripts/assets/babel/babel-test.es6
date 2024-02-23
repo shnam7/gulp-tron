@@ -2,8 +2,9 @@
  * Sample.js
  */
 
+import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { hello } from './hello.js'
+import { Hello } from './hello.js'
 
 console.log(`----- Babel with react eaxmple...`)
 
@@ -21,5 +22,5 @@ const root = document.getElementById('babelTest')
 root.appendChild(p1)
 
 //--- react
-const app = ReactDOM.createRoot(document.getElementById('app'))
-app.render(hello)
+const app = ReactDOM.createRoot(document.getElementById('react-app'))
+app.render(<Hello />)
