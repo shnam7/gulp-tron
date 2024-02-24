@@ -1,9 +1,8 @@
-import type { task } from 'gulp'
-import type { SpawnOptions } from 'child_process'
-import type { Options as delOptions } from 'del'
-import type { SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback } from 'gulp'
+import type { SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback, task } from 'gulp'
 import type { BuildStream } from './buildSream.js'
 import type { Options as browserSyncOptions } from 'browser-sync'
+import type { Options as delOptions } from 'del'
+import type { SpawnOptions } from 'child_process'
 
 //--- common types
 export type GulpStream = ReturnType<SrcMethod>

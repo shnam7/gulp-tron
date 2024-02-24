@@ -15,8 +15,11 @@ import { is, cloneStream } from '../utils/index.js'
 
 const _nullStream = () => gulp.src('./initial-dummy/**/*.dummy')
 
-//--- GBuilder
+/**
+ *  Gulp stream wrapper with API for build processing.
+ */
 export class BuildStream {
+    /** Stream name, the same as tron task name */
     protected _name: string
     protected _stream: GulpStream = _nullStream()
     protected _promiseSync: Promise<any> = Promise.resolve();

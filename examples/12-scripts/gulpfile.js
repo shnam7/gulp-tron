@@ -121,7 +121,7 @@ const babel = {
 const typescript = {
     name: 'typescript',
     build: bs => bs.exec('tsc'),
-    watch: [path.join(srcRoot, 'ts/**/*.ts')],
+    watch: [path.join(srcRoot, 'ts/**/*.{ts,tsx}'), './tsconfig.json'],
 }
 
 const build = {

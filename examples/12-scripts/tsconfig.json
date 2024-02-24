@@ -8,7 +8,8 @@
         "noImplicitAny": true,
         "lib": ["dom", "es6", "es2015", "dom.iterable", "scripthost"],
         "noEmitOnError": true,
+        "jsx": "react",
         "outDir": "www/js"
     },
-    "include": ["assets/ts/**/*.ts"]
+    "include": ["assets/ts/**/*.ts", "assets/ts/**/*.tsx", "!assets/ts/**/*.d.ts"]
 }
