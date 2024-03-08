@@ -7,20 +7,29 @@ import streamToPromise from 'stream-to-promise'
 import child_process from 'child_process'
 import arrayify from '../utils/arrayify.js'
 import { deleteSync } from 'del'
-import { CopyOptions, CopyParam, copy, copyBatch } from '../utils/copy.js'
-import type { CleanOptions, DelOptions, ExecOptions, GulpStream, PluginFunction, TaskOptions } from './types.js'
+import type { CleanOptions, DelOptions, ExecOptions, GulpStream, LogOptions, PluginFunction, TaskOptions } from './types.js'
 import mergeStream from 'merge-stream'
 import order from 'gulp-order3'
 import { is, cloneStream } from '../utils/index.js'
+import newerG from 'gulp-newer'
+import through2 from 'through2'
+
+export type CopyParam = { src: string | string[], dest: string }
+export type CopyOptions =
+    & Partial<Parameters<typeof newerG>[0]>
+    & LogOptions
 
 const _nullStream = () => gulp.src('./initial-dummy/**/*.dummy')
 
 /**
  *  Gulp stream wrapper with API for build processing.
  */
+
+/*****************************************************************************
+ *  Gulp Stream Wrapper providing API for build processing.
+ *****************************************************************************/
 export class BuildStream {
-    /** Stream name, the same as tron task name */
-    protected _name: string
+    protected _name: string     // BuildStream instance name
     protected _stream: GulpStream = _nullStream()
     protected _promiseSync: Promise<any> = Promise.resolve();
     protected _opts: TaskOptions
@@ -109,13 +118,76 @@ export class BuildStream {
         return this.pipe(rename(...args))
     }
 
-    copy(patterns: string | string[], destPath: string, opts: CopyOptions): this
-    copy(param?: CopyParam | CopyParam[], opts?: CopyOptions): this
-    copy(arg1?: string | string[] | CopyParam | CopyParam[], arg2?: string | CopyOptions, arg3: CopyOptions = {}): this {
-        if (typeof arg1 === 'string' || Array.isArray(arg1) && typeof arg1[0] === 'string')
-            copy(arg1 as string | string[], arg2 as string, { logLevel: this._opts.logLevel, logger: this.logger, ...arg3 })
-        else
-            copyBatch(arg1 as CopyParam | CopyParam[], { logLevel: this._opts.logLevel, logger: this.logger, ...arg2 as CopyOptions })
+    /**
+     * Copy files from to destination.
+     * Copy newer files only compared to destination counterpart.
+     * Refer to 'gulp-newer' for the details.
+     *
+     * @param globs Source files to copy
+     * @param destPath destination path to copy
+     * @param opts CopyOptions
+     */
+    copy(globs: string | string[], destPath: string, opts: CopyOptions): this
+
+    /**
+     * Copy files from multiple sources to multiple destinations.
+     *
+     * @params params list of CopyParam (src to dest pairs)
+     * @param opts CopyOptions
+     */
+    copy(params?: CopyParam | CopyParam[], opts?: CopyOptions): this
+
+    /** implementation details */
+    copy(
+        arg1?: string | string[] | CopyParam | CopyParam[],
+        arg2?: string | CopyOptions, arg3: CopyOptions = {}
+    ): this {
+
+        /** function copying newer files only */
+        const _copy = async (globs: string | string[], dest: string,
+            opts: CopyOptions & { index?: number } = {}): Promise<any> => {
+
+            let filesToCopy = 0
+            let filesCopied = 0
+            const logger = opts.logger || console.log
+            const taskIDTag = `(${opts.index})`
+            if (opts.logLevel !== 'silent') logger(`${taskIDTag}... copying:['${globs}' => '${dest}']:`)
+
+            const stream = gulp.src(globs)
+                .pipe(through2.obj((file, encoding, callback) => {
+                    filesToCopy += 1
+                    callback(null, file)
+                }))
+                .pipe(newerG({ ...opts, dest: dest, }))
+                .pipe(through2.obj((file, encoding, callback) => {
+                    let copyInfo = `${taskIDTag}${file.path}' => '${dest}'`
+                    if (opts.logLevel !== 'silent') logger(`${copyInfo}`)
+                    filesCopied += 1
+                    callback(null, file)
+                }))
+                .pipe(gulp.dest(dest))
+
+            return new Promise(resolve => {
+                stream.on('finish', () => {
+                    if (opts.logLevel !== 'silent')
+                        logger(`${taskIDTag}..... ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
+                    resolve(this)
+                })
+            })
+        }
+
+        const optCommon = { logLevel: this._opts.logLevel, logger: this.logger }
+        if (typeof arg1 === 'string' || Array.isArray(arg1) && typeof arg1[0] === 'string') {
+            const opts = { ...optCommon, ...arg3, index: 1 }
+            this.promise(_copy(arg1 as string | string[], arg2 as string, opts))
+        }
+        else {
+            const params = arrayify(arg1 as CopyParam | CopyParam[])
+            params.map(async (param, index) => {
+                const opts = { ...optCommon, ...arg2 as CopyOptions, index: index + 1 }
+                this.promise(_copy(param.src, param.dest, opts))
+            })
+        }
         return this
     }
 

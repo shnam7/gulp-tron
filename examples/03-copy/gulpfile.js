@@ -9,51 +9,32 @@ const prefix = projectName + ':'
 
 const outDir = basePath + '__outdir'
 
-const copyOptions = { logLevel: 'verbose' }
-
-const copy1 = {
-    name: 'copy1',
-    dependsOn: bs =>
-        bs.copy(
-            [
-                { src: [path.join(outDir, 'path-src1/**/*.*')], dest: path.join(outDir, 'path-dest1') },
-                { src: [path.join(outDir, 'path-src2/**/*.*')], dest: path.join(outDir, 'path-dest2') },
-            ],
-            copyOptions,
-        ),
-    logLevel: 'verbose',
+const createTestFiles = {
+    name: 'createTestFiles',
+    build: bs => bs.exec(`mkdir -p test-src; touch test-src/test.js test-src/test.css test-src/test.html`),
 }
+tron.task(createTestFiles)
 
-const copy2 = {
-    name: 'copy2',
+const testSingleCopy = {
+    name: 'testSingleCopy',
+    build: bs => bs.copy('test-src/**/*.html', 'test-dest'),
+}
+tron.task(testSingleCopy)
+
+const testMultiCopy = {
+    name: 'testMultiCopy',
     build: bs =>
         bs.copy([
-            { src: [path.join(outDir, 'path-src1/**/*.*')], dest: path.join(outDir, 'path-dest3') },
-            { src: [path.join(outDir, 'path-src2/**/*.*')], dest: path.join(outDir, 'path-dest4') },
+            { src: ['test-src/**/*.js'], dest: 'test-dest/js' },
+            { src: ['test-src/**/*.css'], dest: 'test-dest/css' },
         ]),
-    dependsOn: (bs, opts) =>
-        bs.copy(
-            [
-                { src: [path.join(outDir, 'path-src1/**/*.*')], dest: path.join(outDir, 'path-dest3-pre') },
-                { src: [path.join(outDir, 'path-src2/**/*.*')], dest: path.join(outDir, 'path-dest4-pre') },
-            ],
-            copyOptions,
-        ),
-    triggers: (bs, opts) =>
-        bs.copy(
-            [
-                { src: [path.join(outDir, 'path-src1/**/*.*')], dest: path.join(outDir, 'path-dest3-post') },
-                { src: [path.join(outDir, 'path-src2/**/*.*')], dest: path.join(outDir, 'path-dest4-post') },
-            ],
-            copyOptions,
-        ),
-    logLevel: 'verbose',
 }
+tron.task(testMultiCopy)
 
 const build = {
     name: '@build',
-    triggers: tron.parallel(copy1, copy2),
-    clean: [outDir],
+    triggers: tron.series(createTestFiles, testSingleCopy, testMultiCopy),
+    clean: ['test-src', 'test-dest'],
 }
 
 tron.task(build).addCleaner()

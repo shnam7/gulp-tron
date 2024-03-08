@@ -17,6 +17,6 @@
         "gulp-tron": "workspace:*",
         "gulp-twig": "^1.2.0",
         "twig-markdown": "^1.0.1",
-        "typescript": "^5.3.3"
+        "typescript": "^5.4.2"
     }
 }

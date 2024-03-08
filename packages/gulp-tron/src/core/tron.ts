@@ -12,6 +12,23 @@ type TaskConfigWithMutableTaskName = Omit<TaskConfig, 'taskName'> & {
     -readonly [key in keyof Pick<TaskConfig, 'taskName'>]: TaskConfig[key]
 }
 
+/**
+ * Convert the series of buildSet items into buildSet Series object
+ *
+ * @param args list of BuildSet items
+ * @returns BuildSetSerial object of the buildSet list
+ */
+export function series(...args: BuildSet[]): BuildSetSeries { return args }
+
+/**
+ * Convert the series of buildSet items into buildSet Parallel object
+ *
+ * @param args list of BuildSet items
+ * @returns BuildSetParallel object of the buildSet list
+ */
+export function parallel(...args: BuildSet[]): BuildSetParallel { return { set: args } }
+
+
 //--- GBuildManager
 export class Tron {
     protected _gulp = gulp
@@ -182,7 +199,7 @@ export class Tron {
      * @param args list of BuildSet items
      * @returns BuildSetSeries object of the buildSet list
      */
-    series(...args: BuildSet[]): BuildSetSeries { return args }
+    series(...args: BuildSet[]): BuildSetSeries { return series(...args) }
 
     /**
      * Convert the series of buildSet items into buildSet parallel object
@@ -190,7 +207,7 @@ export class Tron {
      * @param args list of BuildSet items
      * @returns BuildSetParallel object of the buildSet list
      */
-    parallel(...args: BuildSet[]): BuildSetParallel { return { set: args } }
+    parallel(...args: BuildSet[]): BuildSetParallel { return parallel(...args) }
 
     /**
      * Convert build name to gulp task name.
