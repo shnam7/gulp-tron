@@ -13,16 +13,17 @@ const destRoot = path.join(basePath, '_build')
 
 console.log('======cwd:', process.cwd())
 
-const copyer = {
-    name: 'copyer',
+const copier = {
+    name: 'copier',
     build: async bs => {
-        bs.copy({ src: [path.join(destRoot, 'do-not-delete/sample.txt')], dest: destRoot })
-        try {
-            fs.accessSync(bs.opts.clean[0])
-        } catch (err) {
-            bs.log(`==>Error:file copy failed`)
-            throw err
-        }
+        bs.copy({ src: [path.join(destRoot, 'do-not-delete/sample.txt')], dest: destRoot }).then(() => {
+            try {
+                fs.accessSync(bs.opts.clean[0])
+            } catch (err) {
+                bs.log(`==>Error:file copy failed`)
+                throw err
+            }
+        })
     },
     clean: [path.join(destRoot, 'sample.txt')],
 }
@@ -43,7 +44,7 @@ const dummyCleaner = {
 
 const build = {
     name: '@build',
-    triggers: tron.parallel(copyer, dummyCleaner),
+    triggers: tron.parallel(copier, dummyCleaner),
 }
 
 tron.createTask(build).addCleaner()

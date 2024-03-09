@@ -250,7 +250,8 @@ export class Tron {
                 const bs = new BuildStream(taskName, conf)
                 const ret = await build(bs)
                 if (ret instanceof Promise) await ret
-                return bs.flushStream()
+                await bs.flushStream()
+                bs.stream
             }
             done()
         }

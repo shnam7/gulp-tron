@@ -108,6 +108,10 @@ export class BuildStream {
         return this
     }
 
+    then(func: Function) {
+        this._promiseSync = this._promiseSync.then(() => func())
+    }
+
     promise(promise: Promise<any>): this {
         this._promiseSync = this._promiseSync.then(() => promise)
         return this
@@ -165,7 +169,7 @@ export class BuildStream {
 
         /** function copying newer files only */
         const _copy = async (globs: string | string[], dest: string,
-            opts: CopyOptions & { index?: number } = {}): Promise<any> => {
+            opts: CopyOptions & { index?: number } = {}) => {
 
             let filesToCopy = 0
             let filesCopied = 0
@@ -173,39 +177,43 @@ export class BuildStream {
             const taskIDTag = `(${opts.index})`
             if (opts.logLevel !== 'silent') logger(`${taskIDTag}... copying:['${globs}' => '${dest}']:`)
 
-            const stream = gulp.src(globs)
-                .pipe(through2.obj((file, encoding, callback) => {
-                    filesToCopy += 1
-                    callback(null, file)
-                }))
-                .pipe(newerG({ ...opts, dest: dest, }))
-                .pipe(through2.obj((file, encoding, callback) => {
-                    let copyInfo = `${taskIDTag}${file.path}' => '${dest}'`
-                    if (opts.logLevel !== 'silent') logger(`${copyInfo}`)
-                    filesCopied += 1
-                    callback(null, file)
-                }))
-                .pipe(gulp.dest(dest))
+            const promise = new Promise((done: Function) => {
 
-            return new Promise(resolve => {
-                stream.on('finish', () => {
-                    if (opts.logLevel !== 'silent')
-                        logger(`${taskIDTag}..... ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
-                    resolve(this)
-                })
+                gulp.src(globs)
+                    .pipe(through2.obj((file, encoding, callback) => {
+                        filesToCopy += 1
+                        callback(null, file)
+                    }))
+                    .pipe(newerG({ ...opts, dest: dest, }))
+                    .pipe(through2.obj((file, encoding, callback) => {
+                        let copyInfo = `${taskIDTag}${file.path}' => '${dest}'`
+                        if (opts.logLevel !== 'silent') logger(`${copyInfo}`)
+                        filesCopied += 1
+                        callback(null, file)
+                    }))
+                    .pipe(gulp.dest(dest))
+                    .on('finish', () => {
+                        if (opts.logLevel !== 'silent')
+                            logger(`${taskIDTag}..... ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
+                        done()
+                    })
+
             })
+            this.promise(promise)
         }
 
         const optCommon = { logLevel: this._opts.logLevel, logger: this.logger }
         if (typeof arg1 === 'string' || Array.isArray(arg1) && typeof arg1[0] === 'string') {
             const opts = { ...optCommon, ...arg3, index: 1 }
-            this.promise(_copy(arg1 as string | string[], arg2 as string, opts))
+            // this.promise(_copy(arg1 as string | string[], arg2 as string, opts))
+            _copy(arg1 as string | string[], arg2 as string, opts)
         }
         else {
             const params = arrayify(arg1 as CopyParam | CopyParam[])
             params.map(async (param, index) => {
                 const opts = { ...optCommon, ...arg2 as CopyOptions, index: index + 1 }
-                this.promise(_copy(param.src, param.dest, opts))
+                // this.promise(_copy(param.src, param.dest, opts))
+                _copy(param.src, param.dest, opts)
             })
         }
         return this
@@ -315,10 +323,10 @@ export class BuildStream {
 
     cloneStream(): GulpStream { return this.pipe(cloneStream())._stream }
 
-    async flushStream(): Promise<this> {
+    async flushStream(): Promise<any> {
         await this._promiseSync
         await streamToPromise(this._stream)
-        return this
+        return this._promiseSync
     }
 
     //-------------------------------------------------------------------------

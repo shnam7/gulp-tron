@@ -8,7 +8,7 @@
         "clean": "gulp @clean"
     },
     "devDependencies": {
-        "gulp-tron": "workspace:*",
-        "gulp": "^4.0.2"
+        "gulp": "^4.0.2",
+        "gulp-tron": "workspace:*"
     }
 }

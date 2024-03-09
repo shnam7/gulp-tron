@@ -2,8 +2,8 @@
     "name": "gulp-tron-repo",
     "private": true,
     "scripts": {
-        "dev": "turbo dev",
-        "dev:tron": "turbo dev --filter=gulp-tron...",
+        "dev": "turbo dev --filter gulp-tron --filter=@gulp-tron*",
+        "dev:all": "turbo dev",
         "build": "turbo build",
         "build:examples": "turbo build --filter=./examples/*",
         "clean": "run-s __clean:tools clean:examples __clean:packages",
