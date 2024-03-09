@@ -70,9 +70,29 @@ export class BuildStream {
         return this
     }
 
+    /**
+     * Order files in the stream
+     *
+     * @param args (patterns?: string | string[], options?: Options)
+     *      patterns to give priority in ordering
+     * @returns this
+     */
     order(...args: Parameters<typeof order>) {
         if (!args[0]) args[0] = this.opts.order
         return this.pipe(order(...args))
+    }
+
+    /**
+     * Filter stream files to newer files only comparing to dest path
+     *
+     * @param dest
+     * @returns this
+     */
+    newer(dest?: string): this {
+        if (!dest) dest = is.String(this.opts.dest) ? this.opts.dest : undefined
+        if (!dest) return this
+
+        return this.pipe(newerG(dest))
     }
 
     dest(): this        // call with no argument falls back to '.', which is current directory.

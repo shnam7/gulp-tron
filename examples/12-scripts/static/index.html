@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>Gulp-Tron Example:Scripts</title>
+
+        <script type="importmap">
+            {
+                "imports": {
+                    "react": "https://esm.sh/react?dev",
+                    "react-dom/client": "https://esm.sh/react-dom/client?dev"
+                }
+            }
+        </script>
+    </head>
+
+    <body>
+        <h1>Tron Example - Processing Scripts</h1>
+
+        <hr />
+        <div id="vanilla">
+            <script src="js/vanilla.js"></script>
+        </div>
+
+        <hr />
+        <div id="coffee">
+            <script src="js/coffee/main.js"></script>
+        </div>
+
+        <hr />
+        <div id="babel">
+            <script type="module" src="js/babel/main.js"></script>
+        </div>
+        <div id="typescript">
+            <script type="module" src="js/typescript/main.js"></script>
+        </div>
+
+        <div id="react">
+            <div id="react-app"></div>
+
+            <script type="module" src="js/react/app.js"></script>
+        </div>
+    </body>
+</html>

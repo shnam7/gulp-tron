@@ -17,8 +17,12 @@ export type EslintOptions = {
  * @returns PluginFunction
  */
 export const eslintP = (options: EslintOptions): PluginFunction => (bs: BuildStream) => {
-    return bs.pipe(eslintG(options))
-        .pipe(eslintG.fix())
+
+    bs.pipe(eslintG(options))
+
+    if (options.fix) bs.pipe(eslintG.fix())
+
+    return bs
         .pipe(eslintG.format())
         .pipe(eslintG.failAfterError())
 }
