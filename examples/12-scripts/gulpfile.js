@@ -129,7 +129,7 @@ const typescript = {
     name: 'typescript',
     build: bs => {
         const tsProject = ts.createProject('src/tsconfig.json')
-        bs.src().pipe(tsProject()).dest()
+        bs.src().pipe(tsProject()).debug().changed().debug().dest()
     },
 
     src: [path.join(srcRoot, 'typescript/**/*.ts')],
@@ -142,7 +142,7 @@ const react = {
     name: 'react',
     build: bs => {
         const tsProject = ts.createProject('src/tsconfig.json')
-        bs.src().pipe(tsProject()).dest()
+        bs.src().pipe(tsProject()).changed().dest()
     },
     src: [path.join(srcRoot, 'react/**/*.{ts,tsx}')],
     dest: path.join(destRoot, 'js/react'),

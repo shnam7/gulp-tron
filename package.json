@@ -13,7 +13,7 @@
         "test": "turbo test",
         "lint": "turbo lint",
         "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-        "reset": "npm-run-all -s clean -p reset:node reset:turbo",
+        "reset": "npm-run-all -s clean reset:turbo reset:node",
         "reset:node": "find . -type d -name node_modules -exec rm -rf {} +",
         "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +"
     },

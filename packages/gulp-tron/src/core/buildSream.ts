@@ -11,13 +11,15 @@ import type { CleanOptions, DelOptions, ExecOptions, GulpStream, LogOptions, Plu
 import mergeStream from 'merge-stream'
 import order from 'gulp-order3'
 import { is, cloneStream } from '../utils/index.js'
-import newerG from 'gulp-newer'
+import changedG, { compareContents } from 'gulp-changed'
 import through2 from 'through2'
 
 export type CopyParam = { src: string | string[], dest: string }
 export type CopyOptions =
-    & Partial<Parameters<typeof newerG>[0]>
+    & GulpChangedOptions
     & LogOptions
+
+type GulpChangedOptions = NonNullable<Parameters<typeof changedG>[1]>
 
 const _nullStream = () => gulp.src('./initial-dummy/**/*.dummy')
 
@@ -83,16 +85,20 @@ export class BuildStream {
     }
 
     /**
-     * Filter stream files to newer files only comparing to dest path
+     * Filter stream files to changed files only comparing to dest path
      *
      * @param dest
      * @returns this
      */
-    newer(dest?: string): this {
-        if (!dest) dest = is.String(this.opts.dest) ? this.opts.dest : undefined
-        if (!dest) return this
+    changed(dest?: Parameters<DestMethod>[0], options: Parameters<typeof changedG>[1] = {}): this {
+        if (!dest) {
+            if (!this.opts.dest) return this
+            dest = this.opts.dest
+        }
 
-        return this.pipe(newerG(dest))
+        const opts = { ...options }
+        if (!opts.hasChanged) opts.hasChanged = compareContents
+        return this.pipe(changedG(dest as Parameters<typeof changedG>[0], opts))
     }
 
     dest(): this        // call with no argument falls back to '.', which is current directory.
@@ -144,8 +150,8 @@ export class BuildStream {
 
     /**
      * Copy files from to destination.
-     * Copy newer files only compared to destination counterpart.
-     * Refer to 'gulp-newer' for the details.
+     * Copy changed files only compared to destination counterpart.
+     * Refer to 'gulp-changed' for the details.
      *
      * @param globs Source files to copy
      * @param destPath destination path to copy
@@ -167,7 +173,7 @@ export class BuildStream {
         arg2?: string | CopyOptions, arg3: CopyOptions = {}
     ): this {
 
-        /** function copying newer files only */
+        /** function copying changed files only */
         const _copy = async (globs: string | string[], dest: string,
             opts: CopyOptions & { index?: number } = {}) => {
 
@@ -175,7 +181,7 @@ export class BuildStream {
             let filesCopied = 0
             const logger = opts.logger || console.log
             const taskIDTag = `(${opts.index})`
-            if (opts.logLevel !== 'silent') logger(`${taskIDTag}... copying:['${globs}' => '${dest}']:`)
+            if (opts.logLevel === 'verbose') logger(`${taskIDTag}... copying:['${globs}' => '${dest}']:`)
 
             const promise = new Promise((done: Function) => {
 
@@ -184,7 +190,7 @@ export class BuildStream {
                         filesToCopy += 1
                         callback(null, file)
                     }))
-                    .pipe(newerG({ ...opts, dest: dest, }))
+                    .pipe(changedG(dest, opts))
                     .pipe(through2.obj((file, encoding, callback) => {
                         let copyInfo = `${taskIDTag}${file.path}' => '${dest}'`
                         if (opts.logLevel !== 'silent') logger(`${copyInfo}`)
@@ -193,7 +199,7 @@ export class BuildStream {
                     }))
                     .pipe(gulp.dest(dest))
                     .on('finish', () => {
-                        if (opts.logLevel !== 'silent')
+                        if (opts.logLevel === 'verbose')
                             logger(`${taskIDTag}..... ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
                         done()
                     })
