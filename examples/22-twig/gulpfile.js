@@ -1,4 +1,4 @@
-import tron from 'gulp-tron'
+import tron, { BuildStream } from 'gulp-tron'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -25,20 +25,27 @@ const scss = {
 
 //--- typescript
 import { terserP } from '@gulp-tron/plugin-scripts'
+import ts from 'gulp-typescript'
+
 const scripts = {
     name: 'scripts',
     build: bs => {
-        bs.exec(`tsc`)
-            .src()
-            .debug()
-            .rename({ dirname: path.join(destRoot, 'js'), extname: '.js' })
+        const tsProject = ts.createProject('tsconfig.json')
+
+        // dts (optional)
+        bs.src().pipe(tsProject()).clone().filter('*.d.ts').debug().dest()
+
+        // js
+        bs.filter('*js')
             .pipe(terserP())
             .rename({ extname: '.min.js' })
-            .debug()
+            .debug() //
+            .changed()
             .dest()
     },
 
     src: path.join(srcRoot, 'scripts/**/*.ts'),
+    dest: path.join(destRoot, 'js'),
 }
 
 //--- twig

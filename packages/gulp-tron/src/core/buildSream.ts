@@ -7,10 +7,9 @@ import streamToPromise from 'stream-to-promise'
 import child_process from 'child_process'
 import arrayify from '../utils/arrayify.js'
 import { deleteSync } from 'del'
-import type { CleanOptions, DelOptions, ExecOptions, GulpStream, LogOptions, PluginFunction, TaskOptions } from './types.js'
-import mergeStream from 'merge-stream'
+import type { CleanOptions, DelOptions, ExecOptions, GulpStream, LogOptions, PluginFunction, SrcOptions, TaskOptions } from './types.js'
 import order from 'gulp-order3'
-import { is, cloneStream } from '../utils/index.js'
+import { cloneStream } from '../utils/index.js'
 import changedG, { compareContents } from 'gulp-changed'
 import through2 from 'through2'
 
@@ -51,18 +50,25 @@ export class BuildStream {
     //-------------------------------------------------------------------------
     // Build API: Returns value should be 'this'
     //-------------------------------------------------------------------------
-    src(options: Parameters<SrcMethod>[1]): this
-    src(globs: Parameters<SrcMethod>[0], options?: Parameters<SrcMethod>[1]): this
-    src(globsOrOpts: Parameters<SrcMethod>[0] | Parameters<SrcMethod>[1], options: Parameters<SrcMethod>[1] = {}): this {
 
-        let globs = this._opts.src || ''
-        let opt = { sourcemaps: !!this._opts.sourcemaps, ...options }
-        if (is.String(globsOrOpts) || is.Array(globsOrOpts))
-            globs = globsOrOpts
-        else
-            opt = { ...opt, ...globsOrOpts }
+    /**
+     * The same as gulp.src()
+     *
+     * @param globs string | string[]
+     * @param options SrcOptions of gulp.src()
+     */
+    src(globs?: Parameters<SrcMethod>[0], options: SrcOptions = {}): this {
 
-        this._stream = gulp.src(globs, opt)
+        if (!globs) {
+            if (!this.opts.src) return this
+            globs = this.opts.src
+        }
+
+        const opts: SrcOptions = { ...options }
+        if (!opts.sourcemaps && this.opts.sourcemaps) opts.sourcemaps = this.opts.sourcemaps
+
+        this._stream = gulp.src(globs as string, opts)
+
         return this.order()
     }
 
@@ -205,7 +211,7 @@ export class BuildStream {
                     })
 
             })
-            this.promise(promise)
+            await this.promise(promise)
         }
 
         const optCommon = { logLevel: this._opts.logLevel, logger: this.logger }
@@ -278,33 +284,38 @@ export class BuildStream {
      *
      * @returns colned BuildStream
      */
-    clone(): BuildStream {
-        return new BuildStream(this._name, this._opts, this.cloneStream(), this._promiseSync)
+    clone(stream?: GulpStream): BuildStream {
+        return new BuildStream(this._name, this._opts, stream || this.cloneStream(), this._promiseSync)
     }
 
-    /**
-     * Merge files, GulpStream, or BuildStream into this
-     *
-     * Notes: stream name of bs is discarded. bs.opts are merged into this.opts
-     *
-     * @param bs stream to be merged
-     * @returns
-     */
-    merge(bs: BuildStream): this
-    merge(globs: string | string[]): this
-    merge(stream: GulpStream): this
-    merge(target: string | string[] | GulpStream | BuildStream) {
-        if (target instanceof BuildStream) {
-            this._stream = mergeStream(this._stream, target.stream)
-            this.promise(this._promiseSync)
-            this._opts = { ...this._opts, ...target.opts }
-            return this
-        }
-        else {
-            this._stream = mergeStream(this._stream, is.String(target) || is.Array(target) ? gulp.src(target) : target)
-        }
-        return this
-    }
+    // /**
+    //  * Merge files, GulpStream, or BuildStream into this
+    //  *
+    //  * Notes: stream name of bs is discarded. bs.opts are merged into this.opts
+    //  *
+    //  * @param bs stream to be merged
+    //  * @returns
+    //  */
+    // merge(bs: BuildStream): this
+    // merge(globs: string | string[]): this
+    // merge(stream: NodeJS.ReadableStream): this
+    // merge(target: string | string[] | NodeJS.ReadableStream | BuildStream) {
+    //     if (target instanceof BuildStream) {
+    //         if (target == this) return this
+
+    //         this._stream.pipe(mergeStream(this._stream, target.stream))
+    //         this._opts = { ...this._opts, ...target.opts }
+
+    //         return this
+    //     }
+    //     else if (is.String(target) || is.Array(target)) {
+    //         this._stream.pipe(mergeStream(this._stream, gulp.src(target)))
+    //     }
+    //     else {
+    //         this._stream.pipe(mergeStream(this._stream, target))
+    //     }
+    //     return this
+    // }
 
     log(...args: Parameters<typeof console.log>): this {
         const logger = this.opts.logger || console.log

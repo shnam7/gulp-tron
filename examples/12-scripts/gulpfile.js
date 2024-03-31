@@ -135,6 +135,7 @@ const typescript = {
     src: [path.join(srcRoot, 'typescript/**/*.ts')],
     dest: path.join(destRoot, 'js/typescript'),
     addWatch: [path.join(srcRoot, 'tsconfig.json')],
+    sourcemaps,
 }
 
 /** React with typescript */

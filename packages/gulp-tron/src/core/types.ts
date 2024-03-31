@@ -12,11 +12,17 @@ export type GulpStream = ReturnType<SrcMethod>
 export type GulpTaskName = string
 export type GulpTaskFunction = TaskFunction
 export type GulpTaskFunctionCallback = TaskFunctionCallback
+export type TaskSelector = (string | RegExp) | (string | RegExp)[]
+
 
 export type LogOptions = {
     logLevel?: 'verbose' | 'normal' | 'silent',
     logger?: (...args: any[]) => void
 }
+
+export type SrcOptions = NonNullable<Parameters<SrcMethod>[1]>
+export type DestOptions = NonNullable<Parameters<DestMethod>[1]>
+export type SourceMaps = SrcOptions['sourcemaps'] & DestOptions['sourcemaps']
 
 export type ExecOptions = SpawnOptions & LogOptions
 
@@ -50,7 +56,7 @@ export type TaskOptions =
         readonly src?: Parameters<SrcMethod>[0]         // source for build operation
         readonly order?: string | string[]              // input file(src) ordering
         readonly dest?: Parameters<DestMethod>[0]       // output(destination) directory of the build operation
-        readonly sourcemaps?: boolean | string          // sourcemaps option to gulp.src() and gulp.dest()
+        readonly sourcemaps?: boolean                   // sourcemaps option to gulp.src() and gulp.dest()
     }
     & CleanerOptions
     & WatcherOptions
@@ -60,7 +66,7 @@ export type TaskOptions =
 export type CleanerConfig =
     {
         readonly name?: string,                         // Cleaner task name. default value is '@clean'
-        readonly target?: TaskConfig | TaskConfig[]     // target TaskConfig list to look for clean properties
+        readonly target?: TaskSelector                  // target TaskConfig list to look for clean properties
     }
     & CleanerOptions
     & LogOptions
@@ -76,7 +82,7 @@ export type CleanerOptions =
 export type WatcherConfig =
     {
         readonly name?: string                          // Watcher task name. default value is '@watch'
-        readonly target?: TaskConfig | TaskConfig[]     // target TaskConfig list to look for watch properties
+        readonly target?: TaskSelector                  // target TaskConfig list to look for watch properties
         readonly browserSync?: browserSyncOptions       // browser-options
     }
     & WatcherOptions

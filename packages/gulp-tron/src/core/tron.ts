@@ -1,6 +1,6 @@
 import gulp from 'gulp'
 import { BuildStream } from './buildSream.js'
-import type { BuildFunction, BuildSet, BuildSetParallel, BuildSetSeries, CleanerConfig, CleanerOptions, GulpTaskFunction, TaskConfig, TaskOptions, WatcherConfig, WatcherOptions } from './types.js'
+import type { BuildFunction, BuildSet, BuildSetParallel, BuildSetSeries, CleanerConfig, CleanerOptions, GulpTaskFunction, TaskConfig, TaskOptions, TaskSelector, WatcherConfig, WatcherOptions } from './types.js'
 import is from '../utils/is.js'
 import arrayify from '../utils/arrayify.js'
 import browserSync from 'browser-sync'
@@ -140,11 +140,13 @@ export class Tron {
 
     addCleaner(nameOrConfig?: string | CleanerConfig, options: CleanerOptions = {}): this {
         const conf: CleanerConfig = is.String(nameOrConfig) ? { name: nameOrConfig, ...options } : nameOrConfig as CleanerConfig || {}
-        const target = conf.target || this._taskConfigs   // defaults to all tasks
 
-        let cleanList: string[] = arrayify(target).reduce(
+        const target = this.selectTasks(conf.target) || this._taskConfigs
+
+        let cleanList: string[] = target.reduce(
             (accum, task) => accum.concat(arrayify(task.clean)),
-            [] as string[])
+            [] as string[]
+        )
         if (conf.clean) cleanList = cleanList.concat(arrayify(conf.clean))
 
         const __cleanerFunction__: BuildFunction = (bs: BuildStream) => {
@@ -156,18 +158,23 @@ export class Tron {
 
     addWatcher(conf?: WatcherConfig): this
     addWatcher(nameOrConfig?: string | WatcherConfig, options: WatcherOptions = {}): this {
-        const config: WatcherConfig = is.String(nameOrConfig) ? { name: nameOrConfig, ...options } : nameOrConfig as WatcherConfig || {}
-        const target = arrayify(config.target || this._taskConfigs)   // defaults to all tasks
+        const config: WatcherConfig = (is.String(nameOrConfig)
+            ? { name: nameOrConfig, ...options } : nameOrConfig as WatcherConfig)
+            || { ...(nameOrConfig as WatcherConfig) }
+
+        let target = this.selectTasks(config.target) || this._taskConfigs
+
+        // defaults to all tasks
         const taskName = config.name || '@watch'
         let isWatching = false
-
         const __watcherFunction__: BuildFunction = (bs: BuildStream) => {
+
             if (isWatching) return  // watch task should not run repeatedly on change detection.
 
             function _handleChangeEvent(watcher: ReturnType<typeof gulp.watch>, logLevel?: string) {
                 if (config.browserSync) watcher.on('change', browserSync.reload)
                 watcher.on('change', (path: string) => {
-                    if (logLevel === 'verbose') {
+                    if (logLevel !== 'silent') {
                         let msg = `change detected:'${path}`
                         if (config.browserSync) msg += ' reloaded.'
                         bs.log(msg)
@@ -177,6 +184,8 @@ export class Tron {
 
             if (config.browserSync) browserSync.init(config.browserSync || {})
             target.forEach(conf => {
+                if (!conf) return
+
                 // skip the other watchers (watcher should not monitor the other wacthers)
                 if (this._watchTaskNames.includes(conf.taskName as string) && conf.taskName !== taskName) return
 
@@ -188,6 +197,7 @@ export class Tron {
             })
             isWatching = true
         }
+
         this.task({ ...config, name: taskName, build: __watcherFunction__ })
         this._watchTaskNames.push(taskName)
         return this
@@ -354,16 +364,21 @@ export class Tron {
         throw Error(`Tron:resolveBuildSet:Unknown type of buildSet: ${buildSet}`)
     }
 
-    selectTasksByGroup(groups?: string | string[] | RegExp | RegExp[]): TaskConfig[] {
-        return this._taskConfigs.filter(task => arrayify(groups).some(g => task.name.match(g)))
+    selectTasksByGroup(groups?: TaskSelector): TaskConfig[] | undefined {
+        const selected = this._taskConfigs.filter(task => arrayify(groups).some(g => task.name.match(g)))
+        return selected.length > 0 ? selected : undefined
     }
 
 
-    selectTasks(filter: string | string[] | RegExp | RegExp[]): TaskConfig[] {
-        return this.taskConfigs.filter(task => arrayify(filter).some(f => {
+    selectTasks(filter?: TaskSelector): TaskConfig[] | undefined {
+        if (!filter) return undefined
+
+        const selected = this.taskConfigs.filter(task => arrayify(filter).some(f => {
             if (is.String(f)) return task.name === f || task.taskName === f
             return task.name.match(f) || task.taskName?.match(f)
         }))
+
+        return selected.length > 0 ? selected : undefined
     }
 
     selectTasksAll(): TaskConfig[] {
@@ -379,8 +394,9 @@ export class Tron {
         if (!name) return undefined
 
         const tasks = this.selectTasks(`^${name}$`)
+        if (!tasks) return undefined
 
         if (tasks.length > 1) throw Error('Tron:findTask:Internal error. duplicat task name.')
-        return (tasks.length === 1) ? tasks[0] : undefined
+        return tasks[0]
     }
 }

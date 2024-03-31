@@ -11,8 +11,6 @@ const prefix = projectName + ':'
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, '_build')
 
-console.log('======cwd:', process.cwd())
-
 const copier = {
     name: 'copier',
     build: async bs => {
