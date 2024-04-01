@@ -11,13 +11,13 @@
         "@gulp-tron/plugin-styles": "workspace:*",
         "@gulp-tron/plugin-scripts": "workspace:*",
         "@gulp-tron/plugin-utils": "workspace:*",
-        "gulp": "^4.0.2",
+        "gulp": "^5.0.0",
         "gulp-htmlmin": "^5.0.1",
         "gulp-prettier": "^6.0.0",
         "gulp-tron": "workspace:*",
         "gulp-typescript": "6.0.0-alpha.1",
         "gulp-twig": "^1.2.0",
-        "twig-markdown": "^1.0.1",
-        "typescript": "^5.4.2"
+        "twig-markdown": "^1.1.0",
+        "typescript": "^5.4.3"
     }
 }

@@ -14,7 +14,6 @@ export type GulpTaskFunction = TaskFunction
 export type GulpTaskFunctionCallback = TaskFunctionCallback
 export type TaskSelector = (string | RegExp) | (string | RegExp)[]
 
-
 export type LogOptions = {
     logLevel?: 'verbose' | 'normal' | 'silent',
     logger?: (...args: any[]) => void
@@ -46,8 +45,6 @@ export type TaskConfig =
         readonly triggers?: BuildSet                    // buildSet to be executed after main build function
     }
     & TaskOptions
-    & CleanerConfig
-    & WatcherConfig
 
 export type TaskOptions =
     {
@@ -58,41 +55,30 @@ export type TaskOptions =
         readonly dest?: Parameters<DestMethod>[0]       // output(destination) directory of the build operation
         readonly sourcemaps?: boolean                   // sourcemaps option to gulp.src() and gulp.dest()
     }
-    & CleanerOptions
-    & WatcherOptions
+    & Omit<CleanerOptions, 'name'>
+    & Omit<WatcherOptions, 'name'>
     & LogOptions
 
 //--- Cleaner types
-export type CleanerConfig =
+export type CleanerOptions =
     {
         readonly name?: string,                         // Cleaner task name. default value is '@clean'
         readonly target?: TaskSelector                  // target TaskConfig list to look for clean properties
-    }
-    & CleanerOptions
-    & LogOptions
-
-export type CleanerOptions =
-    {
         readonly clean?: string | string[]              // additional clean list
     }
     & CleanOptions
-
+    & LogOptions
 
 //--- Watcher types
-export type WatcherConfig =
+export type WatcherOptions =
     {
         readonly name?: string                          // Watcher task name. default value is '@watch'
         readonly target?: TaskSelector                  // target TaskConfig list to look for watch properties
         readonly browserSync?: browserSyncOptions       // browser-options
-    }
-    & WatcherOptions
-    & LogOptions
-
-export type WatcherOptions =
-    {
         readonly watch?: string | string[]              // override default watch, which is TaskOptions.src
         readonly addWatch?: string | string[]           // additional watch in addition to watch or default watch
     }
+    & LogOptions
 
 //--- BuildSet
 export type BuildSet =

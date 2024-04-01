@@ -1,9 +1,10 @@
 import tron from 'gulp-tron'
+import gulp from 'gulp'
 import path from 'path'
-
-//--- project settings
 import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+//--- project settings
 const basePath = path.relative(process.cwd(), __dirname)
 const projectName = path.basename(__dirname)
 const prefix = projectName
@@ -11,6 +12,9 @@ const srcRoot = path.join(basePath, 'src')
 const destRoot = path.join(basePath, 'dist')
 const port = 3500
 const sourcemaps = '.'
+
+//--- use local gulp instance: try this when gulp task is not created.
+tron.use(gulp)
 
 //--- common
 import { eslintP, terserP, concatP } from '@gulp-tron/plugin-scripts'

@@ -1,8 +1,7 @@
-import gulp from 'gulp'
+import { gulp, useGulp } from './globals.js'
 import { BuildStream } from './buildSream.js'
-import type { BuildFunction, BuildSet, BuildSetParallel, BuildSetSeries, CleanerConfig, CleanerOptions, GulpTaskFunction, TaskConfig, TaskOptions, TaskSelector, WatcherConfig, WatcherOptions } from './types.js'
-import is from '../utils/is.js'
-import arrayify from '../utils/arrayify.js'
+import type { BuildFunction, BuildSet, BuildSetParallel, BuildSetSeries, CleanerOptions, GulpTaskFunction, TaskConfig, TaskOptions, TaskSelector, WatcherOptions } from './types.js'
+import { is, arrayify } from '../utils/index.js'
 import browserSync from 'browser-sync'
 
 //--- test if wrapped by gulp.serial() or gulp.parallel()
@@ -31,7 +30,6 @@ export function parallel(...args: BuildSet[]): BuildSetParallel { return { set: 
 
 //--- GBuildManager
 export class Tron {
-    protected _gulp = gulp
     protected _taskConfigs: TaskConfig[]
     protected _watchTaskNames: string[]
     protected static annonCount = 0
@@ -41,34 +39,44 @@ export class Tron {
         this._watchTaskNames = []
     }
 
-    get gulp() { return this._gulp }
-    set gulp(gulpInst: typeof gulp) { this._gulp = gulpInst }
-    get taskConfigs() { return this._taskConfigs }
+    use(gulpInstance: typeof gulp) {
+        useGulp(gulpInstance)
+    }
+    // get taskConfigs() { return this._taskConfigs }
 
     /**
-     * Create a gulp task with TaskConfig object
-     * @param conf TaskConfig object
+     * Create a gulp task with TaskConfig
+     *
+     * @param conf TaskConfig
+     * @returns this
      */
+    task(conf: TaskConfig): this
 
     /**
+     * Create a gulp task
      *
      * @param name Task name (mandatory field)
      * @param build build function. if not specified, then defual null function is assigned internally.
      * @param opts TaskConfig object for additional task options
+     * @returns this
      */
-    task(name: string, build: BuildFunction, opts?: TaskOptions): this
-    task(conf: TaskConfig, options?: TaskOptions): this
+    task(name: string, buildFunc: BuildFunction, opts?: TaskOptions): this
 
-    // overloading implementation for task() function
-    task(arg1: TaskConfig | string, arg2?: BuildFunction | TaskOptions, opts: TaskOptions = {}): this {
+    /**
+     * Implementation of task() overloading functions
+     *
+     * @param nameOrConfig taskName or TaskConfig
+     * @param buildFunc BuildFunction
+     * @param opts TaskOptions
+     * @returns this
+     */
+    task(nameOrConfig: TaskConfig | string, buildFunc?: BuildFunction, opts: TaskOptions = {}): this {
         let conf: TaskConfig
-        if (is.String(arg1)) {
-            if (!is.Function(arg2)) throw Error(`Tron:task:${arg1}:second argument should be BuildFunction.`)
-            conf = { name: arg1, build: arg2, ...opts }
+        if (is.String(nameOrConfig)) {
+            conf = { name: nameOrConfig, build: buildFunc, ...opts }
         }
         else {
-            if (!arg2) arg2 = {}
-            conf = { ...arg1, ...arg2 as TaskOptions }
+            conf = { ...nameOrConfig }
         }
 
         const gulpTask = this.resolveBuildSet(conf)
@@ -77,128 +85,103 @@ export class Tron {
     }
 
     /**
-     * Alias for calling task() or createTasks() with single TaskConfig object
+     * Alias for task(conf: TaskConfig) or createTasks() with single TaskConfig object
+     *
+     * @param conf TaskConfig
+     * @returns this
      */
-    createTask(conf: TaskConfig, options: TaskOptions = {}): this {
-        return this.task(conf, options)
+    createTask(conf: TaskConfig): this {
+        return this.task(conf)
     }
 
     /**
      * Create multiple tasks sequencially
      *
-     * Usage:
-     *  tron.task(taskConfig)
-     *  tron.task([taskConfig,...], taskOptions)
-     *  tron.task(taskConfig1, taskConfig2, ..., taskConfigN, taskOptions) --> recommend form
-     *  tron.task(taskConfig1, (taskOptions or Task taskConfig)...)
-     *  tron.task([taskConfig,...], (taskOptions or Task taskConfig)...)
-     *
-     * Note: options parameter is optional, and recommended to be the last argument.
-     *  If multiple options are passed in, then their properties are all assigned from right to left, resulting in single options argument.
-     *  All the tasks will be configured with this resulting single options argument.
-     *
-     * @param tasks array of TaskConfig objects. usage: tron.task([task1, task2], options)
-     * @param options task options
-     */
-    createTasks(task: TaskConfig, options?: TaskOptions): this
-    createTasks(tasks: TaskConfig[], options?: TaskOptions): this
-    createTasks(task: TaskConfig, ...args: (TaskConfig | TaskOptions)[]): this
-
-    /**
-     * Overloading to allow this form: createTasks(...tasks: TaskConfig[], options: TaskConfig): GulpTaskFunction | GulpTaskFunction[];
-     *
-     *
      * @param args
-     * @returns
+     * @returns this
      */
-    createTasks(task: TaskConfig | TaskConfig[], ...args: (TaskConfig | TaskOptions)[]): this {
-        const { length, [length - 1]: last } = args
-        if (length == 0) return this
-
-        let tasks: TaskConfig[] = arrayify(task)
-        let opts: TaskOptions = {}
-        if (is.Array(args[0])) {
-            tasks = args.slice(0, -1) as TaskConfig[]
-            opts = last as TaskConfig
-        }
-        else args.forEach(arg => {
-            if (arg.hasOwnProperty('name'))
-                tasks.push(arg as TaskConfig)
-            else
-                opts = { ...opts, ...arg as TaskOptions }
+    createTasks(...confList: (TaskConfig | TaskOptions)[]): this {
+        let taskOptions: Omit<TaskOptions, 'name'> = {}
+        confList = confList.filter(conf => {
+            if (!conf.hasOwnProperty('name')) {
+                taskOptions = { ...taskOptions, ...conf }
+                return false
+            }
+            return true
         })
 
-        tasks.forEach(task => this.task(task, opts))
+        arrayify(confList).forEach((conf) => {
+            const taskConf: TaskConfig = { ...conf as TaskConfig, ...taskOptions }
+            this.task(taskConf)
+        })
         return this
     }
 
     /**
-     * Create gulp task cleaning the output from the build and anything specified in the options.
-     * @param name cleaner task name.
+     * Create a task cleaning the output from the build and anything specified in the options.
+     *
+     * @param options cleaner task options.
      */
-    addCleaner(conf?: CleanerConfig): this
-
-    addCleaner(nameOrConfig?: string | CleanerConfig, options: CleanerOptions = {}): this {
-        const conf: CleanerConfig = is.String(nameOrConfig) ? { name: nameOrConfig, ...options } : nameOrConfig as CleanerConfig || {}
-
-        const target = this.selectTasks(conf.target) || this._taskConfigs
+    addCleaner(options: CleanerOptions = {}): this {
+        const target = this.selectTasks(options.target) || this._taskConfigs
 
         let cleanList: string[] = target.reduce(
             (accum, task) => accum.concat(arrayify(task.clean)),
             [] as string[]
         )
-        if (conf.clean) cleanList = cleanList.concat(arrayify(conf.clean))
+        if (options.clean) cleanList = cleanList.concat(arrayify(options.clean))
 
         const __cleanerFunction__: BuildFunction = (bs: BuildStream) => {
             bs.clean(cleanList)
         }
-        this.task({ name: conf.name || '@clean', build: __cleanerFunction__ })
+
+        this.task({ name: '@clean', ...options, build: __cleanerFunction__ })
         return this
     }
 
-    addWatcher(conf?: WatcherConfig): this
-    addWatcher(nameOrConfig?: string | WatcherConfig, options: WatcherOptions = {}): this {
-        const config: WatcherConfig = (is.String(nameOrConfig)
-            ? { name: nameOrConfig, ...options } : nameOrConfig as WatcherConfig)
-            || { ...(nameOrConfig as WatcherConfig) }
+    addWatcher(options: WatcherOptions = {}): this {
+        // const config: WatcherConfig = (is.String(nameOrConfig)
+        //     ? { name: nameOrConfig, ...options } : nameOrConfig as WatcherConfig)
+        //     || { ...(nameOrConfig as WatcherConfig) }
 
-        let target = this.selectTasks(config.target) || this._taskConfigs
+        let target = this.selectTasks(options.target) || this._taskConfigs
+        let taskName = options.name || '@watch'
 
-        // defaults to all tasks
-        const taskName = config.name || '@watch'
+        // // exclude other watchers (watcher should not watch the other watchers)
+        // target = target.filter(t => t.build !== __watcherFunction__)
+
         let isWatching = false
         const __watcherFunction__: BuildFunction = (bs: BuildStream) => {
-
             if (isWatching) return  // watch task should not run repeatedly on change detection.
 
             function _handleChangeEvent(watcher: ReturnType<typeof gulp.watch>, logLevel?: string) {
-                if (config.browserSync) watcher.on('change', browserSync.reload)
+                if (options.browserSync) watcher.on('change', browserSync.reload)
                 watcher.on('change', (path: string) => {
                     if (logLevel !== 'silent') {
                         let msg = `change detected:'${path}`
-                        if (config.browserSync) msg += ' reloaded.'
+                        if (options.browserSync) msg += ' reloaded.'
                         bs.log(msg)
                     }
                 })
             }
 
-            if (config.browserSync) browserSync.init(config.browserSync || {})
-            target.forEach(conf => {
-                if (!conf) return
-
+            if (options.browserSync) browserSync.init(options.browserSync || {})
+            target.forEach(task => {
                 // skip the other watchers (watcher should not monitor the other wacthers)
-                if (this._watchTaskNames.includes(conf.taskName as string) && conf.taskName !== taskName) return
+                if (task.build === __watcherFunction__) return
 
-                const watched: string[] = arrayify(conf.watch || conf.src).concat(arrayify(conf.addWatch))
+                // if (this._watchTaskNames.includes(task.taskName as string) && task.taskName !== taskName) return
+
+                const watched: string[] = arrayify(task.watch || task.src).concat(arrayify(task.addWatch))
                 if (watched.length > 0) {
-                    bs.log(`Watching '${conf.taskName}':[${watched}]`)
-                    _handleChangeEvent(gulp.watch(watched, gulp.task(conf.taskName || '')), conf.logLevel)
+                    bs.log(`Watching '${task.taskName}':[${watched}]`)
+                    _handleChangeEvent(gulp.watch(watched, gulp.task(task.taskName || '')), task.logLevel)
                 }
             })
             isWatching = true
         }
 
-        this.task({ ...config, name: taskName, build: __watcherFunction__ })
+        this.task({ ...options, name: taskName, build: __watcherFunction__ })
         this._watchTaskNames.push(taskName)
         return this
     }
@@ -259,9 +242,10 @@ export class Tron {
             if (build) {
                 const bs = new BuildStream(taskName, conf)
                 const ret = await build(bs)
+                await bs.promiseSync
                 if (ret instanceof Promise) await ret
-                await bs.flushStream()
-                bs.stream
+                await bs.promiseSync
+                return bs.stream
             }
             done()
         }
@@ -283,15 +267,11 @@ export class Tron {
         if (trigs) tasks.push(trigs)
 
         // now tasks would have at least 1 entry
-        if (tasks.length > 1)
+        if (tasks.length > 1) {
             gulp.task(taskName, gulp.series(...tasks))
+        }
         else {
-            gulp.task(taskName, tasks[0] as GulpTaskFunction)
-
-            // if (tasks[0] === main || isGulpSeriesOrParallelTask(tasks[0]))
-            //     gulp.task(taskName, tasks[0] as GulpTaskFunction)
-            // else
-            //     gulp.task(taskName, gulp.series(tasks[0] as GulpTaskFunction))
+            gulp.task(taskName, tasks[0]!)
         }
 
         gulpTask = gulp.task(taskName)
@@ -373,7 +353,7 @@ export class Tron {
     selectTasks(filter?: TaskSelector): TaskConfig[] | undefined {
         if (!filter) return undefined
 
-        const selected = this.taskConfigs.filter(task => arrayify(filter).some(f => {
+        const selected = this._taskConfigs.filter(task => arrayify(filter).some(f => {
             if (is.String(f)) return task.name === f || task.taskName === f
             return task.name.match(f) || task.taskName?.match(f)
         }))
@@ -400,3 +380,5 @@ export class Tron {
         return tasks[0]
     }
 }
+
+export { gulp }

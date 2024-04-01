@@ -1,13 +1,16 @@
 import tron from 'gulp-tron'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import gulp from 'gulp'
+// import path from 'path'
+// import { fileURLToPath } from 'url'
+// const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const basePath = path.relative(process.cwd(), __dirname)
-const projectName = path.basename(__dirname)
-const prefix = projectName + ':'
+// const basePath = path.relative(process.cwd(), __dirname)
+// const projectName = path.basename(__dirname)
+// const prefix = projectName + ':'
+// const outDir = basePath + '__outdir'
 
-const outDir = basePath + '__outdir'
+//--- use local gulp instance: try this when gulp task is not created.
+tron.use(gulp)
 
 const createTestFiles = {
     name: 'createTestFiles',

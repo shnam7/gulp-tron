@@ -1,12 +1,12 @@
-import gulp, { DestMethod, SrcMethod } from 'gulp'
+// import gulp, { DestMethod, SrcMethod } from 'gulp'
+import { gulp } from './globals.js'
 import browserSync from 'browser-sync'
 import debug from 'gulp-debug'
 import filter from 'gulp-filter'
 import rename from 'gulp-rename'
-import streamToPromise from 'stream-to-promise'
 import child_process from 'child_process'
 import arrayify from '../utils/arrayify.js'
-import { deleteSync } from 'del'
+import { ProgressData, deleteAsync, deleteSync } from 'del'
 import type { CleanOptions, DelOptions, ExecOptions, GulpStream, LogOptions, PluginFunction, SrcOptions, TaskOptions } from './types.js'
 import order from 'gulp-order3'
 import { cloneStream } from '../utils/index.js'
@@ -18,6 +18,9 @@ export type CopyOptions =
     & GulpChangedOptions
     & LogOptions
 
+
+type SrcMethod = typeof gulp.src
+type DestMethod = typeof gulp.dest
 type GulpChangedOptions = NonNullable<Parameters<typeof changedG>[1]>
 
 const _nullStream = () => gulp.src('./initial-dummy/**/*.dummy')
@@ -34,6 +37,7 @@ export class BuildStream {
     protected _stream: GulpStream = _nullStream()
     protected _promiseSync: Promise<any> = Promise.resolve();
     protected _opts: TaskOptions
+    protected _streamStack: GulpStream[] = []
 
     constructor(name?: string, opts: TaskOptions = {}, stream?: GulpStream, promiseSync?: Promise<any>) {
         this._name = name || "<annonymous>"
@@ -45,6 +49,7 @@ export class BuildStream {
     get name() { return this._name }
     get className() { return this.constructor.name }
     get stream() { return this._stream }
+    get promiseSync() { return this._promiseSync }
     get opts() { return this._opts }
 
     //-------------------------------------------------------------------------
@@ -232,11 +237,17 @@ export class BuildStream {
     }
 
     del(patterns: string | string[], options: DelOptions = {}): this {
-        const opts: DelOptions = { ...this.opts, ...options }
-        const logger = opts.logger || this.logger
 
-        if (opts.logLevel !== 'silent') logger(`deleting:[${arrayify(patterns).join(', ')}]`)
-        deleteSync(patterns, opts)
+        const logger = options.logger ?? this.opts.logger ?? this.logger
+        if (options.logLevel !== 'silent') logger(`deleting:[${arrayify(patterns).join(', ')}]`)
+
+        const opts = {
+            ...options, onProgress: (progress: ProgressData) => {
+                console.log(`--0.0:`, progress.totalCount, progress.deletedCount, progress.percent, progress.path)
+            }
+        }
+
+        this.promise(deleteAsync(patterns, opts))
         return this
     }
 
@@ -253,6 +264,7 @@ export class BuildStream {
         const logger = options.logger || this.logger
         if (options.logLevel !== 'silent') logger(`cleaning:[${arrayify(cleanList).join(', ')}]`)
         options.logLevel = 'silent'
+
         return this.del(cleanList, options)
     }
 
@@ -268,10 +280,12 @@ export class BuildStream {
 
         this.promise(new Promise((resolve, reject) => {
             childProcess.on('exit', (error: any) => {
+
                 if (error) {
                     reject(new Error(`Tron:exec:"${cmd} ${args.join(' ')}" exited with error:${error}`))
-                } else
+                } else {
                     resolve(0)
+                }
             })
         }).catch((error: Error) => {
             this.log(error.message)
@@ -336,15 +350,28 @@ export class BuildStream {
     //-------------------------------------------------------------------------
     // Stream API
     //-------------------------------------------------------------------------
+    pushStream() {
+        this._streamStack.push(this._stream)
+        this._stream.pipe(cloneStream())
+        this._stream = _nullStream()
+        return this
+    }
+
+    popStream() {
+        this._stream.end()
+        if (this._streamStack.length > 0) this._stream = this._streamStack.pop() as GulpStream
+        return this
+    }
+
     createStream(): GulpStream { return _nullStream() }
 
     cloneStream(): GulpStream { return this.pipe(cloneStream())._stream }
 
-    async flushStream(): Promise<any> {
-        await this._promiseSync
-        await streamToPromise(this._stream)
-        return this._promiseSync
-    }
+    // async flushStream(): Promise<any> {
+    //     await this._promiseSync
+    //     await streamToPromise(this._stream)
+    //     return this._promiseSync
+    // }
 
     //-------------------------------------------------------------------------
     // Utilities

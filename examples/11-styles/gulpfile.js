@@ -1,17 +1,20 @@
 import tron from 'gulp-tron'
+import gulp from 'gulp'
 import path from 'path'
 import { fileURLToPath } from 'url'
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 //--- project settings
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const basePath = path.relative(process.cwd(), __dirname)
 const projectName = path.basename(__dirname)
 const prefix = projectName
-
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, 'www')
 const port = 5000
 const sourcemaps = '.'
+
+//--- use local gulp instance: try this when gulp task is not created.
+tron.use(gulp)
 
 //--- common
 import { pcssP, autoPrefixerP } from '@gulp-tron/plugin-styles'

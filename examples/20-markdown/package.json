@@ -13,6 +13,6 @@
         "gulp-htmlclean": "^2.7.22",
         "gulp-markdown": "^8.0.0",
         "gulp-prettier": "^6.0.0",
-        "gulp": "^4.0.2"
+        "gulp": "^5.0.0"
     }
 }
