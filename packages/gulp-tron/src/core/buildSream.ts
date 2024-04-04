@@ -64,20 +64,31 @@ export class BuildStream {
     // Build API: Returns value should be 'this'
     //-------------------------------------------------------------------------
 
+    src(options: SrcOptions): this
+
+    src(globs?: Parameters<SrcMethod>[0], options?: SrcOptions): this
+
+
     /**
      * The same as gulp.src()
      *
      * @param globs string | string[]
      * @param options SrcOptions of gulp.src()
      */
-    src(globs?: Parameters<SrcMethod>[0], options: SrcOptions = {}): this {
-        if (!globs) {
-            if (!this.opts.src) return this
-            globs = this.opts.src
-        }
+    src(globsOrOptions?: Parameters<SrcMethod>[0] | SrcOptions, options: SrcOptions = {}): this {
+        const isGlob = is.String(globsOrOptions) || is.Array(globsOrOptions)
 
-        const opts: SrcOptions = { ...options }
+        const globs = isGlob ? globsOrOptions : this.opts.src
+        if (!globs) return this
+
+        const opts: SrcOptions = isGlob ? { ...options }
+            : globsOrOptions ? { ...globsOrOptions as SrcOptions } : {}
+
+        // respect opts first, and then check TaskOptions
         if (!opts.sourcemaps && this.opts.sourcemaps) opts.sourcemaps = this.opts.sourcemaps
+
+        // disable encoding for compatibiliy with gulp 4 in handling binary data such as images
+        if (!opts.encoding) opts.encoding = false
 
         this._stream = gulp.src(globs as string, opts)
 
@@ -88,6 +99,9 @@ export class BuildStream {
         const [globs = '', opt = {}] = args
 
         if (this._stream === null) return this.src(...args)
+
+        // disable encoding for compatibiliy with gulp 4 in handling binary data such as images
+        if (!opt.encoding) opt.encoding = false
 
         this._stream = this._stream.pipe(gulp.src(globs, opt))
         return this
@@ -268,7 +282,7 @@ export class BuildStream {
             this.promise(new Promise<void>(res => {
                 this
                     .pushStream(true)
-                    .src(globs)
+                    .src(globs, { encoding: false })    // use raw binary data
                     .peek(file => {
                         filesToCopy += 1
                     })
@@ -280,8 +294,8 @@ export class BuildStream {
                     })
                     .pipe(gulp.dest(dest))
                     .on('finish', () => {
-                        // if (opts.logLevel === 'verbose')
-                        logger(`${taskIDTag}..... ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
+                        if (opts.logLevel === 'verbose')
+                            logger(`${taskIDTag}..... ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
                     })
                     .on('end', () => { res() })
                     .popStream()

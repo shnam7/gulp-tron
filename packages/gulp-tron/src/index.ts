@@ -3,6 +3,7 @@
  */
 import { Tron, series, parallel } from './core/tron.js'
 export { BuildStream } from './core/buildSream.js'
+export { gulp } from './core/globals.js'
 export * from './utils/index.js'
 export type * from './core/types.js'
 export type * from './core/buildSream.js'
