@@ -1,7 +1,6 @@
 
 import { BuildStream, LogOptions, PluginFunction, arrayify, is } from 'gulp-tron'
 import { TransformCallback } from 'through2'
-import type Vinyl from 'vinyl'
 import dataG from 'gulp-data'
 import yaml from 'js-yaml'
 import fg from 'fast-glob'
@@ -10,7 +9,7 @@ import path from 'path'
 
 export type Globs = string | string[]
 export type DataObject<T extends {} = {}> = T & LogOptions
-export type DataFunction = (file: Vinyl, callback: TransformCallback) => any
+export type DataFunction = (file: any, callback: TransformCallback) => any
 export type DataOptions = DataFunction | DataObject | Globs    // function returing data or data itself(any type)
 
 export function loadData(patterns: Globs, options?: LogOptions): DataObject {

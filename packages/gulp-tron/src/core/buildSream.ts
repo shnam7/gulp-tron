@@ -1,29 +1,37 @@
-// import gulp, { DestMethod, SrcMethod } from 'gulp'
 import { gulp } from './globals.js'
-import browserSync from 'browser-sync'
 import debug from 'gulp-debug'
 import filter from 'gulp-filter'
 import rename from 'gulp-rename'
 import child_process from 'child_process'
-import arrayify from '../utils/arrayify.js'
-import { ProgressData, deleteAsync, deleteSync } from 'del'
-import type { CleanOptions, DelOptions, ExecOptions, GulpStream, LogOptions, PluginFunction, SrcOptions, TaskOptions } from './types.js'
 import order from 'gulp-order3'
-import { cloneStream } from '../utils/index.js'
 import changedG, { compareContents } from 'gulp-changed'
-import through2 from 'through2'
+import browserSync from 'browser-sync'
+import { deleteSync } from 'del'
+import { ResultCallback, Transform } from 'streamx'
+import { is, arrayify } from '../utils/index.js'
+import type { CleanOptions, DelOptions, ExecOptions, GulpStream, GulpTransformCallback, LogOptions, PluginFunction, SrcOptions, TaskOptions } from './types.js'
+import type { Stream } from 'stream'
 
 export type CopyParam = { src: string | string[], dest: string }
 export type CopyOptions =
     & GulpChangedOptions
     & LogOptions
 
-
 type SrcMethod = typeof gulp.src
 type DestMethod = typeof gulp.dest
 type GulpChangedOptions = NonNullable<Parameters<typeof changedG>[1]>
 
-const _nullStream = () => gulp.src('./initial-dummy/**/*.dummy')
+//--- enforce type casting to remove unnecessary null checking (null checking will be handle manually)
+const _nullStream = () => null as unknown as NodeJS.ReadWriteStream
+
+export function transform(func: GulpTransformCallback): NodeJS.ReadWriteStream {
+    return new Transform({
+        transform(file, cb) { func(file, cb), cb() }
+    }) as unknown as NodeJS.ReadWriteStream
+}
+
+export const cloneStream = () => transform((file, cb) => { cb(null, file.clone()) })
+
 
 /**
  *  Gulp stream wrapper with API for build processing.
@@ -34,10 +42,10 @@ const _nullStream = () => gulp.src('./initial-dummy/**/*.dummy')
  *****************************************************************************/
 export class BuildStream {
     protected _name: string     // BuildStream instance name
-    protected _stream: GulpStream = _nullStream()
+    protected _stream: GulpStream | null = null
+    protected _streamStack: GulpStream[] = []
     protected _promiseSync: Promise<any> = Promise.resolve();
     protected _opts: TaskOptions
-    protected _streamStack: GulpStream[] = []
 
     constructor(name?: string, opts: TaskOptions = {}, stream?: GulpStream, promiseSync?: Promise<any>) {
         this._name = name || "<annonymous>"
@@ -63,7 +71,6 @@ export class BuildStream {
      * @param options SrcOptions of gulp.src()
      */
     src(globs?: Parameters<SrcMethod>[0], options: SrcOptions = {}): this {
-
         if (!globs) {
             if (!this.opts.src) return this
             globs = this.opts.src
@@ -79,6 +86,9 @@ export class BuildStream {
 
     addSrc(...args: Parameters<SrcMethod>): this {
         const [globs = '', opt = {}] = args
+
+        if (this._stream === null) return this.src(...args)
+
         this._stream = this._stream.pipe(gulp.src(globs, opt))
         return this
     }
@@ -109,10 +119,12 @@ export class BuildStream {
 
         const opts = { ...options }
         if (!opts.hasChanged) opts.hasChanged = compareContents
+
         return this.pipe(changedG(dest as Parameters<typeof changedG>[0], opts))
     }
 
     dest(): this        // call with no argument falls back to '.', which is current directory.
+
     dest(...args: Parameters<DestMethod> | []): this {
         let [folder = this._opts.dest, opt = {}] = args
         if (!opt.sourcemaps) opt.sourcemaps = this._opts.sourcemaps
@@ -120,41 +132,99 @@ export class BuildStream {
         return this.pipe(gulp.dest(folder || '.', opt))
     }
 
-    on(...args: Parameters<typeof this._stream.on>): this {
-        this.stream.on(...args)
+    on(...args: Parameters<typeof Stream.prototype.on>): this {
+        this.stream?.on(...args)
         return this
     }
 
+    /**
+     * Add func into internal promise queue
+     *
+     * @param func function to be added
+     */
+    promise(func: Function): this
+
+    /**
+     * Add promise into internal promise queue
+     * @param promise
+     */
+    promise(promise: Promise<any>): this
+
+    /**
+     * Implementation of promise overloading
+     *
+     * @param arg1 funcion or promise to be added to internal promise queue
+     * @returns this
+     */
+    promise(arg1: Function | Promise<any>): this {
+        if (arg1 instanceof Promise)
+            this._promiseSync = this._promiseSync.then(() => arg1)
+        // this._promiseSync = this._promiseSync.then(() => arg1)
+        else
+            this.then(arg1)
+        // this._promiseSync = this._promiseSync.then(() => arg1())
+        return this
+    }
+
+    /**
+     * Add func to internal promise queue. alias for primise(func)
+     *
+     * @param func Function to be excuted.
+     */
     then(func: Function) {
         this._promiseSync = this._promiseSync.then(() => func())
     }
 
-    promise(promise: Promise<any>): this {
-        this._promiseSync = this._promiseSync.then(() => promise)
-        return this
-    }
-
+    /**
+     * Add Tron plugin function into build execution sequence
+     *
+     * @param func Plugin function
+     */
     pipe(func: PluginFunction): this
-    pipe(destination: GulpStream, options?: { end?: boolean | undefined }): this
+
+    /**
+     * Add gulp-plugin into build execution sequence
+     *
+     * @param gulpPlugin
+     * @param options
+     */
+    pipe(gulpPlugin: GulpStream, options?: { end?: boolean | undefined }): this
+
+    /**
+     * Add Tron plugin function or gulp-plugin into build execution sequence
+     *
+     * @param destination Tron plugin function or gulp-plugin
+     * @param options gulp-plugin options
+     * @returns this
+     */
     pipe(destination: PluginFunction | GulpStream, options?: { end?: boolean | undefined }): this {
         if (typeof destination == 'function')   // PluginFunctipn
             destination(this)
-        else
+        else if (this._stream)
             this._stream = this._stream.pipe(destination, options)
         return this
     }
 
-    debug(...args: Parameters<typeof debug>): this {
-        this._stream = this._stream.pipe(debug(...args))
-        return this
-    }
-
+    /**
+     * Filter out build stream to exclude files that matches the filter spec.
+     *
+     * @param pattern Files to be exclude from the build stream
+     * @param options Filter options form gulp-filter
+     * @returns this
+     */
     filter(pattern: string | string[] | filter.FileFunction = ["**", "!**/*.map"], options: filter.Options = {}): this {
         const patterns = arrayify(pattern)
         if (patterns[0] !== '**') patterns.unshift('**')
         return this.pipe(filter(pattern, options))
     }
 
+    /**
+     * Rename files in the build stream
+     * Refer to gulp-rename docs for the details
+     *
+     * @param args
+     * @returns
+     */
     rename(...args: Parameters<typeof rename>): this {
         return this.pipe(rename(...args))
     }
@@ -181,73 +251,63 @@ export class BuildStream {
     /** implementation details */
     copy(
         arg1?: string | string[] | CopyParam | CopyParam[],
-        arg2?: string | CopyOptions, arg3: CopyOptions = {}
+        arg2?: string | CopyOptions,
+        arg3: CopyOptions = {}
     ): this {
 
         /** function copying changed files only */
-        const _copy = async (globs: string | string[], dest: string,
+        const _copy = (globs: string | string[], dest: string,
             opts: CopyOptions & { index?: number } = {}) => {
 
             let filesToCopy = 0
             let filesCopied = 0
             const logger = opts.logger || console.log
-            const taskIDTag = `(${opts.index})`
+            const taskIDTag = opts.index ? `(${opts.index})` : ''
             if (opts.logLevel === 'verbose') logger(`${taskIDTag}... copying:['${globs}' => '${dest}']:`)
 
-            const promise = new Promise((done: Function) => {
-
-                gulp.src(globs)
-                    .pipe(through2.obj((file, encoding, callback) => {
+            this.promise(new Promise<void>(res => {
+                this
+                    .pushStream(true)
+                    .src(globs)
+                    .peek(file => {
                         filesToCopy += 1
-                        callback(null, file)
-                    }))
+                    })
                     .pipe(changedG(dest, opts))
-                    .pipe(through2.obj((file, encoding, callback) => {
+                    .peek(file => {
                         let copyInfo = `${taskIDTag}${file.path}' => '${dest}'`
                         if (opts.logLevel !== 'silent') logger(`${copyInfo}`)
                         filesCopied += 1
-                        callback(null, file)
-                    }))
+                    })
                     .pipe(gulp.dest(dest))
                     .on('finish', () => {
-                        if (opts.logLevel === 'verbose')
-                            logger(`${taskIDTag}..... ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
-                        done()
+                        // if (opts.logLevel === 'verbose')
+                        logger(`${taskIDTag}..... ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
                     })
-
-            })
-            await this.promise(promise)
+                    .on('end', () => { res() })
+                    .popStream()
+            }))
         }
 
         const optCommon = { logLevel: this._opts.logLevel, logger: this.logger }
-        if (typeof arg1 === 'string' || Array.isArray(arg1) && typeof arg1[0] === 'string') {
-            const opts = { ...optCommon, ...arg3, index: 1 }
-            // this.promise(_copy(arg1 as string | string[], arg2 as string, opts))
-            _copy(arg1 as string | string[], arg2 as string, opts)
-        }
-        else {
-            const params = arrayify(arg1 as CopyParam | CopyParam[])
-            params.map(async (param, index) => {
+        arrayify(arg1).forEach((item, index) => {
+            if (is.String(item)) {
+                const opts = { ...optCommon, ...arg3 }
+                _copy(item, arg2 as string, opts)
+            }
+            else {
                 const opts = { ...optCommon, ...arg2 as CopyOptions, index: index + 1 }
-                // this.promise(_copy(param.src, param.dest, opts))
-                _copy(param.src, param.dest, opts)
-            })
-        }
+                _copy(item.src, item.dest, opts)
+            }
+        })
+
         return this
     }
 
     del(patterns: string | string[], options: DelOptions = {}): this {
-
         const logger = options.logger ?? this.opts.logger ?? this.logger
         if (options.logLevel !== 'silent') logger(`deleting:[${arrayify(patterns).join(', ')}]`)
 
-        const opts = {
-            ...options, onProgress: (progress: ProgressData) => {
-                console.log(`--0.0:`, progress.totalCount, progress.deletedCount, progress.percent, progress.path)
-            }
-        }
-
-        this.promise(deleteAsync(patterns, opts))
+        deleteSync(patterns, options)
         return this
     }
 
@@ -275,12 +335,11 @@ export class BuildStream {
 
         const opts: ExecOptions = { shell: true, stdio: 'pipe', ...options }
         const childProcess = child_process.spawn(cmd, args, opts)
-        if (childProcess.stdout) childProcess.stdout.on('data', (data) => console.log(data.toString()))
-        if (childProcess.stderr) childProcess.stderr.on('data', (data) => console.log(data.toString()))
+        if (childProcess.stdout) childProcess.stdout.on('data', (data) => this.log(data.toString()))
+        if (childProcess.stderr) childProcess.stderr.on('data', (data) => this.log(data.toString()))
 
         this.promise(new Promise((resolve, reject) => {
             childProcess.on('exit', (error: any) => {
-
                 if (error) {
                     reject(new Error(`Tron:exec:"${cmd} ${args.join(' ')}" exited with error:${error}`))
                 } else {
@@ -298,9 +357,9 @@ export class BuildStream {
      *
      * @returns colned BuildStream
      */
-    clone(stream?: GulpStream): BuildStream {
-        return new BuildStream(this._name, this._opts, stream || this.cloneStream(), this._promiseSync)
-    }
+    // clone(stream?: GulpStream): BuildStream {
+    //     return new BuildStream(this._name, this._opts, stream || this.cloneStream(), this._promiseSync)
+    // }
 
     // /**
     //  * Merge files, GulpStream, or BuildStream into this
@@ -331,17 +390,12 @@ export class BuildStream {
     //     return this
     // }
 
-    log(...args: Parameters<typeof console.log>): this {
-        const logger = this.opts.logger || console.log
-        this._promiseSync.then(() => { logger(...args) })
-        return this
-    }
-
-    clearStream(): this {
-        this._stream = _nullStream()
-        return this
-    }
-
+    /**
+     * Reload BroiwserSync
+     *
+     * @param options
+     * @returns
+     */
     reload(options?: browserSync.StreamOptions): this {
         if (browserSync.active) this.pipe(browserSync.stream(options))
         return this
@@ -350,32 +404,77 @@ export class BuildStream {
     //-------------------------------------------------------------------------
     // Stream API
     //-------------------------------------------------------------------------
-    pushStream() {
-        this._streamStack.push(this._stream)
-        this._stream.pipe(cloneStream())
+    /**
+     * Reset current build stream to null.
+     * Previoius build stream is moved to internal promise queue if it was active.
+     *
+     * @returns this
+     */
+    clearStream(): this {
+        if (this._stream !== null) {
+            this.promise(new Promise<void>(res => {
+                this._stream!.on('end', () => res())
+            }))
+        }
         this._stream = _nullStream()
         return this
     }
 
+    /**
+     * Push current build stream to internal stack.
+     * Optionally resets current build stream.
+     *
+     * @param clearStream if true, current build stream is cleared. default false.
+     * @returns this
+     */
+    pushStream(clearStream: boolean = false) {
+        if (this._stream === null) return this
+        this._streamStack.push(this._stream.pipe(cloneStream()))
+        if (clearStream) this._stream = _nullStream()
+        return this
+    }
+
     popStream() {
-        this._stream.end()
+        if (this._streamStack.length < 1) return this
+        this.clearStream()
         if (this._streamStack.length > 0) this._stream = this._streamStack.pop() as GulpStream
         return this
     }
 
     createStream(): GulpStream { return _nullStream() }
 
-    cloneStream(): GulpStream { return this.pipe(cloneStream())._stream }
+    debug(options: Parameters<typeof debug>[0] = {}): this {
+        if (!(<any>options).logger) (<any>options).logger = this.logger
+        // if (!options.title) options.title = ''  // remove default title
 
-    // async flushStream(): Promise<any> {
-    //     await this._promiseSync
-    //     await streamToPromise(this._stream)
-    //     return this._promiseSync
-    // }
+        if (this._stream !== null) this._stream.pipe(debug(options))
+
+        return this
+    }
+
+    intercept(interceptFunc: (file: any, cb: ResultCallback<any>) => void) {
+        this.pipe(new Transform({
+            transform(file, cb) { interceptFunc(file, cb) }
+        }) as unknown as NodeJS.ReadWriteStream)
+        return this
+    }
+
+    peek(peekFunc: (file: any) => void) {
+        return this.intercept((file, cb) => {
+            peekFunc(file)
+            cb(null, file)
+        })
+    }
 
     //-------------------------------------------------------------------------
     // Utilities
     //-------------------------------------------------------------------------
+    log(...args: Parameters<typeof console.log>): this {
+        const logger = this.opts.logger || console.log
+        logger(`${this.name}::`, ...args)
+        return this
+    }
+
     get logger(): typeof console.log {
         const _logger = (...args: Parameters<typeof console.log>) => {
             this.log(...args)

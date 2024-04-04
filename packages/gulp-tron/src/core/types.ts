@@ -3,6 +3,7 @@ import type { BuildStream } from './buildSream.js'
 import type { Options as browserSyncOptions } from 'browser-sync'
 import type { Options as delOptions } from 'del'
 import type { SpawnOptions } from 'child_process'
+import type { ResultCallback } from 'streamx'
 
 
 /*****************************************************************************
@@ -12,6 +13,7 @@ export type GulpStream = ReturnType<SrcMethod>
 export type GulpTaskName = string
 export type GulpTaskFunction = TaskFunction
 export type GulpTaskFunctionCallback = TaskFunctionCallback
+export type GulpTransformCallback = (file: any, cb: ResultCallback<any>) => void
 export type TaskSelector = (string | RegExp) | (string | RegExp)[]
 
 export type LogOptions = {

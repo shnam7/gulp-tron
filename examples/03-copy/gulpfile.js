@@ -34,9 +34,17 @@ const testMultiCopy = {
 }
 tron.task(testMultiCopy)
 
+const pushpop = {
+    name: 'pushpop',
+    build: bs => {
+        bs.src('./test-src/**/*').debug().pushStream(true).debug().popStream().debug()
+    },
+}
+tron.task(pushpop)
+
 const build = {
     name: '@build',
-    triggers: tron.series(createTestFiles, testSingleCopy, testMultiCopy),
+    triggers: tron.series(createTestFiles, testSingleCopy, testMultiCopy, pushpop),
     clean: ['test-src', 'test-dest'],
 }
 

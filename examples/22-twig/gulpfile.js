@@ -38,13 +38,21 @@ const scripts = {
         const tsProject = ts.createProject('tsconfig.json')
 
         // dts (optional)
-        bs.src().pipe(tsProject()).clone().filter('*.d.ts').debug().dest()
+        // bs.src().pipe(tsProject()).clone().filter('*.d.ts').debug().dest()
+        bs.src()
+            .pipe(tsProject())
+            // pricess d.ts files
+            .pushStream() // save current stream
+            .filter('*.d.ts')
+            .debug()
+            .dest()
 
-        // js
-        bs.filter('*js')
+            // now process js
+            .popStream() // resstore previous stream
+            .filter('*js')
             .pipe(terserP())
             .rename({ extname: '.min.js' })
-            .debug() //
+            .debug()
             .changed()
             .dest()
     },

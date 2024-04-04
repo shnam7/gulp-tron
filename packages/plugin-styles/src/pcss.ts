@@ -5,11 +5,10 @@
 
 import { BuildStream, PluginFunction } from 'gulp-tron'
 import pcssG from 'gulp-postcss'
-import type Vinyl from 'vinyl'
 
 
 export type PostCssOptions = pcssG.Options
-export type PostcssCallbackFunction = (file: Vinyl) => { plugins?: any[]; options?: PostCssOptions }
+export type PostcssCallbackFunction = (file: any) => { plugins?: any[]; options?: PostCssOptions }
 
 /**
  * Postcss Plugin - wrapper for gulp-postcss
@@ -18,7 +17,7 @@ export type PostcssCallbackFunction = (file: Vinyl) => { plugins?: any[]; option
  * @param options postcss Options
  * @returns PluginFunction
  */
-export function pcssP(callback?: (file: Vinyl) => { plugins?: any[]; options?: PostCssOptions }): PluginFunction
+export function pcssP(callback?: (file: any) => { plugins?: any[]; options?: PostCssOptions }): PluginFunction
 export function pcssP(plugins?: any[], options?: PostCssOptions): PluginFunction
 export function pcssP(pluginsOrCallback?: any[] | PostcssCallbackFunction, options?: PostCssOptions): PluginFunction {
     return (bs: BuildStream) => {

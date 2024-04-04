@@ -1,7 +1,18 @@
 import { gulp, useGulp } from './globals.js'
 import { BuildStream } from './buildSream.js'
-import type { BuildFunction, BuildSet, BuildSetParallel, BuildSetSeries, CleanerOptions, GulpTaskFunction, TaskConfig, TaskOptions, TaskSelector, WatcherOptions } from './types.js'
 import { is, arrayify } from '../utils/index.js'
+import type {
+    BuildFunction,
+    BuildSet,
+    BuildSetParallel,
+    BuildSetSeries,
+    CleanerOptions,
+    GulpTaskFunction,
+    TaskConfig,
+    TaskOptions,
+    TaskSelector,
+    WatcherOptions
+} from './types.js'
 import browserSync from 'browser-sync'
 
 //--- test if wrapped by gulp.serial() or gulp.parallel()
@@ -32,6 +43,8 @@ export function parallel(...args: BuildSet[]): BuildSetParallel { return { set: 
 export class Tron {
     protected _taskConfigs: TaskConfig[]
     protected _watchTaskNames: string[]
+
+    /** Counter to assigne ID to annonymous tasks */
     protected static annonCount = 0
 
     constructor() {
@@ -39,9 +52,16 @@ export class Tron {
         this._watchTaskNames = []
     }
 
+    /**
+     * Set gulp instance to use.
+     * Use this function to make sure the gulp instance you want is actuall running
+     *
+     * @param gulpInstance
+     */
     use(gulpInstance: typeof gulp) {
         useGulp(gulpInstance)
     }
+
     // get taskConfigs() { return this._taskConfigs }
 
     /**
@@ -134,25 +154,25 @@ export class Tron {
         const __cleanerFunction__: BuildFunction = (bs: BuildStream) => {
             bs.clean(cleanList)
         }
-
         this.task({ name: '@clean', ...options, build: __cleanerFunction__ })
         return this
     }
 
+    /**
+     * Create task watching tasks.
+     *
+     * @param options WatchOptions
+     * @returns
+     */
     addWatcher(options: WatcherOptions = {}): this {
-        // const config: WatcherConfig = (is.String(nameOrConfig)
-        //     ? { name: nameOrConfig, ...options } : nameOrConfig as WatcherConfig)
-        //     || { ...(nameOrConfig as WatcherConfig) }
-
         let target = this.selectTasks(options.target) || this._taskConfigs
         let taskName = options.name || '@watch'
 
-        // // exclude other watchers (watcher should not watch the other watchers)
-        // target = target.filter(t => t.build !== __watcherFunction__)
-
         let isWatching = false
         const __watcherFunction__: BuildFunction = (bs: BuildStream) => {
-            if (isWatching) return  // watch task should not run repeatedly on change detection.
+
+            // watch task should not run repeatedly on change detection.
+            if (isWatching) return
 
             function _handleChangeEvent(watcher: ReturnType<typeof gulp.watch>, logLevel?: string) {
                 if (options.browserSync) watcher.on('change', browserSync.reload)
@@ -169,8 +189,6 @@ export class Tron {
             target.forEach(task => {
                 // skip the other watchers (watcher should not monitor the other wacthers)
                 if (task.build === __watcherFunction__) return
-
-                // if (this._watchTaskNames.includes(task.taskName as string) && task.taskName !== taskName) return
 
                 const watched: string[] = arrayify(task.watch || task.src).concat(arrayify(task.addWatch))
                 if (watched.length > 0) {
@@ -238,14 +256,13 @@ export class Tron {
         let gulpTask = gulp.task(taskName)
         if (gulpTask) return gulpTask.unwrap()
 
-        const main: GulpTaskFunction = async (done) => {
+        const main: GulpTaskFunction = (done) => {
             if (build) {
                 const bs = new BuildStream(taskName, conf)
-                const ret = await build(bs)
-                await bs.promiseSync
-                if (ret instanceof Promise) await ret
-                await bs.promiseSync
-                return bs.stream
+                const ret = build(bs)
+                const promise = (ret instanceof Promise) ? ret : Promise.resolve()
+
+                return Promise.all([promise, bs.promiseSync]).then(async () => bs.stream)
             }
             done()
         }
@@ -380,5 +397,3 @@ export class Tron {
         return tasks[0]
     }
 }
-
-export { gulp }

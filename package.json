@@ -18,7 +18,7 @@
         "reset:node": "find . -type d -name node_modules -exec rm -rf {} +"
     },
     "license": "MIT",
-    "packageManager": "pnpm@8.15.4",
+    "packageManager": "pnpm@8.15.6",
     "engines": {
         "node": ">=16.14"
     },
