@@ -212,7 +212,7 @@ export class BuildStream {
      * @returns this
      */
     pipe(destination: PluginFunction | GulpStream, options?: { end?: boolean | undefined }): this {
-        if (typeof destination == 'function')   // PluginFunctipn
+        if (typeof destination === 'function')   // PluginFunctipn
             destination(this)
         else if (this._stream)
             this._stream = this._stream.pipe(destination, options)
@@ -461,7 +461,7 @@ export class BuildStream {
         if (!(<any>options).logger) (<any>options).logger = this.logger
         // if (!options.title) options.title = ''  // remove default title
 
-        if (this._stream !== null) this._stream.pipe(debug(options))
+        if (this._stream) this._stream = this._stream.pipe(debug(options))
 
         return this
     }
