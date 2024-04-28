@@ -1,5 +1,4 @@
 import tron from 'gulp-tron'
-import gulp from 'gulp'
 import path from 'path'
 import gulpSass from 'gulp-sass'
 import * as dartSass from 'sass'
@@ -14,9 +13,6 @@ const basePath = path.relative(process.cwd(), __dirname)
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, 'www')
 const sass = gulpSass(dartSass)
-
-//--- use local gulp instance: try this when gulp task is not created.
-tron.use(gulp)
 
 //--- styles
 const scss = {

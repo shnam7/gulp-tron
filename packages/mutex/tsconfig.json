@@ -1,9 +1,0 @@
-{
-    "extends": "@gulp-tron/tsconfig/base.json",
-    "compilerOptions": {
-        "outDir": "./dist",
-        "sourceMap": false,
-        "declarationMap": false
-    },
-    "include": ["./src/**/*.ts"]
-}

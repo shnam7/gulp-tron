@@ -1,5 +1,4 @@
 import tron from 'gulp-tron'
-import gulp from 'gulp'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'node:fs'
@@ -11,9 +10,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const basePath = path.relative(process.cwd(), __dirname)
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, '_build')
-
-//--- use local gulp instance: try this when gulp task is not created.
-tron.use(gulp)
 
 const copier = {
     name: 'copier',

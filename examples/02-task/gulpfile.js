@@ -1,5 +1,4 @@
 import tron from 'gulp-tron'
-import gulp from 'gulp'
 import path from 'path'
 import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -8,9 +7,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectName = path.basename(__dirname)
 const prefix = projectName + ':'
 // const basePath = path.relative(process.cwd(), __dirname)
-
-//--- use local gulp instance: try this when gulp task is not created.
-tron.use(gulp)
 
 //--- build item type #1: BuildConfig items
 const build1 = { name: 'build1' }

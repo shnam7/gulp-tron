@@ -1,5 +1,4 @@
 import tron from 'gulp-tron'
-import gulp from 'gulp'
 import path from 'path'
 import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -11,9 +10,6 @@ const prefix = projectName
 const srcRoot = path.join(basePath, 'assets/panini')
 const destRoot = path.join(basePath, 'dist')
 const portBase = 5000
-
-//--- use local gulp instance: try this when gulp task is not created.
-tron.use(gulp)
 
 //--- panini
 import paniniP from 'panini'

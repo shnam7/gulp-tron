@@ -1,5 +1,4 @@
 import tron from 'gulp-tron'
-import gulp from 'gulp'
 import path from 'path'
 import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -10,9 +9,6 @@ const taskOptions = {
     group: projectName,
     prefix: true,
 }
-
-//--- use local gulp instance: try this when gulp task is not created.
-tron.use(gulp)
 
 //--- standard TaskConfig form
 const b1 = { name: 'b1', build: bs => console.log(`${bs.name} executed.`) }
