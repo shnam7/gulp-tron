@@ -1,5 +1,5 @@
 {
-    "extends": "@gulp-tron/tsconfig/base.json",
+    "extends": "@wicle/tsconfig/base.json",
     "compilerOptions": {
         "outDir": "./dist",
         "rootDir": "./src"

@@ -20,8 +20,8 @@
         "npm-dry-run": "npm publish --dry-run"
     },
     "dependencies": {
-        "@babel/core": "^7.24.4",
-        "@babel/preset-env": "^7.24.4",
+        "@babel/core": "^7.24.5",
+        "@babel/preset-env": "^7.24.5",
         "gulp-babel": "^8.0.0",
         "gulp-coffee": "^3.0.3",
         "gulp-coffeelint": "^0.6.0",
@@ -30,16 +30,16 @@
         "gulp-terser": "^2.1.0"
     },
     "devDependencies": {
-        "@gulp-tron/tsconfig": "workspace:*",
+        "@wicle/tsconfig": "github:shnam7/wicle-tsconfig",
         "@types/gulp-coffeelint": "^0.0.35",
         "@types/gulp-babel": "^6.1.33",
         "@types/gulp-concat": "^0.0.37",
         "@types/gulp-rename": "^2.0.6",
         "@types/gulp-terser": "^1.2.6",
-        "@vitest/coverage-v8": "^1.5.2",
+        "@vitest/coverage-v8": "^1.5.3",
         "gulp-tron": "workspace:*",
         "rimraf": "^5.0.5",
         "typescript": "^5.4.5",
-        "vitest": "^1.5.2"
+        "vitest": "^1.5.3"
     }
 }

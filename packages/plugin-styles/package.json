@@ -31,11 +31,11 @@
         "postcss-reporter": "^7.1.0",
         "postcss-sass": "^0.5.0",
         "postcss-scss": "^4.0.9",
-        "sass": "^1.75.0",
+        "sass": "^1.76.0",
         "stylelint": "^16.4.0"
     },
     "devDependencies": {
-        "@gulp-tron/tsconfig": "workspace:*",
+        "@wicle/tsconfig": "github:shnam7/wicle-tsconfig",
         "@types/clean-css": "^4.2.11",
         "@types/gulp-autoprefixer": "^0.0.37",
         "@types/gulp-less": "^0.0.36",
@@ -45,10 +45,10 @@
         "@types/postcss-reporter": "^7.0.5",
         "@types/postcss-sass": "^0.5.0",
         "@types/rtlcss": "^3.5.4",
-        "@vitest/coverage-v8": "^1.5.2",
+        "@vitest/coverage-v8": "^1.5.3",
         "gulp-tron": "workspace:*",
         "rimraf": "^5.0.5",
         "typescript": "^5.4.5",
-        "vitest": "^1.5.2"
+        "vitest": "^1.5.3"
     }
 }

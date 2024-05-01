@@ -27,16 +27,16 @@
         "gulp-imagemin": "^9.0.0"
     },
     "devDependencies": {
-        "@gulp-tron/tsconfig": "workspace:*",
+        "@wicle/tsconfig": "github:shnam7/wicle-tsconfig",
         "@types/gulp-concat": "^0.0.37",
         "@types/gulp-imagemin": "^8.0.6",
         "@types/imagemin": "^8.0.5",
         "@types/js-yaml": "^4.0.9",
         "@types/through2": "^2.0.41",
-        "@vitest/coverage-v8": "^1.5.2",
+        "@vitest/coverage-v8": "^1.5.3",
         "gulp-tron": "workspace:*",
         "rimraf": "^5.0.5",
         "typescript": "^5.4.5",
-        "vitest": "^1.5.2"
+        "vitest": "^1.5.3"
     }
 }
