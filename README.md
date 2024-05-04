@@ -1,121 +1,113 @@
 # gulp-tron
-Easy to use, configuration based gulp build manager. Users can create gulp tasks with simple build configurations. At the same time, javascript can be used to customize and extend the configuration.
+Easy to use, configuration based gulp build manager. Users can create gulp tasks with simple configuration. At the same time, users can defien build function as part of the configuration leveraging BuildStream API.
+
+It provides major two benefits:
+- Easy to building task dependency hierarchy.
+- Easy to define build process leveraging BuildStream API.
 
 Focus on build actions, rather than environment setup.
-
-Note: gulp-tron is the successor of gulp-build-manager, which is no longer maintained.
 
 
 ## Installation
 ```bash
-npm i gulp-tron --save-dev
-npm i gulp --save-dev
+npm i --save-dev gulp gulp-tron
+
+# or
+yard add -D gulp gulp-tron
+
+# or
+pnpm add -D gulp gulp-tron
 ```
-gulp should also be installed.
 
-
-## Documentation
-Go to [Documentation](https://shnam7.github.io/gulp-tron)<br>
-Go to [gulp-tron-samples](https://github.com/shnam7/gulp-tron-samples) for various working examples.
+gulp is required as peer dependency, to run gulp tron.
 
 
 ## Key features
-- Quick and easy gulp task creation
-- Watching, reloading, and cleaning with minimal efforts
-- Rich run-time builder API for user build actions
-- Sync and async control for tasks, build actions, and gulp streams for flushing.
-- Automatic Node module installation (npm/pnpm/yarn)
-- Small to large scale project support using modular configuration
-- Pre-defined Buildt-in builders and extensions
-- Custom builders and extension support
+- Quick and easy gulp task creation using configuration.
+- Rich BuildStream API to help define build process.
+- Easy to add clean and watch tasks with minimal efforts
+- Browser-sync support in the build configuration.
+- Plugin support to develop and share build actions.
+- Tested with gulp 5 and streamx.
 
 
 ## Quick example: gulpfile.js
 
 ```js
-const tron = require('gulp-tron');
+import tron from 'gulp-tron'
+import path from 'path'
+import gulpSass from 'gulp-sass'
+import * as dartSass from 'sass'
+import babel from 'gulp-babel'
+import { fileURLToPath } from 'url'
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+//--- project settings
+const basePath = path.relative(process.cwd(), __dirname)
+const srcRoot = path.join(basePath, 'assets')
+const destRoot = path.join(basePath, 'www')
+const sass = gulpSass(dartSass)
+
+//--- scss build configuration
 const scss = {
     name: 'scss',
-    builder: (rtb) => {
-        const sass = require('gulp-sass');
-        rtb.src().pipe(sass().on('error', sass.logError)).dest()
-    },
-    src: 'assets/scss/**/*.scss',
-    dest: 'www/css',
-    npmInstall: ['gulp-sass']
+    build: bs => bs.src().pipe(sass().on('error', sass.logError)).dest(),
+
+    src: path.join(srcRoot, 'scss/**/*.scss'),
+    dest: path.join(destRoot, 'css'),
 }
 
+//--- scripts build configuration
 const scripts = {
-    name: 'babel',
-    builder: (rtb) => {
-        const babel = require('gulp-babel');
-        rtb.src().pipe(babel()).dest()
-    },
-    src: 'assets/js/**/*.js',
-    dest: 'www/js',
-    npmInstall: ['gulp-babel', '@babel/core']
+    name: 'scripts',
+    build: bs => bs.src().pipe(babel()).dest(),
+
+    src: path.join(srcRoot, 'js/**/*.js'),
+    dest: path.join(destRoot, 'js'),
 }
 
+//--- main build configuration
 const build = {
     name: '@build',
     triggers: tron.parallel(scss, scripts),
-    clean: 'www/{css,js}'
+    clean: path.join(destRoot, '{css,js}'),
 }
 
-tron.createProject(build)
+// now create build task. Then it also creates dependent tasks recurrsively.
+tron.task(build)
+    .addCleaner()
     .addWatcher({
-        watch: 'www/**/*.html',
-        browserSync: { server: 'www' }
+        watch: path.join(destRoot, '**/*.html'),
+        browserSync: { server: destRoot },
     })
-    .addCleaner();
 ```
 
-This gulpfile will create a single project with 5 gulp tasks as following:
-- scss: sass transpiler
-- babel: ES6 transpiler using babel
-- @build: main task running 'scss' and 'babel' in parallel
-- @clean: clean task (default name is @clean)
-- @watch: Full featured watch task with reloading using browser-sync (default name is @watch)
+Now you can see the gulp tasks created from this with `gulp --tasks` command:
 
-
-## Easier way using built-in builders: gulpfile.js
-```js
-const tron = require('gulp-tron');
-
-const scss = {
-    name: 'scss',
-    builder: 'GCSSBuilder',
-    src: 'assets/scss/**/*.scss',
-    dest: 'www/css',
-}
-
-const scripts = {
-    name: 'babel',
-    builder: 'GJavaScriptBuilder',
-    src: 'assets/js/**/*.js',
-    dest: 'www/js',
-}
-
-const build = {
-    name: '@build',
-    triggers: tron.parallel(scss, scripts),
-    clean: 'www/{css,js}'
-}
-
-tron.createProject(build)
-    .addWatcher({
-        watch: 'www/**/*.html',
-        browserSync: { server: 'www' }
-    })
-    .addCleaner();
+```bash
+$ pnpm gulp --tasks
+Tasks for ~/dev/public/gulp-tron/examples/00-getting-started/gulpfile.js
+├── scss
+├── scripts
+├─┬ @build
+│ └─┬ <parallel>
+│   ├── scss:main
+│   └── scripts:main
+├── @clean
+└── @watch
 ```
 
-Check **[samples](https://github.com/shnam7/gulp-tron-samples)** for more examples.
+- `scss` and `scripts` tasks were created.
+- `@build` task has two parallel tasks: `scss:main` and `script:main`
+- `@clean` and `@watch` tasks were also created.
+- `bs` is an instance of `BuildStream` automatically created by the task.
+- `scss:main` and `script:main` are display names referring to `scss` and `scripts` tasks.
+
+Check **[examples](./examples/)** for more examples.
 
 
 <br/><br/>
 <p align="center">
   <img class="logo" src="gulp-tron.svg" width="64px">
-  <p align=center>Copyright &copy; 2020, under <a href="./LICENSE">MIT</a></p>
+  <p align=center>Copyright &copy; 2024, under <a href="./LICENSE">MIT</a></p>
 </div>
