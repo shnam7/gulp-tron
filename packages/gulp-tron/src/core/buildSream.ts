@@ -9,6 +9,7 @@ import browserSync from 'browser-sync'
 import { deleteSync } from 'del'
 import { Callback, ResultCallback, Transform } from 'streamx'
 import { is, arrayify } from '../utils/index.js'
+import { streamToPromise } from './globals.js'
 import type { CleanOptions, DelOptions, ExecOptions, GulpStream, GulpTransformCallback, LogOptions, PluginFunction, SrcOptions, TaskOptions } from './types.js'
 import type { Stream } from 'stream'
 
@@ -32,11 +33,6 @@ export function _transform(func: GulpTransformCallback, onFinish?: (cb: Callback
 }
 
 export const cloneStream = () => _transform((file, cb) => { cb(null, file.clone()) })
-
-
-/**
- *  Gulp stream wrapper with API for build processing.
- */
 
 /*****************************************************************************
  *  Gulp Stream Wrapper providing API for build processing.
@@ -268,35 +264,40 @@ export class BuildStream {
         arg2?: string | CopyOptions,
         arg3: CopyOptions = {}
     ): this {
-
         /** function copying changed files only */
-        const _copy = (globs: string | string[], dest: string,
-            opts: CopyOptions & { index?: number } = {}) => {
+        const _copy = (
+            globs: string | string[], dest: string,
+            opts: CopyOptions & { index?: number } = {}
+        ) => {
 
             let filesToCopy = 0
             let filesCopied = 0
             const logger = opts.logger || console.log
-            const taskIDTag = opts.index ? `(${opts.index})` : ''
-            if (opts.logLevel === 'verbose') logger(`${taskIDTag}... copying:['${globs}' => '${dest}']:`)
+            const taskIDTag = opts.index ? `[${opts.index}]` : ''
+            if (opts.logLevel !== 'silent') logger(`${taskIDTag}>>> copying:['${globs}' => '${dest}']:`)
 
             this.promise(new Promise<void>(res => {
                 this
                     .pushStream(true)
                     .src(globs, { encoding: false })    // use raw binary data
-                    .peek(file => {
-                        filesToCopy += 1
-                    })
+                    .peek(file => { filesToCopy += 1 })
                     .pipe(changedG(dest, opts))
-                    .peek(file => {
-                        let copyInfo = `${taskIDTag}${file.path}' => '${dest}'`
-                        if (opts.logLevel !== 'silent') logger(`${copyInfo}`)
-                        filesCopied += 1
-                    })
+                    .peek(
+                        file => {
+                            let copyInfo = `${taskIDTag}... file:${file.path}' => '${dest}'`
+                            if (opts.logLevel === 'verbose') logger(`${copyInfo}`)
+                            filesCopied += 1
+                        },
+                        () => {
+                            if (opts.logLevel !== 'silent')
+                                logger(`${taskIDTag}>>> ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
+                        }
+                    )
                     .pipe(gulp.dest(dest))
-                    .on('finish', () => {
-                        if (opts.logLevel === 'verbose')
-                            logger(`${taskIDTag}..... ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
-                    })
+                    // .on('finish', () => {
+                    //     if (opts.logLevel !== 'silent')
+                    //         logger(`${taskIDTag}>>> ${filesToCopy} file(s) synched (${filesCopied} files copied).`)
+                    // })
                     .on('end', () => { res() })
                     .popStream()
             }))
@@ -440,12 +441,17 @@ export class BuildStream {
      * @returns this
      */
     clearStream(): this {
+        // if (this._stream) {
+        //     this.promise(streamToPromise(this._stream))
+        //     this._stream.emit('end')
+        //     this._stream = null
+        // }
         if (this._stream !== null) {
             this.promise(new Promise<void>(res => {
                 this._stream!.on('end', () => res())
             }))
+            this._stream = null
         }
-        this._stream = null
         return this
     }
 

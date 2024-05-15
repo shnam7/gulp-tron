@@ -68,5 +68,5 @@ tron.createTask({
 
 tron.task({
     name: '@build',
-    triggers: tron.parallel(customPlugin, customScss),
+    triggers: tron.parallel(customPlugin, customScss, 'intercept-test', 'peek-test'),
 }).addCleaner()

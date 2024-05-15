@@ -24,6 +24,7 @@ const copier = {
         })
     },
     clean: [path.join(destRoot, 'sample.txt')],
+    logLevel: 'verbose',
 }
 
 const dummyCleaner = {
