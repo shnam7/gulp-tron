@@ -16,7 +16,7 @@ export type RtlCssConfigureOptions = ConfigureOptions
  */
 export const rtlcssP = (options: RtlCssConfigureOptions = {}): PluginFunction => (bs: BuildStream) => {
     const opts = { ...options }
-    return bs.pipe(rtlcssG(options))
+    bs.pipe(rtlcssG(options))
 }
 
 export default rtlcssP

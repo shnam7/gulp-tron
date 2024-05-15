@@ -97,4 +97,4 @@ export type BuildSetParallel = { set: BuildSet[] }
 /*****************************************************************************
  *  Plugin Types
  *****************************************************************************/
-export type PluginFunction = (bs: BuildStream) => BuildStream
+export type PluginFunction = (bs: BuildStream) => void

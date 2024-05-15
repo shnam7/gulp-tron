@@ -36,7 +36,7 @@ export const babelP = (options: BabelOptions = {}): PluginFunction => (bs: Build
         opts.sourceMap = opts.sourceMaps
         delete opts.sourceMaps
     }
-    return bs.pipe(babelG(opts))
+    bs.pipe(babelG(opts))
 }
 
 export default babelP

@@ -19,7 +19,7 @@ export type CoffeeLintOptions<T extends {} = {}> = T
  */
 export const coffeelintP = (optFile?: string, opt?: CoffeeLintOptions, literate?: boolean, rules?: Function[])
     : PluginFunction => (bs: BuildStream) => {
-        return bs.pipe(coffeelintG(optFile, opt, literate, rules))
+        bs.pipe(coffeelintG(optFile, opt, literate, rules))
     }
 
 export default coffeelintP

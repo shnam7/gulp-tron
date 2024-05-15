@@ -15,7 +15,7 @@ export type TerserOptions = Parameters<typeof terserG>[0]
  * @returns PluginFunction
  */
 export const terserP = (options: TerserOptions): PluginFunction => (bs: BuildStream) => {
-    return bs.pipe(terserG(options))
+    bs.pipe(terserG(options))
 }
 
 export default terserP

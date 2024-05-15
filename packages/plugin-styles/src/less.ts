@@ -15,7 +15,7 @@ export type LessOptions = Parameters<typeof lessG>[0]
  * @returns PluginFunction
  */
 export const lessP = (options?: LessOptions): PluginFunction => (bs: BuildStream) => {
-    return bs.pipe(lessG(options))
+    bs.pipe(lessG(options))
 }
 
 export default lessP

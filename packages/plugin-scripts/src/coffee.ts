@@ -15,7 +15,7 @@ export type CoffeeOptions = Parameters<typeof coffeeG>[0]
  * @returns PluginFunction
  */
 export const coffeeP = (options: CoffeeOptions): PluginFunction => (bs: BuildStream) => {
-    return bs.pipe(coffeeG(options))
+    bs.pipe(coffeeG(options))
 }
 
 export default coffeeP

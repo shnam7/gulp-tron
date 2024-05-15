@@ -39,11 +39,10 @@ export const stylelintP = (options?: StylelintOptions, reporterOptions: Stylelin
         }
         // console.log(`---111`, pcssOptions, is.Object(options.parser))
         bs.pipe(pcssG([stylelint(options), pcssReporter(reporterOptions)], pcssOptions))
-            .on('error', (e) => {
+            .on('error', (e: Error) => {
                 bs.log(e.toString())
                 // .stream.emit('end')  // signal that task finished
             })
-        return bs
     }
 
 /**

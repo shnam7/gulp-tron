@@ -15,7 +15,7 @@ export type ConcatOptions = Parameters<typeof concatG>[0]
  * @returns PluginFunction
  */
 export const concatP = (options: ConcatOptions): PluginFunction => (bs: BuildStream) => {
-    return bs.pipe(concatG(options))
+    bs.pipe(concatG(options))
 }
 
 export default concatP

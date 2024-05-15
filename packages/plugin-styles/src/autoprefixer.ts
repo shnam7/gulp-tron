@@ -15,7 +15,7 @@ export type AutoPrefixerOptions = autoPrefixerG.Options
  * @returns PluginFunction
  */
 export const autoPrefixerP = (options?: AutoPrefixerOptions): PluginFunction => (bs: BuildStream) => {
-    return bs.pipe(autoPrefixerG(options))
+    bs.pipe(autoPrefixerG(options))
 }
 
 export default autoPrefixerP

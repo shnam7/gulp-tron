@@ -13,16 +13,20 @@ export type PostcssCallbackFunction = (file: any) => { plugins?: any[]; options?
 /**
  * Postcss Plugin - wrapper for gulp-postcss
  *
- * @param pluginsOrCallback plugins array or callback function of type PostcssCallbackFunction
- * @param options postcss Options
+ * @param plugins plugins array.
+ * @param callback callback function of type PostcssCallbackFunction.
+ * @param options postcss Options.
  * @returns PluginFunction
  */
-export function pcssP(callback?: (file: any) => { plugins?: any[]; options?: PostCssOptions }): PluginFunction
 export function pcssP(plugins?: any[], options?: PostCssOptions): PluginFunction
+export function pcssP(callback?: (file: any) => { plugins?: any[]; options?: PostCssOptions }): PluginFunction
+
 export function pcssP(pluginsOrCallback?: any[] | PostcssCallbackFunction, options?: PostCssOptions): PluginFunction {
     return (bs: BuildStream) => {
-        if (typeof pluginsOrCallback === 'function') return bs.pipe(pcssG(pluginsOrCallback))
-        return bs.pipe(pcssG(pluginsOrCallback, options))
+        if (typeof pluginsOrCallback === 'function')
+            bs.pipe(pcssG(pluginsOrCallback))
+        else
+            bs.pipe(pcssG(pluginsOrCallback, options))
     }
 }
 

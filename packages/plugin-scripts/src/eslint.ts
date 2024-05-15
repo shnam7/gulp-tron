@@ -22,9 +22,7 @@ export const eslintP = (options: EslintOptions): PluginFunction => (bs: BuildStr
 
     if (options.fix) bs.pipe(eslintG.fix())
 
-    return bs
-        .pipe(eslintG.format())
-        .pipe(eslintG.failAfterError())
+    bs.pipe(eslintG.format()).pipe(eslintG.failAfterError())
 }
 
 export default eslintP

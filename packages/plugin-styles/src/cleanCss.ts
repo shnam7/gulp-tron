@@ -20,7 +20,7 @@ export const cleanCssP = (options: CleanCssOptions = {}): PluginFunction => (bs:
     if (!opts.format) opts.format = 'beautify'
     // if (!opts.level) opts.level = { 2: { mergeSemantically: true } }
 
-    return bs.on('data', function(file) {
+    bs.on('data', function(file) {
         const bufferFile = new CleanCSS(options).minify(file.contents)
         return file.contents = Buffer.from(bufferFile.styles)
     })
