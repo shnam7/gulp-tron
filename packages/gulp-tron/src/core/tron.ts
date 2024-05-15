@@ -23,18 +23,18 @@ type TaskConfigWithMutableTaskName = Omit<TaskConfig, 'taskName'> & {
 }
 
 /**
- * Convert the series of buildSet items into buildSet Series object
+ * Convert series of buildSet items into buildSet Series object.
  *
- * @param args list of BuildSet items
- * @returns BuildSetSerial object of the buildSet list
+ * @param args list of BuildSet items.
+ * @returns BuildSetSeries object of the buildSet list.
  */
 export function series(...args: BuildSet[]): BuildSetSeries { return args }
 
 /**
- * Convert the series of buildSet items into buildSet Parallel object
+ * Convert series of buildSet items into buildSet Parallel object.
  *
- * @param args list of BuildSet items
- * @returns BuildSetParallel object of the buildSet list
+ * @param args list of BuildSet items.
+ * @returns BuildSetParallel object of the buildSet list.
  */
 export function parallel(...args: BuildSet[]): BuildSetParallel { return { set: args } }
 
@@ -75,8 +75,8 @@ export class Tron {
     /**
      * Create a gulp task
      *
-     * @param name Task name (mandatory field)
-     * @param build build function. if not specified, then defual null function is assigned internally.
+     * @param name Task name (mandatory field).
+     * @param build build function. if not specified, default null function is assigned internally.
      * @param opts TaskConfig object for additional task options
      * @returns this
      */
@@ -85,7 +85,7 @@ export class Tron {
     /**
      * Implementation of task() overloading functions
      *
-     * @param nameOrConfig taskName or TaskConfig
+     * @param nameOrConfig taskName or TaskConfig.
      * @param buildFunc BuildFunction
      * @param opts TaskOptions
      * @returns this
@@ -99,13 +99,13 @@ export class Tron {
             conf = { ...nameOrConfig }
         }
 
-        const gulpTask = this.resolveBuildSet(conf)
+        const gulpTask = this._resolveBuildSet(conf)
         if (!gulpTask) throw Error(`Tron:task: failed to create task "${conf.name}"`)
         return this
     }
 
     /**
-     * Alias for task(conf: TaskConfig) or createTasks() with single TaskConfig object
+     * Alias for task(conf: TaskConfig) or createTasks() with single TaskConfig object.
      *
      * @param conf TaskConfig
      * @returns this
@@ -115,9 +115,9 @@ export class Tron {
     }
 
     /**
-     * Create multiple tasks sequencially
+     * Create multiple tasks sequencially.
      *
-     * @param args
+     * @param confList List of TaskConfig objects.
      * @returns this
      */
     createTasks(...confList: (TaskConfig | TaskOptions)[]): this {
@@ -221,7 +221,7 @@ export class Tron {
     parallel(...args: BuildSet[]): BuildSetParallel { return parallel(...args) }
 
     /**
-     * Convert build name to gulp task name.
+     * Convert TaskCoinfig name to gulp task name.
      *
      * @param name TaskConfig.name or TaskConfig.taskName
      * @returns TaskConfig.taskName (gulp task name)
@@ -231,13 +231,55 @@ export class Tron {
         return taskConfig ? taskConfig.taskName : undefined
     }
 
+    selectTasks(filter?: TaskSelector): TaskConfig[] | undefined {
+        if (!filter) return undefined
+
+        const selected = this._taskConfigs.filter(task => arrayify(filter).some(f => {
+            if (is.String(f)) return task.name === f || task.taskName === f
+            return task.name.match(f) || task.taskName?.match(f)
+        }))
+
+        return selected.length > 0 ? selected : undefined
+    }
+
+    selectTasksAll(): TaskConfig[] {
+        return this._taskConfigs
+    }
+
+    /**
+     * Find TaskConfig with the name.
+     *
+     * @param name task name looking for. It can be build name or task name prefixed with group name.
+     * @returns TaskFConfig object found, or undefined.
+     */
+    findTask(name?: string): TaskConfig | undefined {
+        if (!name) return undefined
+
+        const tasks = this.selectTasks(`^${name}$`)
+        if (!tasks) return undefined
+
+        if (tasks.length > 1) throw Error('Tron:findTask:Internal error. duplicat task name.')
+        return tasks[0]
+    }
+
+    /**
+     * Select TaskConfigs with the group name.
+     *
+     * @param groups group name.
+     * @returns List of TaskConfigs with the group name.
+     */
+    selectTasksByGroup(groups?: TaskSelector): TaskConfig[] | undefined {
+        const selected = this._taskConfigs.filter(task => arrayify(groups).some(g => task.name.match(g)))
+        return selected.length > 0 ? selected : undefined
+    }
+
     /**
      * Create gulp task with the data in TaskConfig object.
      *
      * @param conf TaskConfig object
      * @returns task funtion created by gulp. Value returned from gulp.task(taskName).
      */
-    resolveTaskConfg(conf: TaskConfigWithMutableTaskName): GulpTaskFunction {
+    _resolveTaskConfg(conf: TaskConfigWithMutableTaskName): GulpTaskFunction {
         const { name, build, dependsOn, triggers, logLevel, group } = conf
         if (!name) throw Error(`Tron:resolveTaskConfig: invalid task name: ${name}`)
         if (
@@ -272,8 +314,8 @@ export class Tron {
         if (this.findTask(taskName)) throw Error(`Tron:resolveTaskConfig:taskName ${taskName} already registerd.`)
 
         let tasks: GulpTaskFunction[] = []
-        let deps = this.resolveBuildSet(dependsOn)
-        let trigs = this.resolveBuildSet(triggers)
+        let deps = this._resolveBuildSet(dependsOn)
+        let trigs = this._resolveBuildSet(triggers)
 
         if (deps) tasks.push(deps)
         // create mainTask if no deps and no trigs, to make this task(taskName) created and exist.
@@ -307,7 +349,7 @@ export class Tron {
     * @param conf original TaskConfig
     * @returns gulp task function of the gulp task tree constructed from buildSet. undefined there's no task.
     */
-    resolveBuildSet(buildSet?: BuildSet): GulpTaskFunction | undefined {
+    _resolveBuildSet(buildSet?: BuildSet): GulpTaskFunction | undefined {
         if (!buildSet) return
 
         // buildSet is gulp task name (BuildName)
@@ -321,12 +363,12 @@ export class Tron {
             // all the function argument to the function is assumed to be BuildFunction,
             // and it is converted to TaskCobfig object for processing with __resolveBuildSet()
             const name = `tron-anonymous#${++Tron.annonCount}-${buildSet.name}`
-            return this.resolveTaskConfg({ name, build: buildSet })
+            return this._resolveTaskConfg({ name, build: buildSet })
         }
 
         // buildSet is TaskConfig object
         if (is.Object(buildSet) && buildSet.hasOwnProperty('name'))
-            return this.resolveTaskConfg(buildSet as TaskConfig)
+            return this._resolveTaskConfg(buildSet as TaskConfig)
 
         // buildSet is series of BuildSet items
         if (is.Array(buildSet)) {
@@ -335,7 +377,7 @@ export class Tron {
 
             let list = []
             for (let bs of buildSet) {
-                let ret = this.resolveBuildSet(bs)
+                let ret = this._resolveBuildSet(bs)
                 if (ret) list.push(ret)
             }
             if (list.length === 0) return
@@ -350,7 +392,7 @@ export class Tron {
 
             let list = []
             for (let bs of set) {
-                let ret = this.resolveBuildSet(bs)
+                let ret = this._resolveBuildSet(bs)
                 if (ret) list.push(ret)
             }
             if (list.length === 0) return
@@ -359,41 +401,5 @@ export class Tron {
 
         // buildSet is unknown - throw Error
         throw Error(`Tron:resolveBuildSet:Unknown type of buildSet: ${buildSet}`)
-    }
-
-    selectTasksByGroup(groups?: TaskSelector): TaskConfig[] | undefined {
-        const selected = this._taskConfigs.filter(task => arrayify(groups).some(g => task.name.match(g)))
-        return selected.length > 0 ? selected : undefined
-    }
-
-
-    selectTasks(filter?: TaskSelector): TaskConfig[] | undefined {
-        if (!filter) return undefined
-
-        const selected = this._taskConfigs.filter(task => arrayify(filter).some(f => {
-            if (is.String(f)) return task.name === f || task.taskName === f
-            return task.name.match(f) || task.taskName?.match(f)
-        }))
-
-        return selected.length > 0 ? selected : undefined
-    }
-
-    selectTasksAll(): TaskConfig[] {
-        return this._taskConfigs
-    }
-
-    /**
-     * Find gulp task with name. Returns GulpTaskFunction if found, or undefined.
-     *
-     * @param name task name looking for. It can be build name or task name prefixed with group name.
-     */
-    findTask(name?: string): TaskConfig | undefined {
-        if (!name) return undefined
-
-        const tasks = this.selectTasks(`^${name}$`)
-        if (!tasks) return undefined
-
-        if (tasks.length > 1) throw Error('Tron:findTask:Internal error. duplicat task name.')
-        return tasks[0]
     }
 }
