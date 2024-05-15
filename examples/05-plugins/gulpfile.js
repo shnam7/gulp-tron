@@ -14,7 +14,6 @@ const sassOpts = { includePaths: ['./scss/lib'] }
 //--- custom plugin
 const hello = msg => bs => {
     console.log(`${bs.name}:${msg}: custom plugin is running`)
-    return bs.stream
 }
 
 const customPlugin = {
@@ -31,6 +30,41 @@ const customScss = {
     sourcemaps: '.',
     clean: [path.join(basePath, 'scss/*.{css,map}')],
 }
+
+tron.createTask({
+    name: 'intercept-test',
+    build: bs => {
+        // take '*/css' files only
+        bs.src()
+            .debug()
+            .intercept((file, cb) => {
+                if (file.path.endsWith('.css')) cb(null, file)
+                cb(null)
+            })
+            .debug()
+    },
+    src: [path.join(basePath, 'scss/*.*')],
+})
+
+tron.createTask({
+    name: 'peek-test',
+    build: bs => {
+        // take '*/css' files only
+        let cssFileCount = 0
+        bs.src()
+            .peek(
+                file => {
+                    if (file.path.endsWith('.css')) ++cssFileCount
+                    // bs.log(file.path, cssFileCount)
+                },
+                () => {
+                    bs.log(`cssFileCount=${cssFileCount}`)
+                },
+            )
+            .debug()
+    },
+    src: ['./scss/*.*'],
+})
 
 tron.task({
     name: '@build',

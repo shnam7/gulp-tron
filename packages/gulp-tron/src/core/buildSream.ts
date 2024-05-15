@@ -7,7 +7,7 @@ import order from 'gulp-order3'
 import changedG, { compareContents } from 'gulp-changed'
 import browserSync from 'browser-sync'
 import { deleteSync } from 'del'
-import { ResultCallback, Transform } from 'streamx'
+import { Callback, ResultCallback, Transform } from 'streamx'
 import { is, arrayify } from '../utils/index.js'
 import type { CleanOptions, DelOptions, ExecOptions, GulpStream, GulpTransformCallback, LogOptions, PluginFunction, SrcOptions, TaskOptions } from './types.js'
 import type { Stream } from 'stream'
@@ -22,15 +22,16 @@ type DestMethod = typeof gulp.dest
 type GulpChangedOptions = NonNullable<Parameters<typeof changedG>[1]>
 
 //--- enforce type casting to remove unnecessary null checking (null checking will be handle manually)
-const _nullStream = () => null as unknown as NodeJS.ReadWriteStream
+// const _nullStream = () => null as unknown as NodeJS.ReadWriteStream
 
-export function transform(func: GulpTransformCallback): NodeJS.ReadWriteStream {
+export function _transform(func: GulpTransformCallback, onFinish?: (cb: Callback) => void): NodeJS.ReadWriteStream {
     return new Transform({
-        transform(file, cb) { func(file, cb), cb() }
+        transform: func,
+        flush: onFinish
     }) as unknown as NodeJS.ReadWriteStream
 }
 
-export const cloneStream = () => transform((file, cb) => { cb(null, file.clone()) })
+export const cloneStream = () => _transform((file, cb) => { cb(null, file.clone()) })
 
 
 /**
@@ -41,7 +42,7 @@ export const cloneStream = () => transform((file, cb) => { cb(null, file.clone()
  *  Gulp Stream Wrapper providing API for build processing.
  *****************************************************************************/
 export class BuildStream {
-    protected _name: string     // BuildStream instance name
+    protected _name: string     // BuildStream instance name (same as gulp task name)
     protected _stream: GulpStream | null = null
     protected _streamStack: GulpStream[] = []
     protected _promiseSync: Promise<any> = Promise.resolve();
@@ -114,7 +115,7 @@ export class BuildStream {
      *      patterns to give priority in ordering
      * @returns this
      */
-    order(...args: Parameters<typeof order>) {
+    order(...args: Parameters<typeof order>): this {
         if (!args[0]) args[0] = this.opts.order
         return this.pipe(order(...args))
     }
@@ -173,10 +174,8 @@ export class BuildStream {
     promise(arg1: Function | Promise<any>): this {
         if (arg1 instanceof Promise)
             this._promiseSync = this._promiseSync.then(() => arg1)
-        // this._promiseSync = this._promiseSync.then(() => arg1)
         else
             this.then(arg1)
-        // this._promiseSync = this._promiseSync.then(() => arg1())
         return this
     }
 
@@ -185,8 +184,9 @@ export class BuildStream {
      *
      * @param func Function to be excuted.
      */
-    then(func: Function) {
-        this._promiseSync = this._promiseSync.then(() => func())
+    then(func: Function): this {
+        this._promiseSync = this._promiseSync.then(() => { func(); return 0 })
+        return this
     }
 
     /**
@@ -220,15 +220,15 @@ export class BuildStream {
     }
 
     /**
-     * Filter out build stream to exclude files that matches the filter spec.
+     * Filter files in the stream with glob patterns.
      *
-     * @param pattern Files to be exclude from the build stream
-     * @param options Filter options form gulp-filter
+     * @param pattern Optional filter pattern with default valuse selecting all files except .map files.
+     * @param options Filter options to be passed to gulp-filter.
      * @returns this
      */
     filter(pattern: string | string[] | filter.FileFunction = ["**", "!**/*.map"], options: filter.Options = {}): this {
         const patterns = arrayify(pattern)
-        if (patterns[0] !== '**') patterns.unshift('**')
+        // if (patterns[0] !== '**') patterns.unshift('**')
         return this.pipe(filter(pattern, options))
     }
 
@@ -317,6 +317,13 @@ export class BuildStream {
         return this
     }
 
+    /**
+     * Delete file in sync mode.
+     *
+     * @param patterns Files to delete.
+     * @param options Options from `del` and LogOptions.
+     * @returns
+     */
     del(patterns: string | string[], options: DelOptions = {}): this {
         const logger = options.logger ?? this.opts.logger ?? this.logger
         if (options.logLevel !== 'silent') logger(`deleting:[${arrayify(patterns).join(', ')}]`)
@@ -342,6 +349,13 @@ export class BuildStream {
         return this.del(cleanList, options)
     }
 
+    /**
+     * Execute `command` passing it to shell.
+     *
+     * @param command command to be executed.
+     * @param options LogOptions & Ooptions to be passed to child_process.spawn().
+     * @returns
+     */
     exec(command: string, options: ExecOptions): this {
         if (this.opts.logLevel !== 'silent') this.log(`Executing command:'${command}'`)
         const [cmd, ...args] = command.split(' ')
@@ -405,10 +419,10 @@ export class BuildStream {
     // }
 
     /**
-     * Reload BroiwserSync
+     * Reload the changes to browser-sync, if it is activated.
      *
-     * @param options
-     * @returns
+     * @param options Options to be passed to broiwser-sync.
+     * @returns BuildStream itself.
      */
     reload(options?: browserSync.StreamOptions): this {
         if (browserSync.active) this.pipe(browserSync.stream(options))
@@ -420,7 +434,8 @@ export class BuildStream {
     //-------------------------------------------------------------------------
     /**
      * Reset current build stream to null.
-     * Previoius build stream is moved to internal promise queue if it was active.
+     * Previoius build stream is moved to internal promise queue
+     * for safe closing if it was active.
      *
      * @returns this
      */
@@ -430,7 +445,7 @@ export class BuildStream {
                 this._stream!.on('end', () => res())
             }))
         }
-        this._stream = _nullStream()
+        this._stream = null
         return this
     }
 
@@ -441,22 +456,31 @@ export class BuildStream {
      * @param clearStream if true, current build stream is cleared. default false.
      * @returns this
      */
-    pushStream(clearStream: boolean = false) {
+    pushStream(clearStream: boolean = false): this {
         if (this._stream === null) return this
         this._streamStack.push(this._stream.pipe(cloneStream()))
-        if (clearStream) this._stream = _nullStream()
+        if (clearStream) this.clearStream()
         return this
     }
 
-    popStream() {
-        if (this._streamStack.length < 1) return this
+    /**
+     * If pushed stream is available, then clear current and pop the pushed stream back to cuerrent.
+     *
+     * @returns BuildStream itself.
+     */
+    popStream(): this {
+        if (this._streamStack.length <= 0) return this
         this.clearStream()
-        if (this._streamStack.length > 0) this._stream = this._streamStack.pop() as GulpStream
+        this._stream = this._streamStack.pop() as GulpStream
         return this
     }
 
-    createStream(): GulpStream { return _nullStream() }
-
+    /**
+     * Print debug message using `gulp-debug`
+     *
+     * @param options Options to be passed to `gulp-stream`
+     * @returns this
+     */
     debug(options: Parameters<typeof debug>[0] = {}): this {
         if (!(<any>options).logger) (<any>options).logger = this.logger
         // if (!options.title) options.title = ''  // remove default title
@@ -466,29 +490,48 @@ export class BuildStream {
         return this
     }
 
-    intercept(interceptFunc: (file: any, cb: ResultCallback<any>) => void) {
-        this.pipe(new Transform({
-            transform(file, cb) { interceptFunc(file, cb) }
-        }) as unknown as NodeJS.ReadWriteStream)
+    /**
+     * Add a function to be modify the contents of the stream.
+     *
+     * @param interceptFunc Function to modify the contents of the stream.
+     *
+     * @returns
+     */
+    intercept(interceptFunc: (file: any, cb: ResultCallback<any>) => void, onFinish?: (cb: Callback) => void): this {
+        this.pipe(_transform(interceptFunc, onFinish))
         return this
     }
 
-    peek(peekFunc: (file: any) => void) {
-        return this.intercept((file, cb) => {
-            peekFunc(file)
-            cb(null, file)
-        })
+    /**
+     * Add a function to monitor the contents of the stream.
+     *
+     * @param peekFunc Function to monitor the contents of the stream.
+     * @returns
+     */
+    peek(peekFunc: (file: any) => void, onFinish?: (cb: Callback) => void): this {
+        return this.intercept(
+            (file, cb) => { peekFunc(file); cb(null, file) },
+            (cb) => { if (onFinish) onFinish(cb); cb() }
+        )
     }
 
     //-------------------------------------------------------------------------
     // Utilities
     //-------------------------------------------------------------------------
+    /**
+     *
+     * @param args
+     * @returns
+     */
     log(...args: Parameters<typeof console.log>): this {
         const logger = this.opts.logger || console.log
         logger(`${this.name}::`, ...args)
         return this
     }
 
+    /**
+     *
+     */
     get logger(): typeof console.log {
         const _logger = (...args: Parameters<typeof console.log>) => {
             this.log(...args)
