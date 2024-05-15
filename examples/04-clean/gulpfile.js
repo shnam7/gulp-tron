@@ -18,7 +18,7 @@ const copier = {
             try {
                 fs.accessSync(bs.opts.clean[0])
             } catch (err) {
-                bs.log(`==>Error:file copy failed`)
+                bs.log(`==> Error:file copy failed`)
                 throw err
             }
         })
