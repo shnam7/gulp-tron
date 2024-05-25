@@ -8,14 +8,13 @@ export function useGulp(gulpInstacen: typeof gulp) {
 }
 
 export function streamToPromise(stream: GulpStream | null) {
-    // stream.pipe(debug({ title: '', logger: () => {} } as unknown as {}))
-    // return streamToPromiseG(stream)
-    if (stream === null) return Promise.resolve()
-
-    return new Promise((resolve, reject) => {
-        if (stream.resume) stream.resume()
-        stream.on('end', () => { resolve(stream) })
-    })
+    return stream
+        ? new Promise((resolve, reject) => {
+            if (stream.resume) stream.resume()
+            if (stream.readable) stream.on('end', () => resolve(null))
+            if (stream.writable) stream.on('finish', () => resolve(null))
+        })
+        : Promise.resolve()
 }
 
 export { _gulpInstance as gulp }

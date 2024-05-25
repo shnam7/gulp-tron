@@ -301,10 +301,7 @@ export class Tron {
         const main: GulpTaskFunction = (done) => {
             if (build) {
                 const bs = new BuildStream(taskName, conf)
-                const ret = build(bs)
-                const promise = (ret instanceof Promise) ? ret : Promise.resolve()
-
-                return Promise.all([promise, bs.promiseSync]).then(async () => bs.stream)
+                return bs._main(build)
             }
             done()
         }

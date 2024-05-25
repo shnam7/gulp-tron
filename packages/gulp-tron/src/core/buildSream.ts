@@ -10,7 +10,7 @@ import { deleteSync } from 'del'
 import { Callback, ResultCallback, Transform } from 'streamx'
 import { is, arrayify } from '../utils/index.js'
 import { streamToPromise } from './globals.js'
-import type { CleanOptions, DelOptions, ExecOptions, GulpStream, GulpTransformCallback, LogOptions, PluginFunction, SrcOptions, TaskOptions } from './types.js'
+import type { BuildFunction, CleanOptions, DelOptions, ExecOptions, GulpStream, GulpTransformCallback, LogOptions, PluginFunction, SrcOptions, TaskOptions } from './types.js'
 import type { Stream } from 'stream'
 
 export type CopyParam = { src: string | string[], dest: string }
@@ -43,6 +43,26 @@ export class BuildStream {
     protected _streamStack: GulpStream[] = []
     protected _promiseSync: Promise<any> = Promise.resolve();
     protected _opts: TaskOptions
+
+    /**
+     * main build function to be executed by gulp task
+     * @param bs BuildStream created by gulp task.
+     * @param buildFunc BuildFunction from TaskConfig (`conf.build`).
+     * @returns void or A promise to be waited by gulp task.
+     */
+    async _main(buildFunc: BuildFunction) {
+        await buildFunc(this)
+        await this._promiseSync
+        // this._flushStream.pipe(this._stream)
+        // this._stream.resume()
+
+        // @ts-ignore
+        // this._flushStream.pipe(debug({ logger: undefined }))
+        // @ts-ignore
+        // this._stream.pipe(debug({ logger: undefined }))
+        // await streamToPromise(this._flushStream)
+        return this._stream
+    }
 
     constructor(name?: string, opts: TaskOptions = {}, stream?: GulpStream, promiseSync?: Promise<any>) {
         this._name = name || "<annonymous>"
