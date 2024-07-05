@@ -1,16 +1,15 @@
-
 /**
  *  gulp-tron plugin-scripts:babelP
  *
  */
 
-import { BuildStream, PluginFunction } from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import babelG from 'gulp-babel'
 
 export type BabelOptions = Parameters<typeof babelG>[0]
 
-//--- internals
-type GulpBabelOptions = BabelOptions & { sourceMap?: any }
+// --- internals
+type GulpBabelOptions = BabelOptions & {sourceMap?: any}
 
 /**
  * Babel Plugin - wrapper for gulp-babel
@@ -27,16 +26,18 @@ type GulpBabelOptions = BabelOptions & { sourceMap?: any }
  * @param options - Babel options (gulp-babel options with sourceMaps, instread of sourceMap)
  * @returns PluginFunction
  */
-export const babelP = (options: BabelOptions = {}): PluginFunction => (bs: BuildStream) => {
+export const babelP =
+    (options: BabelOptions = {}): PluginFunction =>
+    (bs: BuildStream) => {
+        // change sourceMaps to sourceMap to fit into gulp-babel interface w/ no warning
+        const opts: GulpBabelOptions = {...options}
+        if (!opts.sourceMaps && bs.opts.sourcemaps) opts.sourceMaps = bs.opts.sourcemaps
+        if (opts.sourceMaps) {
+            opts.sourceMap = opts.sourceMaps // eslint-disable-line @typescript-eslint/no-unsafe-assignment
+            delete opts.sourceMaps
+        }
 
-    // change sourceMaps to sourceMap to fit into gulp-babel interface w/ no warning
-    const opts: GulpBabelOptions = { ...options }
-    if (!opts.sourceMaps && bs.opts.sourcemaps) opts.sourceMaps = bs.opts.sourcemaps
-    if (opts.sourceMaps) {
-        opts.sourceMap = opts.sourceMaps
-        delete opts.sourceMaps
+        bs.pipe(babelG(opts))
     }
-    bs.pipe(babelG(opts))
-}
 
 export default babelP

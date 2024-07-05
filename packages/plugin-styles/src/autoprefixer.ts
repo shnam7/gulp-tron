@@ -3,7 +3,7 @@
  *
  */
 
-import { BuildStream, PluginFunction } from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import autoPrefixerG from 'gulp-autoprefixer'
 
 export type AutoPrefixerOptions = autoPrefixerG.Options
@@ -14,8 +14,10 @@ export type AutoPrefixerOptions = autoPrefixerG.Options
  * @param options -autoprefixer options
  * @returns PluginFunction
  */
-export const autoPrefixerP = (options?: AutoPrefixerOptions): PluginFunction => (bs: BuildStream) => {
-    bs.pipe(autoPrefixerG(options))
-}
+export const autoPrefixerP =
+    (options?: AutoPrefixerOptions): PluginFunction =>
+    (bs: BuildStream) => {
+        bs.pipe(autoPrefixerG(options))
+    }
 
 export default autoPrefixerP

@@ -3,10 +3,8 @@
  *
  */
 
-import { BuildStream, PluginFunction } from 'gulp-tron'
-import coffeeG from 'gulp-coffee'
-
-export type CoffeeOptions = Parameters<typeof coffeeG>[0]
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
+import coffeeG, {type CoffeeOptions} from 'gulp-coffee'
 
 /**
  * Terser Plugin - wrapper for gulp-terser
@@ -14,8 +12,11 @@ export type CoffeeOptions = Parameters<typeof coffeeG>[0]
  * @param options - Terser options
  * @returns PluginFunction
  */
-export const coffeeP = (options: CoffeeOptions): PluginFunction => (bs: BuildStream) => {
-    bs.pipe(coffeeG(options))
-}
+export const coffeeP =
+    (options: CoffeeOptions = {}): PluginFunction =>
+    (bs: BuildStream): void => {
+        bs.pipe(coffeeG(options))
+    }
 
 export default coffeeP
+export {type CoffeeOptions} from 'gulp-coffee'

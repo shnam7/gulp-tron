@@ -1,28 +1,32 @@
 import {fileURLToPath} from 'node:url'
 import path from 'node:path'
-import fs from 'node:fs'
 import {Transform} from 'node:stream'
 import {type MockInstance, afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import type Vinyl from 'vinyl'
 import {pEvent} from 'p-event'
-import {src} from 'gulp'
-import {Semaphore} from '@wicle/mutex'
-import filter from 'gulp-filter'
+import {filterSync} from 'event-stream'
 import {BuildStream} from '../src/core/build-stream.js'
 import {gulp} from '../src/core/globals.js'
-import {type DestOptions, type SrcOptions, type TaskOptions} from '../src/core/types.js'
+import {type DestOptions, type SrcOptions, type BuildOptions} from '../src/core/types.js'
 
 const __pathname = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__pathname)
 const __srcGlob = path.join(__dirname, '../src/core/*.ts')
+const __srcFiles: string[] = []
 
-// const aFile = new Vinyl({
-//     cwd: __dirname,
-//     base: __dirname,
-//     path: path.join(__dirname, 'foo.js'),
-//     stat: fs.statSync(__pathname),
-//     contents: Buffer.from('Lorem ipsum dolor sit amet, consectetuer adipiscing elit.'),
-// })
+await pEvent(
+    gulp.src(__srcGlob).pipe(
+        new Transform({
+            objectMode: true,
+            highWaterMark: 16,
+            transform(file: Vinyl, enc, cb) {
+                __srcFiles.push(file.basename)
+                cb(null)
+            },
+        }),
+    ),
+    'finish',
+)
 
 describe('BuildStream.nullStream()', () => {
     it('is instance of NodeJS.ReadWriteStream().', () => {
@@ -46,8 +50,8 @@ describe('.constructor', () => {
         expect(bs.name).toBe(name)
         expect(bs.className).toBe('BuildStream')
         expect(bs.stream).toBe(stream)
-        expect(bs.options.src).toBe(conf.src)
-        expect(bs.promiseSync).toBeInstanceOf(Promise)
+        expect(bs.opts.src).toBe(conf.src)
+        expect(bs.sync).toBeInstanceOf(Promise)
     })
 })
 
@@ -74,14 +78,14 @@ describe('.src()', () => {
         const bs = new BuildStream('test', {src: __srcGlob})
         bs.src()
         expect(srcMock).toHaveBeenCalledTimes(1)
-        expect(resultGlob).toBe(bs.options.src)
+        expect(resultGlob).toBe(bs.opts.src)
     })
     it('can override TaskConf.src(default glob).', () => {
         const bs = new BuildStream('test', {src: __srcGlob})
         const srcOverride = './src/utils'
         bs.src(srcOverride)
         expect(srcMock).toHaveBeenCalledTimes(1)
-        expect(resultGlob).not.toBe(bs.options.src)
+        expect(resultGlob).not.toBe(bs.opts.src)
         expect(resultGlob).toBe(srcOverride)
     })
     it('does nothing if no glob is provided.', () => {
@@ -112,7 +116,7 @@ describe('.src()', () => {
         expect(resultOptions.encoding).toBe('utf8')
     })
 
-    it('calls this.order() when order option is given.', async () => {
+    it(`calls .order() when 'order' option is given.`, async () => {
         const bs = new BuildStream('test', {
             src: __srcGlob,
             order: ['types.ts', 'global.ts', 'build-stream.ts'],
@@ -127,15 +131,102 @@ describe('.src()', () => {
     })
 })
 
-// describe('.addSrc()', () => {
-//     it('add globs to stream when the stream is null - .src() never called earlier.', async () => {
-//         const bs = new BuildStream()
-//         bs.addSrc(__srcGlob).peek((file: Vinyl) => {
-//             console.log(`---111`, file.basename)
-//         })
-//         await pEvent(bs.stream, 'finish')
-//     })
-// })
+describe('.add()', () => {
+    it('can be called before or w/o .src() call.', async () => {
+        const bs = new BuildStream('test')
+        let fileCount = 0
+        bs.add(__srcGlob).peek(() => ++fileCount)
+        await pEvent(bs.stream, 'finish')
+        expect(fileCount).toBe(__srcFiles.length)
+    })
+
+    it('can be called after .src() call.', async () => {
+        const bs = new BuildStream('test')
+        const files: string[] = []
+        bs.src(__srcGlob)
+            .add(__pathname)
+            .peek((file: Vinyl) => files.push(file.basename))
+        await pEvent(bs.stream, 'finish')
+        expect(files).toEqual([...__srcFiles, path.basename(__pathname)])
+    })
+})
+
+describe('.remove()', () => {
+    it('can handle call with no argument.', async () => {
+        const bs = new BuildStream('test')
+        let fileCount = 0
+        bs.src(__srcGlob)
+            .remove()
+            .peek(() => ++fileCount)
+        await pEvent(bs.stream, 'finish')
+        expect(fileCount).toBe(__srcFiles.length)
+    })
+
+    it('can handle negation.', async () => {
+        const bs = new BuildStream('test')
+        const files: string[] = []
+        bs.src(path.join(__dirname, '*'))
+            .remove('!build-stream*')
+            .peek((file: Vinyl) => files.push(file.basename))
+        await pEvent(bs.stream, 'finish')
+        expect(files).toEqual([path.basename(__pathname)])
+    })
+})
+
+describe('.filter()', () => {
+    it('filters files in the stream.', async () => {
+        const allFiles: string[] = []
+        const tFiles: string[] = []
+
+        const bs = new BuildStream('test', {src: __srcGlob})
+        bs.src()
+            .peek((file: Vinyl) => allFiles.push(file.basename))
+            .filter('t*.ts')
+            .peek((file: Vinyl) => tFiles.push(file.basename))
+        await pEvent(bs.stream, 'finish')
+
+        expect(allFiles.length).toBe(4)
+        expect(tFiles.length).toBe(2)
+        expect(tFiles).toEqual(['tron.ts', 'types.ts'])
+    })
+})
+
+describe('.rename()', () => {
+    it('renames files in the stream.', async () => {
+        const renamedFiles: string[] = []
+
+        const bs = new BuildStream('test', {src: __srcGlob})
+        bs.src()
+            .rename({extname: 'ts-renamed'})
+            .peek((file: Vinyl) => renamedFiles.push(file.basename))
+        await pEvent(bs.stream, 'finish')
+
+        expect(renamedFiles.length).toBe(4)
+        for (const file of renamedFiles) {
+            expect(file.endsWith('ts-renamed')).toBeTruthy()
+        }
+    })
+})
+
+describe('.order()', () => {
+    it('order files in the stream.', async () => {
+        const originalList: string[] = []
+        const orderedList: string[] = []
+
+        const bs = new BuildStream('test', {src: __srcGlob})
+        bs.src()
+            .add(path.join(__dirname, '../package.json'))
+            .peek((file: Vinyl) => originalList.push(file.basename))
+            .order('package.json')
+            .peek((file: Vinyl) => orderedList.push(file.basename))
+        await pEvent(bs.stream, 'finish')
+
+        expect(originalList.length).toBeGreaterThan(0)
+        expect(orderedList.length).toBeGreaterThan(0)
+        expect(originalList[0]).not.toBe(orderedList[0])
+        expect(orderedList[0]).toBe('package.json')
+    })
+})
 
 describe('.changed()', () => {
     it('does not pipe to gulp-changed if destination is not valid.', async () => {
@@ -143,7 +234,7 @@ describe('.changed()', () => {
         const pipeMock = vi.spyOn(bs, 'pipe')
         bs.src().changed()
         await pEvent(bs.stream, 'finish')
-        expect(pipeMock).toHaveBeenCalledTimes(1) // 1 time call inside src()
+        expect(pipeMock).toHaveBeenCalledTimes(1) // 1 time call inside src(), not changed()
         pipeMock.mockRestore()
     })
 
@@ -156,7 +247,7 @@ describe('.changed()', () => {
         pipeMock.mockRestore()
     })
 
-    it('uses TaskConfig.dest as default destination.', async () => {
+    it('uses conf.dest as default destination.', async () => {
         const bs = new BuildStream('test', {src: __srcGlob, dest: '.'})
         const pipeMock = vi.spyOn(bs, 'pipe')
         bs.src().changed()
@@ -197,7 +288,7 @@ describe('.dest()', () => {
         const bs = new BuildStream('test', {src: __srcGlob, dest: 'dest-path'})
         bs.src().dest()
         expect(destMock).toHaveBeenCalledTimes(1)
-        expect(folder).toBe(bs.options.dest)
+        expect(folder).toBe(bs.opts.dest)
     })
 
     it(`can override default destination '.'.`, () => {
@@ -235,7 +326,7 @@ describe('.promise()', () => {
         const bs = new BuildStream('test', {src: __srcGlob})
         bs.src()
         for (let i = 0; i < 100; i++) bs.promise(() => sequence.push(i))
-        await bs.promiseSync
+        await bs.sync
         for (let i = 0; i < 100; i++) expect(sequence[i]).toBe(i)
     })
 
@@ -250,7 +341,7 @@ describe('.promise()', () => {
             })
         bs.src()
         for (let i = 0; i < 100; i++) bs.promise(promisePush())
-        await bs.promiseSync
+        await bs.sync
         sequence.push(i++)
         for (let i = 0; i <= 100; i++) expect(sequence[i]).toBe(i)
     })
@@ -259,7 +350,6 @@ describe('.promise()', () => {
 describe('.chain()', () => {
     it('calls the plugin function with current build stream.', () => {
         const bs = new BuildStream('test')
-
         const plugin = (bs1: BuildStream) => {
             expect(bs1).toBe(bs)
             bs1.src()
@@ -284,38 +374,17 @@ describe('.pipe()', () => {
     })
 })
 
-describe('.filter()', () => {
-    it('filters files in the stream.', async () => {
-        const allFiles: string[] = []
-        const tFiles: string[] = []
-
-        const bs = new BuildStream('test', {src: __srcGlob})
-        bs.src()
-            .peek((file: Vinyl) => allFiles.push(file.basename))
-            .filter('t*.ts')
-            .peek((file: Vinyl) => tFiles.push(file.basename))
+describe('.clearStream()', () => {
+    it('remove all the files int the build stream.', async () => {
+        const bs = new BuildStream('test')
+        const files: string[] = []
+        bs.src(__srcGlob).peek((file: Vinyl) => files.push(file.basename))
         await pEvent(bs.stream, 'finish')
+        expect(files).toEqual(__srcFiles)
 
-        expect(allFiles.length).toBe(4)
-        expect(tFiles.length).toBe(2)
-        expect(tFiles).toEqual(['tron.ts', 'types.ts'])
-    })
-})
-
-describe('.rename()', () => {
-    it('renames files in the stream.', async () => {
-        const renamedFiles: string[] = []
-
-        const bs = new BuildStream('test', {src: __srcGlob})
-        bs.src()
-            .rename({extname: 'ts-renamed'})
-            .peek((file: Vinyl) => renamedFiles.push(file.basename))
-        await pEvent(bs.stream, 'finish')
-
-        expect(renamedFiles.length).toBe(4)
-        for (const file of renamedFiles) {
-            expect(file.endsWith('ts-renamed')).toBeTruthy()
-        }
+        files.splice(0, files.length)
+        bs.clearStream().peek((file: Vinyl) => files.push(file.basename))
+        expect(files.length).toBe(0)
     })
 })
 
@@ -345,7 +414,7 @@ describe('.rename()', () => {
 
 //         expect(srcMock).toHaveBeenCalledTimes(1)
 //         expect(destMock).toHaveBeenCalledTimes(1)
-//         expect(globString).toBe(bs.options.src)
+//         expect(globString).toBe(bs.opts.src)
 
 //         srcMock.mockRestore()
 //         destMock.mockRestore()

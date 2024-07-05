@@ -20,13 +20,13 @@
         "npm-dry-run": "npm publish --dry-run"
     },
     "dependencies": {
-        "@babel/core": "^7.24.6",
-        "@babel/preset-env": "^7.24.6",
+        "@babel/core": "^7.24.7",
+        "@babel/preset-env": "^7.24.7",
         "gulp-babel": "^8.0.0",
         "gulp-coffee": "^3.0.3",
         "gulp-coffeelint": "^0.6.0",
         "gulp-concat": "^2.6.1",
-        "gulp-eslint-new": "^2.0.0",
+        "gulp-eslint-new": "^2.1.0",
         "gulp-terser": "^2.1.0"
     },
     "devDependencies": {
@@ -39,7 +39,7 @@
         "@vitest/coverage-v8": "^1.6.0",
         "gulp-tron": "workspace:*",
         "rimraf": "^5.0.7",
-        "typescript": "^5.4.5",
+        "typescript": "^5.5.3",
         "vitest": "^1.6.0"
     }
 }

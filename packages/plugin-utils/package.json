@@ -30,13 +30,13 @@
         "@wicle/tsconfig": "github:shnam7/wicle-tsconfig",
         "@types/gulp-concat": "^0.0.37",
         "@types/gulp-imagemin": "^8.0.6",
-        "@types/imagemin": "^8.0.5",
+        "@types/imagemin": "^9.0.0",
         "@types/js-yaml": "^4.0.9",
         "@types/through2": "^2.0.41",
         "@vitest/coverage-v8": "^1.6.0",
         "gulp-tron": "workspace:*",
         "rimraf": "^5.0.7",
-        "typescript": "^5.4.5",
+        "typescript": "^5.5.3",
         "vitest": "^1.6.0"
     }
 }

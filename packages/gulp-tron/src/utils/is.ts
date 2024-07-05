@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+/* eslint-disable @typescript-eslint/naming-convention */
 const _is = (a: any, name: string): boolean => toString.call(a) === '[object ' + name + ']'
 
 /**
@@ -5,9 +7,9 @@ const _is = (a: any, name: string): boolean => toString.call(a) === '[object ' +
  */
 export const is = {
     // Array: (a: unknown): a is (typeof a)[] => Array.isArray(a),
-    Array: (a: unknown): a is (typeof a)[] => _is(a, 'Array'),
+    Array: (a: unknown): a is Array<typeof a> => _is(a, 'Array'),
     // Object: (a: unknown): a is object => a === Object(a),
-    Object: (a: unknown): a is object => _is(a, 'Object'),
+    Object: (a: unknown): a is Record<string, unknown> => _is(a, 'Object'),
     // Arguments: (a: unknown) => _is(a, 'Argument'),
     // Function: (a: unknown): a is Function => _is(a, 'Function')
     Function: (a: unknown): a is Function => typeof a === 'function' && !/^class\s/.test(Function.prototype.toString.call(a)),
@@ -16,12 +18,12 @@ export const is = {
     Date: (a: unknown): a is Date => _is(a, 'Date'),
     RegExp: (a: unknown): a is RegExp => _is(a, 'RegExp'),
     Error: (a: unknown): a is Error => _is(a, 'Error'),
-    Symbol: (a: unknown): a is Symbol => _is(a, 'Symbol'),
+    Symbol: (a: unknown): a is symbol => _is(a, 'Symbol'),
     Map: (a: unknown): a is typeof Map => _is(a, 'Map'),
     WeakMap: (a: unknown): a is typeof WeakMap => _is(a, 'WeakMap'),
     Set: (a: unknown): a is typeof Set => _is(a, 'Set'),
     WeakSet: (a: unknown): a is typeof WeakSet => _is(a, 'WeakSet'),
-    Class: (a: unknown): a is typeof Function => typeof a === 'function' && /^class\s/.test(Function.prototype.toString.call(a))
+    Class: (a: unknown): a is typeof Function => typeof a === 'function' && /^class\s/.test(Function.prototype.toString.call(a)),
 }
 
 export default is

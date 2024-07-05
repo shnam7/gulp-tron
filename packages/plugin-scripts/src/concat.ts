@@ -3,7 +3,7 @@
  *
  */
 
-import { BuildStream, PluginFunction } from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import concatG from 'gulp-concat'
 
 export type ConcatOptions = Parameters<typeof concatG>[0]
@@ -14,8 +14,10 @@ export type ConcatOptions = Parameters<typeof concatG>[0]
  * @param options - Terser options
  * @returns PluginFunction
  */
-export const concatP = (options: ConcatOptions): PluginFunction => (bs: BuildStream) => {
-    bs.pipe(concatG(options))
-}
+export const concatP =
+    (options: ConcatOptions): PluginFunction =>
+    (bs: BuildStream) => {
+        bs.pipe(concatG(options))
+    }
 
 export default concatP

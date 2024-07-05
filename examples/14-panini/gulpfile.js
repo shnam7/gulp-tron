@@ -1,9 +1,12 @@
+import path from 'node:path'
+import process from 'node:process'
+import {fileURLToPath} from 'node:url'
 import tron from 'gulp-tron'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import paniniG from 'panini'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-//--- project settings
+// --- project settings
 const basePath = path.relative(process.cwd(), __dirname)
 const projectName = path.basename(__dirname)
 const prefix = projectName
@@ -11,8 +14,6 @@ const srcRoot = path.join(basePath, 'assets/panini')
 const destRoot = path.join(basePath, 'dist')
 const portBase = 5000
 
-//--- panini
-import paniniP from 'panini'
 const paniniOptions = {
     root: path.join(srcRoot, 'pages/'),
     layouts: path.join(srcRoot, 'layouts/'),
@@ -23,9 +24,9 @@ const paniniOptions = {
 
 const panini = {
     name: 'panini',
-    build: bs => {
-        paniniP.refresh()
-        bs.src().pipe(paniniP(paniniOptions)).rename({ extname: '.html' }).dest()
+    build(bs) {
+        paniniG.refresh()
+        bs.src().pipe(paniniG(paniniOptions)).rename({extname: '.html'}).dest()
     },
 
     // panini does not handle backslashes correctly, so replace them to slash
@@ -36,14 +37,14 @@ const panini = {
     clean: [destRoot],
 }
 
-const build = { name: '@build', triggers: panini }
+const build = {name: '@build', triggers: panini}
 
 tron.task(build)
     .addCleaner()
     .addWatcher({
         browserSync: {
             server: path.resolve(destRoot),
-            port: portBase + parseInt(prefix),
-            ui: { port: portBase + 100 + parseInt(prefix) },
+            port: portBase + Number.parseInt(prefix, 10),
+            ui: {port: portBase + 100 + Number.parseInt(prefix, 10)},
         },
     })

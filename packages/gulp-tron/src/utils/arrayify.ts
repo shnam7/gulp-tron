@@ -4,6 +4,7 @@
  * @param arg argument to arrayfy
  * @returns arrayfied arg. Ex: returns [arg], if arg is not already array.
  */
-export const arrayify = <T>(arg?: T | T[]): T[] => arg ? (Array.isArray(arg) ? arg : [arg]) : []
+export const arrayify = <T>(arg?: T | T[]): T[] =>
+    arg === undefined ? [] : Array.isArray(arg) ? arg : [arg]
 
 export default arrayify

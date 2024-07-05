@@ -1,10 +1,12 @@
-import tron from 'gulp-tron'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import path from 'node:path'
+import process from 'node:process'
+import {fileURLToPath} from 'node:url'
 import fs from 'node:fs'
+import tron from 'gulp-tron'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-//--- project settings
+// --- project settings
 // const projectName = path.basename(__dirname)
 // const prefix = projectName + ':'
 const basePath = path.relative(process.cwd(), __dirname)
@@ -13,15 +15,16 @@ const destRoot = path.join(basePath, '_build')
 
 const copier = {
     name: 'copier',
-    build: async bs => {
-        bs.copy({ src: [path.join(destRoot, 'do-not-delete/sample.txt')], dest: destRoot }).then(() => {
-            try {
-                fs.accessSync(bs.opts.clean[0])
-            } catch (err) {
-                bs.log(`==> Error:file copy failed`)
-                throw err
-            }
-        })
+    async build(bs) {
+        bs.copy({src: [path.join(destRoot, 'do-not-delete/sample.txt')], dest: destRoot})
+        await bs.sync
+
+        try {
+            fs.accessSync(bs.opts.clean[0])
+        } catch (error) {
+            bs.log(`==> Error:file copy failed`)
+            throw error
+        }
     },
     clean: [path.join(destRoot, 'sample.txt')],
     logLevel: 'verbose',

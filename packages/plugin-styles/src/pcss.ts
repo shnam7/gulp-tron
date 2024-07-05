@@ -3,12 +3,11 @@
  *
  */
 
-import { BuildStream, PluginFunction } from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import pcssG from 'gulp-postcss'
 
-
 export type PostCssOptions = pcssG.Options
-export type PostcssCallbackFunction = (file: any) => { plugins?: any[]; options?: PostCssOptions }
+export type PostcssCallbackFunction = (file: any) => {plugins?: any[]; options?: PostCssOptions}
 
 /**
  * Postcss Plugin - wrapper for gulp-postcss
@@ -19,14 +18,17 @@ export type PostcssCallbackFunction = (file: any) => { plugins?: any[]; options?
  * @returns PluginFunction
  */
 export function pcssP(plugins?: any[], options?: PostCssOptions): PluginFunction
-export function pcssP(callback?: (file: any) => { plugins?: any[]; options?: PostCssOptions }): PluginFunction
+export function pcssP(
+    callback?: (file: any) => {plugins?: any[]; options?: PostCssOptions},
+): PluginFunction
 
-export function pcssP(pluginsOrCallback?: any[] | PostcssCallbackFunction, options?: PostCssOptions): PluginFunction {
+export function pcssP(
+    pluginsOrCallback?: any[] | PostcssCallbackFunction,
+    options?: PostCssOptions,
+): PluginFunction {
     return (bs: BuildStream) => {
-        if (typeof pluginsOrCallback === 'function')
-            bs.pipe(pcssG(pluginsOrCallback))
-        else
-            bs.pipe(pcssG(pluginsOrCallback, options))
+        if (typeof pluginsOrCallback === 'function') bs.pipe(pcssG(pluginsOrCallback))
+        else bs.pipe(pcssG(pluginsOrCallback, options))
     }
 }
 

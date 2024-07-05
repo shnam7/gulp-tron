@@ -1,6 +1,7 @@
 declare module 'gulp-rtlcss' {
-    import type { ConfigureOptions } from 'rtlcss'
+    import {type Transform} from 'node:stream'
+    import {type ConfigureOptions} from 'gulp-rtlcss'
 
-    export type { ConfigureOptions }
-    export default function rtlcssG(options: ConfigureOptions): stream.Transform
+    export default function rtlcssG(options: ConfigureOptions): Transform
+    export {type ConfigureOptions as RtlCssOptions} from 'rtlcss'
 }

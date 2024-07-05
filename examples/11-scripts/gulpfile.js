@@ -1,9 +1,13 @@
+import path from 'node:path'
+import process from 'node:process'
+import {fileURLToPath} from 'node:url'
 import tron from 'gulp-tron'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import {eslintP, terserP, concatP, coffeeP, coffeelintP, babelP} from '@gulp-tron/plugin-scripts'
+import ts from 'gulp-typescript'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-//--- project settings
+// --- project settings
 const basePath = path.relative(process.cwd(), __dirname)
 const projectName = path.basename(__dirname)
 const prefix = projectName
@@ -11,9 +15,6 @@ const srcRoot = path.join(basePath, 'src')
 const destRoot = path.join(basePath, 'dist')
 const port = 3500
 const sourcemaps = '.'
-
-//--- common
-import { eslintP, terserP, concatP } from '@gulp-tron/plugin-scripts'
 
 const eslintOptions = {
     overrideConfig: {
@@ -57,10 +58,10 @@ const statics = {
 /** Vanilla Javascript */
 const vanilla = {
     name: 'vanilla',
-    build: async bs => {
+    async build(bs) {
         bs.src()
-            .pipe(concatP(bs.opts.outFile))
-            .pipe(eslintP(eslintOptions)) //
+            .chain(concatP(bs.opts.outFile))
+            .chain(eslintP(eslintOptions)) //
             .dest()
     },
 
@@ -71,22 +72,19 @@ const vanilla = {
     outFile: 'vanilla.js',
 }
 
-/** CoffeeScript */
-import { coffeeP, coffeelintP } from '@gulp-tron/plugin-scripts'
-
 const coffee = {
     name: 'coffee',
-    build: bs => {
+    build(bs) {
         bs.src()
             // .debug()
-            .pipe(coffeelintP()) // lint first
-            .pipe(coffeeP())
+            .chain(coffeelintP()) // lint first
+            .chain(coffeeP())
             // .pipe(babelP())
-            .pipe(concatP(bs.opts.outFile))
+            .chain(concatP(bs.opts.outFile))
             .dest()
-            .filter() // exclude map files
-            .pipe(terserP())
-            .rename({ extname: '.min.js' })
+            .remove('*.map') // exclude map files
+            .chain(terserP())
+            .rename({extname: '.min.js'})
             .dest()
     },
     src: [path.join(srcRoot, 'coffee/**/*.coffee')],
@@ -96,24 +94,22 @@ const coffee = {
     sourcemaps,
 }
 
-/** Babel */
-import { babelP } from '@gulp-tron/plugin-scripts'
 const babelOptions = {
     // modules:false option isrequired to generate esm out (using import, not require())
-    presets: [['@babel/preset-env', { modules: false }]],
+    presets: [['@babel/preset-env', {modules: false}]],
 }
 
 const babel = {
     name: 'babel',
-    build: bs => {
+    build(bs) {
         bs.src()
-            .pipe(eslintP(eslintOptions)) // lint first
-            .pipe(babelP(babelOptions))
+            .chain(eslintP(eslintOptions)) // lint first
+            .chain(babelP(babelOptions))
             .dest()
-            .filter() // exclude map files
+            .remove('*.map') // exclude map files
             // .debug()
-            .pipe(terserP(terserOptions))
-            .rename({ extname: '.min.js' })
+            .chain(terserP(terserOptions))
+            .rename({extname: '.min.js'})
             // .debug()
             .dest()
     },
@@ -122,12 +118,9 @@ const babel = {
     sourcemaps,
 }
 
-/** Typescript */
-import ts from 'gulp-typescript'
-
 const typescript = {
     name: 'typescript',
-    build: bs => {
+    build(bs) {
         const tsProject = ts.createProject('src/tsconfig.json')
         bs.src().pipe(tsProject()).debug().changed().debug().dest()
     },
@@ -141,7 +134,7 @@ const typescript = {
 /** React with typescript */
 const react = {
     name: 'react',
-    build: bs => {
+    build(bs) {
         const tsProject = ts.createProject('src/tsconfig.json')
         bs.src().pipe(tsProject()).changed().dest()
     },
@@ -164,9 +157,9 @@ tron.task(build)
         // watch: [path.join(destRoot, '**/*.html')],
         browserSync: {
             server: path.resolve(destRoot),
-            port: port + parseInt(prefix),
+            port: port + Number.parseInt(prefix, 10),
             ui: {
-                port: port + 100 + parseInt(prefix),
+                port: port + 100 + Number.parseInt(prefix, 10),
             },
         },
         // triggers: build,

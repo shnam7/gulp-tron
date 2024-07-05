@@ -1,3 +1,10 @@
 declare module 'gulp-data' {
-    export default function dataG(options: any): stream.Transform
+    import {type LogOptions, type GulpStream} from 'gulp-tron'
+
+    export type DataObject<T extends Record<string, unknown> = Record<string, unknown>> = T &
+        LogOptions
+
+    export type DataFunction = (file: any, callback: TransformCallback) => DataObject
+
+    export default function dataG(options: DataObject | DataFunction): GulpStream
 }

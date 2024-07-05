@@ -3,7 +3,7 @@
  *
  */
 
-import { BuildStream, PluginFunction } from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import eslintG from 'gulp-eslint-new'
 
 export type EslintOptions = {
@@ -16,13 +16,14 @@ export type EslintOptions = {
  * @param options - ESLint options
  * @returns PluginFunction
  */
-export const eslintP = (options: EslintOptions): PluginFunction => (bs: BuildStream) => {
+export const eslintP =
+    (options: EslintOptions): PluginFunction =>
+    (bs: BuildStream) => {
+        bs.pipe(eslintG(options))
 
-    bs.pipe(eslintG(options))
+        if (options.fix) bs.pipe(eslintG.fix())
 
-    if (options.fix) bs.pipe(eslintG.fix())
-
-    bs.pipe(eslintG.format()).pipe(eslintG.failAfterError())
-}
+        bs.pipe(eslintG.format()).pipe(eslintG.failAfterError())
+    }
 
 export default eslintP

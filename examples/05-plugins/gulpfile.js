@@ -1,29 +1,31 @@
+import path from 'node:path'
+import process from 'node:process'
+import {fileURLToPath} from 'node:url'
 import tron from 'gulp-tron'
-import path from 'path'
-import { fileURLToPath } from 'url'
 import myScss from './gulp-tron-plugins/my-scss.js'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-//--- project settings
+// --- project settings
 const basePath = path.relative(process.cwd(), __dirname)
 // const projectName = path.basename(__dirname)
 // const prefix = projectName + ':'
 
-const sassOpts = { includePaths: ['./scss/lib'] }
+const sassOpts = {includePaths: ['./scss/lib']}
 
-//--- custom plugin
+// --- custom plugin
 const hello = msg => bs => {
     console.log(`${bs.name}:${msg}: custom plugin is running`)
 }
 
 const customPlugin = {
     name: 'custom-plugin',
-    build: bs => bs.pipe(hello('Hello!')),
+    build: bs => bs.chain(hello('Hello!')),
 }
 
 const customScss = {
     name: 'custom-scss',
-    build: bs => bs.src().pipe(myScss(sassOpts)).dest(),
+    build: bs => bs.src().chain(myScss(sassOpts)).dest(),
 
     src: path.join(basePath, 'scss/*.scss'),
     dest: file => file.base,
@@ -33,22 +35,23 @@ const customScss = {
 
 tron.createTask({
     name: 'intercept-test',
-    build: bs => {
+    async build(bs) {
         // take '*/css' files only
         bs.src()
-            .debug()
-            .intercept((file, cb) => {
+            .debug('before:')
+            .intercept((file, enc, cb) => {
                 if (file.path.endsWith('.css')) cb(null, file)
-                cb(null)
+                else cb(null)
+                bs.log(`---`, file.path)
             })
-            .debug()
+            .debug('after:')
     },
     src: [path.join(basePath, 'scss/*.*')],
 })
 
 tron.createTask({
     name: 'peek-test',
-    build: bs => {
+    build(bs) {
         // take '*/css' files only
         let cssFileCount = 0
         bs.src()

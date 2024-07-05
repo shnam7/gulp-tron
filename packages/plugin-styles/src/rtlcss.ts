@@ -1,12 +1,10 @@
 /**
- *  gulp-tron plugin-styles:cleanCss
+ *  gulp-tron plugin-styles
  *
  */
 
-import { BuildStream, PluginFunction } from 'gulp-tron'
-import rtlcssG, { ConfigureOptions } from 'gulp-rtlcss'
-
-export type RtlCssConfigureOptions = ConfigureOptions
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
+import rtlcssG, {type RtlCssOptions} from 'gulp-rtlcss'
 
 /**
  * Less Plugin - wrapper for gulp-less
@@ -14,9 +12,11 @@ export type RtlCssConfigureOptions = ConfigureOptions
  * @param options - less options
  * @returns PluginFunction
  */
-export const rtlcssP = (options: RtlCssConfigureOptions = {}): PluginFunction => (bs: BuildStream) => {
-    const opts = { ...options }
-    bs.pipe(rtlcssG(options))
-}
+export const rtlcssP =
+    (options: RtlCssOptions = {}): PluginFunction =>
+    (bs: BuildStream): void => {
+        bs.pipe(rtlcssG(options))
+    }
 
 export default rtlcssP
+export {type RtlCssOptions} from 'gulp-rtlcss'

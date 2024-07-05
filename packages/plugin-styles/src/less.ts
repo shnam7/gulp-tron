@@ -3,7 +3,7 @@
  *
  */
 
-import { BuildStream, PluginFunction } from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import lessG from 'gulp-less'
 
 export type LessOptions = Parameters<typeof lessG>[0]
@@ -14,8 +14,10 @@ export type LessOptions = Parameters<typeof lessG>[0]
  * @param options - less options
  * @returns PluginFunction
  */
-export const lessP = (options?: LessOptions): PluginFunction => (bs: BuildStream) => {
-    bs.pipe(lessG(options))
-}
+export const lessP =
+    (options?: LessOptions): PluginFunction =>
+    (bs: BuildStream) => {
+        bs.pipe(lessG(options))
+    }
 
 export default lessP

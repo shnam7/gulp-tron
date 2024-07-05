@@ -1,26 +1,27 @@
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
+import process from 'node:process'
 import tron from 'gulp-tron'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import markdownG from 'gulp-markdown'
+import htmlCleanG from 'gulp-htmlclean'
+import prettierG from 'gulp-prettier'
+import {sassP} from '@gulp-tron/plugin-styles'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-//--- project settings
+// --- project settings
 const basePath = path.relative(process.cwd(), __dirname)
 const projectName = path.basename(__dirname)
 const prefix = projectName
 
-//--- common
+// --- common
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, 'dist')
 const portBase = 5000
 
-//--- markdown
-import markdownG from 'gulp-markdown'
-import htmlCleanG from 'gulp-htmlclean'
-import prettierG from 'gulp-prettier'
-
 const markdown = {
     name: 'markdown',
-    build: bs => {
+    build(bs) {
         bs.src() //
             .pipe(markdownG())
             .pipe(htmlCleanG())
@@ -32,11 +33,9 @@ const markdown = {
     dest: destRoot,
 }
 
-//--- sass
-import { sassP } from '@gulp-tron/plugin-styles'
 const scss = {
     name: 'scss',
-    build: bs => bs.src().pipe(sassP()).dest(),
+    build: bs => bs.src().chain(sassP()).dest(),
 
     src: [path.join(srcRoot, '**/*.scss')],
     dest: destRoot,
@@ -54,7 +53,7 @@ tron.task(build)
         // watch: [path.join(destRoot, '**/*.html')],
         browserSync: {
             server: destRoot,
-            port: portBase + parseInt(prefix),
-            ui: { port: portBase + 100 + parseInt(prefix) },
+            port: portBase + Number.parseInt(prefix, 10),
+            ui: {port: portBase + 100 + Number.parseInt(prefix, 10)},
         },
     })

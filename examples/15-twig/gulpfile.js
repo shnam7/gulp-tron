@@ -1,68 +1,57 @@
-import tron from 'gulp-tron'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import path from 'node:path'
+import process from 'node:process'
+import {fileURLToPath} from 'node:url'
+import tron, {BuildStream} from 'gulp-tron'
+import {sassP, cleanCssP} from '@gulp-tron/plugin-styles'
+import {terserP} from '@gulp-tron/plugin-scripts'
+import ts from 'gulp-typescript'
+import {dataP} from '@gulp-tron/plugin-utils'
+import twigG from 'gulp-twig'
+import twigMarkdown from 'twig-markdown'
+import htmlCleanG from 'gulp-htmlmin'
+import prettierG from 'gulp-prettier'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-//--- project settings
+// --- project settings
 const basePath = path.relative(process.cwd(), __dirname)
 const projectName = path.basename(__dirname)
 const prefix = projectName
 
-//--- common
+// --- common
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, 'dist')
 const port = 5000
 
-//--- sass
-import { sassP, cleanCssP } from '@gulp-tron/plugin-styles'
-
 const scss = {
     name: 'scss',
-    build: bs => bs.src().pipe(sassP()).pipe(cleanCssP()).rename({ extname: '.min.css' }).dest(),
+    build: bs => bs.src().chain(sassP()).chain(cleanCssP()).rename({extname: '.min.css'}).dest(),
 
     src: path.join(srcRoot, 'scss/**/*.scss'),
     dest: path.join(destRoot, 'css'),
 }
 
-//--- typescript
-import { terserP } from '@gulp-tron/plugin-scripts'
-import ts from 'gulp-typescript'
-
 const scripts = {
     name: 'scripts',
-    build: bs => {
+    build(bs) {
         const tsProject = ts.createProject('tsconfig.json')
+        const tsResult = bs.src().pipe(tsProject())
+        const bsJ = new BuildStream(bs.name, bs.opts, tsResult.js)
+        const bsD = new BuildStream(bs.name, bs.opts, tsResult.dts).debug({title: 'tsResult:'})
 
-        // dts (optional)
-        // bs.src().pipe(tsProject()).clone().filter('*.d.ts').debug().dest()
-        bs.src()
-            .pipe(tsProject())
-            // pricess d.ts files
-            .pushStream() // save current stream
-            .filter('*.d.ts')
-            .debug()
-            .dest()
-
-            // now process js
-            .popStream() // resstore previous stream
-            .filter('*js')
-            .pipe(terserP())
-            .rename({ extname: '.min.js' })
-            .debug()
+        bsJ.chain(terserP()) //
+            .rename({extname: '.min.js'})
+            .debug('js Stream:')
             .changed()
+            .debug('js Stream changed:')
             .dest()
+
+        bsD.debug('dts Stream:').dest()
     },
 
     src: path.join(srcRoot, 'scripts/**/*.ts'),
     dest: path.join(destRoot, 'js'),
 }
-
-//--- twig
-import { dataP } from '@gulp-tron/plugin-utils'
-import twigG from 'gulp-twig'
-import twigMarkdown from 'twig-markdown'
-import htmlCleanG from 'gulp-htmlmin'
-import prettierG from 'gulp-prettier'
 
 const twigOptions = {
     base: path.join(srcRoot, 'twig/templates'), // data can be a glob string or array of strings or data object
@@ -79,7 +68,7 @@ const twigOptions = {
     functions: [
         {
             name: 'nameOfFunction',
-            func: function (args) {
+            func(_args) {
                 return 'the function'
             },
         },
@@ -87,7 +76,7 @@ const twigOptions = {
     filters: [
         {
             name: 'nameOfFilter',
-            func: function (args) {
+            func(_args) {
                 return 'the filter'
             },
         },
@@ -96,13 +85,13 @@ const twigOptions = {
 
 const twig = {
     name: 'twig',
-    build: bs => {
+    build(bs) {
         bs.src() //
-            .pipe(dataP(path.join(srcRoot, 'twig/data/**/*.{yml,yaml,json}')))
+            .chain(dataP(path.join(srcRoot, 'twig/data/**/*.{yml,yaml,json}')))
             .debug()
             .pipe(twigG(twigOptions))
-            .pipe(prettierG({ tabWidth: 4 }))
-            .pipe(htmlCleanG({ collapseWhitespace: false }))
+            .pipe(prettierG({tabWidth: 4}))
+            .pipe(htmlCleanG({collapseWhitespace: false}))
             .dest()
     },
 
@@ -129,7 +118,7 @@ tron.task(build)
     .addWatcher({
         browserSync: {
             server: path.resolve(destRoot),
-            port: port + parseInt(prefix),
-            ui: { port: port + 100 + parseInt(prefix) },
+            port: port + Number.parseInt(prefix, 10),
+            ui: {port: port + 100 + Number.parseInt(prefix, 10)},
         },
     })

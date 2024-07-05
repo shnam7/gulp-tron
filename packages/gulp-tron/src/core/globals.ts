@@ -1,20 +1,26 @@
 import gulp from 'gulp'
-import type { GulpStream } from './types.js'
+import type {GulpStream} from './types.js'
 
+// eslint-disable-next-line import/no-mutable-exports
 let _gulpInstance = gulp
 
 export function useGulp(gulpInstacen: typeof gulp) {
     _gulpInstance = gulpInstacen
 }
 
-export function streamToPromise(stream: GulpStream | null) {
-    return stream
-        ? new Promise((resolve, reject) => {
-            if (stream.resume) stream.resume()
-            if (stream.readable) stream.on('end', () => resolve(null))
-            if (stream.writable) stream.on('finish', () => resolve(null))
-        })
-        : Promise.resolve()
-}
+// export async function streamToPromise(stream: GulpStream) {
+//     return new Promise((resolve, reject) => {
+//         if (stream.resume) stream.resume()
 
-export { _gulpInstance as gulp }
+//         //   if (stream.readable)
+//         //       stream.on('end', () => {
+//         //           resolve(stream)
+//         //       })
+//         //   if (stream.writable)
+//         stream.on('finish', () => {
+//             resolve(null)
+//         })
+//     })
+// }
+
+export {_gulpInstance as gulp}

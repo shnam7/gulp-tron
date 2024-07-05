@@ -1,10 +1,8 @@
-
-import { BuildStream, PluginFunction } from 'gulp-tron'
-import { Plugin } from 'imagemin'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
+import {type Plugin} from 'imagemin'
 import imageminG from 'gulp-imagemin'
 
 export type ImageminOptions = imageminG.Options
-
 
 /**
  * Imagemin plugin - wrapper for gulp-imagemin
@@ -15,7 +13,10 @@ export type ImageminOptions = imageminG.Options
  */
 export function imageminP(pluginsOrOptions?: readonly Plugin[] | ImageminOptions): PluginFunction
 export function imageminP(plugins?: readonly Plugin[], options?: ImageminOptions): PluginFunction
-export function imageminP(pluginsOrOptions?: readonly Plugin[] | ImageminOptions, options?: ImageminOptions): PluginFunction {
+export function imageminP(
+    pluginsOrOptions?: readonly Plugin[] | ImageminOptions,
+    options?: ImageminOptions,
+): PluginFunction {
     return (bs: BuildStream) => {
         if (Array.isArray(pluginsOrOptions)) return bs.pipe(imageminG(pluginsOrOptions, options))
         return bs.pipe(imageminG(pluginsOrOptions))

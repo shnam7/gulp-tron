@@ -3,9 +3,10 @@
  *
  */
 
-import { BuildStream, PluginFunction } from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import * as dartSass from 'sass'
 import gulpSass from 'gulp-sass'
+
 const sassG = gulpSass(dartSass)
 
 export type SassOptions = Parameters<ReturnType<typeof gulpSass>>[0]
@@ -16,8 +17,10 @@ export type SassOptions = Parameters<ReturnType<typeof gulpSass>>[0]
  * @param options - DartSass options
  * @returns PluginFunction
  */
-export const sassP = (options?: SassOptions): PluginFunction => (bs: BuildStream) => {
-    bs.pipe(sassG(options).on('error', sassG.logError))
-}
+export const sassP =
+    (options?: SassOptions): PluginFunction =>
+    (bs: BuildStream) => {
+        bs.pipe(sassG(options).on('error', sassG.logError))
+    }
 
 export default sassP

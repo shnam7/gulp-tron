@@ -13,17 +13,17 @@
         "@gulp-tron/plugin-scripts": "workspace:*"
     },
     "devDependencies": {
-        "@babel/core": "^7.24.6",
-        "@babel/preset-env": "^7.24.6",
-        "@babel/preset-react": "^7.24.6",
+        "@babel/core": "^7.24.7",
+        "@babel/preset-env": "^7.24.7",
+        "@babel/preset-react": "^7.24.7",
         "@types/react": "^18",
         "@types/react-dom": "^18",
-        "eslint-plugin-react": "^7.34.1",
+        "eslint-plugin-react": "^7.34.3",
         "gulp": "^5.0.0",
         "gulp-babel": "^8.0.0",
         "gulp-tron": "workspace:*",
         "gulp-typescript": "6.0.0-alpha.1",
         "rimraf": "^5.0.7",
-        "typescript": "^5.4.5"
+        "typescript": "^5.5.3"
     }
 }
