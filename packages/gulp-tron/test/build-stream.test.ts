@@ -4,7 +4,6 @@ import {Transform} from 'node:stream'
 import {type MockInstance, afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import type Vinyl from 'vinyl'
 import {pEvent} from 'p-event'
-import {filterSync} from 'event-stream'
 import {BuildStream} from '../src/core/build-stream.js'
 import {gulp} from '../src/core/globals.js'
 import {type DestOptions, type SrcOptions, type BuildOptions} from '../src/core/types.js'
@@ -374,6 +373,30 @@ describe('.pipe()', () => {
     })
 })
 
+describe('.copy()', () => {
+    it('prints default log messages.', async () => {
+        const messages: string[] = []
+        const consoleMock = vi
+            .spyOn(console, 'log')
+            .mockImplementation((...args: any[]) => messages.push(args.join('')))
+        const bs = new BuildStream('test')
+        bs.copy({src: __srcGlob, dest: './dummy'}, {dryRun: true})
+        expect(messages.length).toBe(2)
+        expect(messages[0].startsWith(`${bs.name}::copy:`)).toBeTruthy()
+        expect(messages[1].startsWith(`${bs.name}::>>>>: ${__srcFiles.length} file`)).toBeTruthy()
+        consoleMock.mockRestore()
+    })
+    it('preserves build stream.', async () => {
+        vi.spyOn(console, 'log').mockImplementation(() => {})
+        const bs = new BuildStream('test')
+        bs.src(__srcGlob).copy({src: '*', dest: './dummy'}, {dryRun: true})
+        const files: string[] = []
+        bs.peek((file: Vinyl) => files.push(file.basename))
+        await pEvent(bs.stream, 'finish')
+        expect(files).toEqual(__srcFiles)
+    })
+})
+
 describe('.clearStream()', () => {
     it('remove all the files int the build stream.', async () => {
         const bs = new BuildStream('test')
@@ -387,39 +410,3 @@ describe('.clearStream()', () => {
         expect(files.length).toBe(0)
     })
 })
-
-// describe('.changed()', () => {
-//     it('does not pipe to gulp-changed if destination is not valid.', async () => {
-//     })
-// })
-
-// describe('.src()', () => {
-//     const bs = new BuildStream('test', {src: './src/core/*.ts'})
-//     it('use TaskConf.src property as default.', async () => {
-//         let globString
-//         const glupSrc = gulp.src
-//         const srcMock = vi.spyOn(gulp, 'src').mockImplementation((globs: string | string[]) => {
-//             globString = globs
-//             // return BuildStream.nullStream()
-//             return glupSrc(globs)
-//         })
-//         const destMock = vi.spyOn(gulp, 'dest')
-//         const files: string[] = []
-//         bs.src()
-//             .peek((file: Vinyl) => {
-//                 files.push(file.basename)
-//             })
-//             .dest()
-//         await pEvent(bs.stream, 'finish')
-
-//         expect(srcMock).toHaveBeenCalledTimes(1)
-//         expect(destMock).toHaveBeenCalledTimes(1)
-//         expect(globString).toBe(bs.opts.src)
-
-//         srcMock.mockRestore()
-//         destMock.mockRestore()
-
-//         expect(files.length).toBe(4)
-//         console.log(`---11`, files)
-//     })
-// })

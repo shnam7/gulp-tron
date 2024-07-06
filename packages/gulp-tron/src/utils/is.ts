@@ -6,13 +6,10 @@ const _is = (a: any, name: string): boolean => toString.call(a) === '[object ' +
  * Collectin of type-checking functions
  */
 export const is = {
-    // Array: (a: unknown): a is (typeof a)[] => Array.isArray(a),
-    Array: (a: unknown): a is Array<typeof a> => _is(a, 'Array'),
-    // Object: (a: unknown): a is object => a === Object(a),
+    Array: Array.isArray ?? ((a: unknown): a is Array<typeof a> => _is(a, 'Array')),
     Object: (a: unknown): a is Record<string, unknown> => _is(a, 'Object'),
-    // Arguments: (a: unknown) => _is(a, 'Argument'),
-    // Function: (a: unknown): a is Function => _is(a, 'Function')
-    Function: (a: unknown): a is Function => typeof a === 'function' && !/^class\s/.test(Function.prototype.toString.call(a)),
+    Function: (a: unknown): a is Function =>
+        typeof a === 'function' && !/^class\s/.test(Function.prototype.toString.call(a)),
     String: (a: unknown): a is string => _is(a, 'String'),
     Number: (a: unknown): a is number => _is(a, 'Number'),
     Date: (a: unknown): a is Date => _is(a, 'Date'),
@@ -23,7 +20,8 @@ export const is = {
     WeakMap: (a: unknown): a is typeof WeakMap => _is(a, 'WeakMap'),
     Set: (a: unknown): a is typeof Set => _is(a, 'Set'),
     WeakSet: (a: unknown): a is typeof WeakSet => _is(a, 'WeakSet'),
-    Class: (a: unknown): a is typeof Function => typeof a === 'function' && /^class\s/.test(Function.prototype.toString.call(a)),
+    Class: (a: unknown): a is typeof Function =>
+        typeof a === 'function' && /^class\s/.test(Function.prototype.toString.call(a)),
 }
 
 export default is

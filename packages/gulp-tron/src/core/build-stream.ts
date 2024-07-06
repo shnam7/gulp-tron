@@ -1,5 +1,8 @@
+import process from 'node:process'
 import child_process from 'node:child_process'
 import {Transform, type TransformCallback, type Stream} from 'node:stream'
+import fs from 'node:fs'
+import path from 'node:path'
 import debugG, {type DebugOptions} from 'gulp-debug2'
 import filterG from 'gulp-filter'
 import renameG from 'gulp-rename'
@@ -14,6 +17,7 @@ import vinyl from 'vinyl-fs'
 import through from 'through2'
 import streamqueue from 'streamqueue'
 import es from 'event-stream'
+import {globbySync} from 'globby'
 import {is, arrayify} from '../utils/index.js'
 import {gulp} from './globals.js'
 import type {
@@ -29,7 +33,7 @@ import type {
 } from './types.js'
 
 export type CopyParam = {src: string | string[]; dest: string}
-export type CopyOptions = GulpChangedOptions & LogOptions
+export type CopyOptions = {dryRun?: boolean} & GulpChangedOptions & LogOptions
 
 type SrcMethod = typeof gulp.src
 type DestMethod = typeof gulp.dest
@@ -242,11 +246,6 @@ export class BuildStream {
         dest ??= this.opts.dest
         if (!dest) return this
 
-        // if (!dest) {
-        //     if (!this.options.dest) return this
-        //     dest = this.options.dest
-        // }
-
         const opts = {...options}
         opts.hasChanged ??= compareContents
 
@@ -349,45 +348,57 @@ export class BuildStream {
         arg3: CopyOptions = {},
     ): this {
         /** function copying changed files only */
-        type CopyOptionsEx = CopyOptions & {index?: number}
-        async function _copy(globs: string | string[], dest: string, opts: CopyOptionsEx = {}) {
-            let filesToCopy = 0
-            let filesCopied = 0
+        function _copy(globs: string | string[], dest: string, opts: CopyOptions = {}) {
             const logger = opts.logger ?? console.log
-            const taskIdTag = opts.index ? `[${opts.index}]` : ''
+            const filesToCopy = globbySync(globs)
 
-            if (opts.logLevel !== 'silent') {
-                logger(`${taskIdTag}>>> copying:['${arrayify(globs).join(', ')}]' => '${dest}':`)
+            if (opts.logLevel !== 'silent')
+                logger(`copy:['${arrayify(globs).join(', ')}'] => '${dest}':`)
+
+            let srcStat
+            let destStat
+            let copyCount = 0
+
+            for (let srcFile of filesToCopy) {
+                srcFile = path.relative(process.cwd(), srcFile)
+                const destFile = path.relative(
+                    process.cwd(),
+                    path.join(dest, path.basename(srcFile)),
+                )
+
+                ++copyCount
+                srcStat = fs.statSync(srcFile)
+                try {
+                    destStat = fs.statSync(destFile)
+                } catch (error: any) {
+                    if (error.code !== 'ENOENT') throw error as Error
+                }
+
+                const copyInfo = `  ${copyCount}) ${srcFile} --> ${dest}`
+                if (destStat && srcStat.mtime <= destStat.mtime && srcStat.size === destStat.size) {
+                    if (opts.logLevel === 'verbose') logger(`${copyInfo} (already exists.)`)
+                    continue
+                }
+
+                if (opts.logLevel === 'verbose') logger(`${copyInfo}`)
+                if (!opts.dryRun) {
+                    fs.mkdirSync(dest, {recursive: true})
+                    fs.copyFileSync(srcFile, destFile)
+                }
             }
 
-            const bs = new BuildStream(taskIdTag)
-            bs.src(globs, {encoding: false}) // use raw binary data
-                .peek(() => ++filesToCopy)
-                .changed(dest, opts)
-                .peek(
-                    file => {
-                        const copyInfo = `${taskIdTag}... file:${file.path}' => '${dest}'`
-                        if (opts.logLevel === 'verbose') logger(`${copyInfo}`)
-                        filesCopied += 1
-                    },
-                    () => {
-                        if (opts.logLevel !== 'silent')
-                            logger(
-                                `${taskIdTag}>>> ${filesToCopy} file(s) synched (${filesCopied} files copied).`,
-                            )
-                    },
-                )
-                .pipe(gulp.dest(dest))
-            await pEvent(bs.stream, 'finish')
+            if (opts.logLevel !== 'silent') {
+                const plural = `file${filesToCopy.length > 1 ? 's' : ''}`
+                logger(`>>>>: ${filesToCopy.length} ${plural} copied.`)
+            }
         }
 
         const optCommon = {logLevel: this._opts.logLevel, logger: this.logger}
         for (const [index, item] of arrayify(arg1).entries()) {
-            if (is.String(item)) {
-                this.promise(_copy(item, arg2 as string, {...optCommon, ...arg3}))
-            } else {
-                const opts = {...optCommon, ...(arg2 as CopyOptions), index: index + 1}
-                this.promise(_copy(item.src, item.dest, opts))
+            if (is.String(item)) _copy(item, arg2 as string, {...optCommon, ...arg3})
+            else {
+                const opts = {...optCommon, ...(arg2 as CopyOptions)}
+                _copy(item.src, item.dest, opts)
             }
         }
 

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import tron, { BuildStream } from 'gulp-tron'
-import { imageminP } from '../src/index.js'
+import {describe, expect, it} from 'vitest'
+import tron, {BuildStream} from 'gulp-tron'
+import {imageminP} from '../src/index.js'
 
 describe('imagemin', () => {
     it('is a function.', () => {
@@ -8,6 +8,6 @@ describe('imagemin', () => {
     })
     it('can be piped to BuildStream.', () => {
         const bs = new BuildStream('test')
-        expect(bs.pipe(imageminP())).toBeInstanceOf(BuildStream)
+        expect(bs.chain(imageminP())).toBeInstanceOf(BuildStream)
     })
 })
