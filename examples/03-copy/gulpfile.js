@@ -17,10 +17,10 @@ tron.task(createTestFiles)
 
 const testSingleCopy = {
     name: 'testSingleCopy',
-    build: bs => bs.copy('test-src/**/*.html', 'test-dest'),
-    // build: bs => bs.src().debug('before copy:').copy('test-src/**/*.html', 'test-dest').debug('after copy:'),
+    build: bs =>
+        bs.src().debug('before copy:').copy('test-src/**/*.html', 'test-dest').debug('after copy:'),
 
-    // src: 'test-src/**/*.js',
+    src: 'test-src/**/*.js',
     logLevel: 'verbose',
 }
 tron.task(testSingleCopy)
@@ -34,14 +34,6 @@ const testMultiCopy = {
         ]),
 }
 tron.task(testMultiCopy)
-
-// const pushpop = {
-//     name: 'pushpop',
-//     build: bs => {
-//         bs.src('./test-src/**/*').debug({ title: 'before push' }).pushStream().debug({ title: 'after push' }).popStream().debug({ title: 'after pop' })
-//     },
-// }
-// tron.task(pushpop)
 
 const build = {
     name: '@build',

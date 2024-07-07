@@ -1,5 +1,5 @@
-import { getSub1NodeBabel } from './sub-1.js'
-import { getSub2NodeBabel } from './sub-2.js'
+import {getSub1NodeBabel} from './sub-1.js'
+import {getSub2NodeBabel} from './sub-2.js'
 
 await Promise.resolve()
 
@@ -19,15 +19,15 @@ class BabelContainer {
     }
 
     render(root) {
-        const title = document.createElement('h1')
-        title.innerText = this._title
+        const title = document.createElement('h1') // eslint-disable-line no-undef
+        title.textContent = this._title
 
         root.style.cssText = this._style
-        root.appendChild(title)
-        root.appendChild(getSub1NodeBabel())
-        root.appendChild(getSub2NodeBabel())
+        root.append(title)
+        root.append(getSub1NodeBabel())
+        root.append(getSub2NodeBabel())
     }
 }
 
-let container = new BabelContainer()
-container.render(document.getElementById('babel'))
+const container = new BabelContainer()
+container.render(document.querySelector('#babel')) // eslint-disable-line no-undef

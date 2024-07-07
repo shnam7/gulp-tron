@@ -1,4 +1,4 @@
-export default config = {
+const config = {
     extends: 'standard',
     rules: {
         indent: ['error', 4],
@@ -11,3 +11,5 @@ export default config = {
         'eol-last': 0,
     },
 }
+
+export default config

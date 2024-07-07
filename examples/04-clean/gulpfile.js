@@ -5,8 +5,6 @@ import fs from 'node:fs'
 import tron from 'gulp-tron'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-// --- project settings
 // const projectName = path.basename(__dirname)
 // const prefix = projectName + ':'
 const basePath = path.relative(process.cwd(), __dirname)

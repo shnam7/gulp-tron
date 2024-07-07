@@ -383,7 +383,7 @@ describe('.copy()', () => {
         bs.copy({src: __srcGlob, dest: './dummy'}, {dryRun: true})
         expect(messages.length).toBe(2)
         expect(messages[0].startsWith(`${bs.name}::copy:`)).toBeTruthy()
-        expect(messages[1].startsWith(`${bs.name}::>>>>: ${__srcFiles.length} file`)).toBeTruthy()
+        expect(messages[1].startsWith(`${bs.name}::  >>>: ${__srcFiles.length} file`)).toBeTruthy()
         consoleMock.mockRestore()
     })
     it('preserves build stream.', async () => {

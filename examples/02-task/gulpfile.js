@@ -4,10 +4,8 @@ import tron from 'gulp-tron'
 import gulp from 'gulp'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-// --- project settings
-const projectName = path.basename(__dirname)
-const prefix = projectName + ':'
+// const projectName = path.basename(__dirname)
+// const prefix = projectName + ':'
 // const basePath = path.relative(process.cwd(), __dirname)
 
 // --- build item type #1: BuildConfig items
@@ -16,15 +14,15 @@ const build2 = {name: 'build2', build: bs => console.log(`${bs.name} executed`)}
 
 // --- build item type #2: native gulp task function
 function buildFunc(bs) {
-    console.log(`gulpTaskFunc(${bs.name}): Hello, Lake!`)
+    console.log(`gulpTaskFunc(${bs.name}): Hello, Tron!`)
 }
 
 // --- build item type #3: existing gulp task
-gulp.task(prefix + 'nativeGulpTask', done => done()) // this task will be created first
+gulp.task('nativeGulpTask', done => done()) // this task will be created first
 
 // --- buildset: combination of single item, series, parallel
 const set01 = [build1]
-const set02 = [build1, build2, buildFunc, prefix + 'nativeGulpTask'] // series
+const set02 = [build1, build2, buildFunc, 'nativeGulpTask'] // series
 const set03 = tron.parallel(build1, build2)
 const set04 = tron.series(build1, build2)
 const set05 = [build1, build2] // serial set, the same as set04
@@ -51,7 +49,6 @@ const cmd1 = {
     build(bs) {
         bs.exec(`ls -1 .`)
     },
-    dependsOn: undefined,
 }
 
 const cmd2 = {

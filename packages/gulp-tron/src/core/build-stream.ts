@@ -318,7 +318,15 @@ export class BuildStream {
      * @returns this
      */
     pipe(gulpPlugin: GulpStream | Transform, options?: {end?: boolean}): this {
-        this._stream = this._stream.pipe(gulpPlugin, options)
+        try {
+            this._stream = this._stream.pipe(gulpPlugin, options)
+        } catch (error: any) {
+            // preventive message to avoid confusion between gulp plugin and tron plugin.
+            throw is.Function(gulpPlugin)
+                ? new Error(`Tron:error: use bs.chain() to use tron Plugin.`)
+                : (error as Error)
+        }
+
         return this
     }
 
@@ -389,7 +397,7 @@ export class BuildStream {
 
             if (opts.logLevel !== 'silent') {
                 const plural = `file${filesToCopy.length > 1 ? 's' : ''}`
-                logger(`>>>>: ${filesToCopy.length} ${plural} copied.`)
+                logger(`  >>>: ${filesToCopy.length} ${plural} copied.`)
             }
         }
 
@@ -451,8 +459,8 @@ export class BuildStream {
 
         const opts: ExecOptions = {shell: true, stdio: 'pipe', ...options}
         const childProcess = child_process.spawn(cmd, args, opts)
-        if (childProcess.stdout) childProcess.stdout.on('data', data => this.log(data))
-        if (childProcess.stderr) childProcess.stderr.on('data', data => this.log(data))
+        childProcess.stdout?.pipe(process.stdout)
+        childProcess.stderr?.pipe(process.stderr)
 
         this.promise(
             new Promise((resolve, reject) => {
@@ -537,32 +545,6 @@ export class BuildStream {
         this._stream = this._stream.pipe(clearStreamG())
         return this
     }
-
-    // /**
-    //  * Push current build stream to internal stack.
-    //  * Optionally resets current build stream.
-    //  *
-    //  * @param clearStream if true, current build stream is cleared. default false.
-    //  * @returns this
-    //  */
-    // pushStream(clearStream = false): this {
-    //     if (this._stream === null) return this
-    //     this._streamStack.push(this._stream.pipe(cloneStreamG()))
-    //     if (clearStream) this.clearStream()
-    //     return this
-    // }
-
-    // /**
-    //  * If pushed stream is available, then clear current and pop the pushed stream back to cuerrent.
-    //  *
-    //  * @returns BuildStream itself.
-    //  */
-    // popStream(): this {
-    //     if (this._streamStack.length <= 0) return this
-    //     this.clearStream()
-    //     this._stream = this._streamStack.pop()!
-    //     return this
-    // }
 
     debug(title?: string, options?: DebugOptions): this
 

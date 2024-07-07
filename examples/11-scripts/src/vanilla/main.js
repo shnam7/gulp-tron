@@ -1,4 +1,6 @@
-const container = document.getElementById('vanilla')
+/* eslint-disable no-undef */
+
+const container = document.querySelector('#vanilla')
 
 container.style.cssText = `
     position: relative;
@@ -7,8 +9,8 @@ container.style.cssText = `
 `
 
 const title = document.createElement('h1')
-title.innerText = 'Vanilla JavaScript'
+title.textContent = 'Vanilla JavaScript'
 
-container.appendChild(title)
-container.appendChild(getSub1Node())
-container.appendChild(getSub2Node())
+container.append(title)
+container.append(getSub1Node())
+container.append(getSub2Node())

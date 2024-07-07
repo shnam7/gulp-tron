@@ -1,15 +1,15 @@
-import { getSub1Node } from './sub-1.js'
-import { getSub2Node } from './sub-2.js'
+import {getSub1Node} from './sub-1.js'
+import {getSub2Node} from './sub-2.js'
 
 await Promise.resolve()
 
-class TSContainer {
+class TsContainer {
+    // ES2022: Static class properties
+    static staticProperty = 'typescriptIsCool'
+
     // ES2022: initializer syntax
     protected _title = 'Typescript'
     protected _style
-
-    // ES2022: Static class properties
-    static staticProperty = 'typescriptIsCool'
 
     constructor() {
         this._style = `
@@ -19,19 +19,18 @@ class TSContainer {
         `
     }
 
-    render(root: HTMLElement | null) {
-        if (!root)
-            throw Error(`typescript:Invalid root root node`)
+    render(root: HTMLElement | undefined) {
+        if (!root) throw new Error(`typescript:Invalid root root node`)
 
         const title = document.createElement('h1')
-        title.innerText = this._title
+        title.textContent = this._title
 
         root.style.cssText = this._style
-        root.appendChild(title)
-        root.appendChild(getSub1Node())
-        root.appendChild(getSub2Node())
+        root.append(title)
+        root.append(getSub1Node())
+        root.append(getSub2Node())
     }
 }
 
-let container = new TSContainer()
-container.render(document.getElementById('typescript'))
+const container = new TsContainer()
+container.render(document.querySelector<HTMLElement>('#typescript')!)

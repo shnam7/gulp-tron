@@ -5,8 +5,6 @@ import tron from 'gulp-tron'
 import myScss from './gulp-tron-plugins/my-scss.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-// --- project settings
 const basePath = path.relative(process.cwd(), __dirname)
 // const projectName = path.basename(__dirname)
 // const prefix = projectName + ':'
@@ -15,7 +13,7 @@ const sassOpts = {includePaths: ['./scss/lib']}
 
 // --- custom plugin
 const hello = msg => bs => {
-    console.log(`${bs.name}:${msg}: custom plugin is running`)
+    console.log(`${bs.name}:${msg}: custom plugin is running.`)
 }
 
 const customPlugin = {
@@ -42,7 +40,7 @@ tron.createTask({
             .intercept((file, enc, cb) => {
                 if (file.path.endsWith('.css')) cb(null, file)
                 else cb(null)
-                bs.log(`---`, file.path)
+                bs.log(`---`, file.basename)
             })
             .debug('after:')
     },

@@ -7,7 +7,7 @@ $sidebar-width: 20rem !default;
 $content-width: calc(100% - #{$sidebar-width}) !default;
 
 html {
-    font-family: "Arial", sans-serif;
+    font-family: 'Arial', sans-serif;
     font-size: 16px;
 }
 
@@ -19,7 +19,6 @@ html {
         clear: both;
     }
 }
-
 
 //--- styles
 [id^='l-'] {
@@ -86,8 +85,6 @@ html {
     background: rgba(#000, 0.8);
 }
 
-
-
 #l-navbar {
     background: $color-bahama-blue;
     height: 3.5rem;
@@ -142,11 +139,11 @@ html {
 }
 
 .sidebar {
-    &>ul {
+    & > ul {
         margin: 0;
         padding-left: 1rem;
 
-        &>li {
+        & > li {
             list-style-position: outside;
             margin: 0;
         }

@@ -268,6 +268,9 @@ export class Tron {
      */
     selectTasks(patterns?: string | string[]): TaskConfig[] | undefined {
         if (!patterns) return undefined
+        patterns = arrayify(patterns)
+        if (patterns.length > 0 && patterns.every(pattern => pattern.startsWith('!')))
+            patterns.unshift('*')
 
         const selected = this._taskConfigs.filter(
             task => multimatch(task.name, patterns).length > 0,
@@ -306,13 +309,85 @@ export class Tron {
     // }
 
     /**
+     *Convert buildSet to gulp task tree
+     *
+     * @param buildSet buildSet currently being resolved
+     * @param conf original TaskConfig
+     * @returns gulp task function of the gulp task tree constructed from buildSet. undefined there's no task.
+     */
+    protected _resolveBuildSet(buildSet?: BuildSet): GulpTaskFunction | undefined {
+        if (!buildSet) return
+
+        // buildSet is gulp task name (BuildName)
+        if (is.String(buildSet)) {
+            const gulpTask = gulp.task(buildSet)
+            if (!gulpTask) throw new Error(`Tron:resolveBuildset: Task "${buildSet}" is not found.`)
+            return gulpTask
+        }
+
+        if (is.Function(buildSet)) {
+            // All the function argument to the function is assumed to be BuildFunction,
+            // and it is converted to TaskCobfig object for processing with __resolveBuildSet()
+            const name = `tron-anonymous#${++Tron.annonCount}-${buildSet.name}`
+            return this._resolveTaskConfg({name, build: buildSet})
+        }
+
+        // buildSet is TaskConfig object
+        if (is.Object(buildSet))
+            return Object.hasOwn(buildSet, 'set')
+                ? this._resolveBuildSetGroup(buildSet as BuildSetSeries | BuildSetParallel)
+                : this._resolveTaskConfg(buildSet as TaskConfig)
+
+        // buildSet is BuildSetSeries or BuildSetParallel
+        return this._resolveBuildSetGroup(buildSet as BuildSetParallel | BuildSetSeries)
+    }
+
+    protected _resolveBuildSetGroup(
+        buildSet: BuildSetSeries | BuildSetParallel,
+    ): GulpTaskFunction | undefined {
+        // BuildSet is series of BuildSet items
+        if (is.Array(buildSet)) {
+            // Strip redundant outer arrays
+            while (buildSet.length === 1 && is.Array(buildSet[0])) buildSet = buildSet[0]
+
+            const list = []
+            for (const bs of buildSet) {
+                const ret = this._resolveBuildSet(bs)
+                if (ret) list.push(ret)
+            }
+
+            if (list.length === 0) return
+            return list.length > 1 ? gulp.series(list) : list[0]
+        }
+
+        // BuildSet is parallel set of BuildSet items
+        if (is.Object(buildSet) && Object.hasOwn(buildSet, 'set')) {
+            let {set} = buildSet
+            // Strip redundant outer arrays
+            while (set.length === 1 && Array.isArray(set[0])) set = set[0]
+
+            const list = []
+            for (const bs of set) {
+                const ret = this._resolveBuildSet(bs)
+                if (ret) list.push(ret)
+            }
+
+            if (list.length === 0) return
+            return list.length > 1 ? gulp.parallel(list) : list[0]
+        }
+
+        // BuildSet is unknown - throw Error
+        throw new Error(`Tron:resolveBuildSet:Unknown type of buildSet`, {cause: buildSet})
+    }
+
+    /**
      * Create gulp task with the data in TaskConfig object.
      *
      * @param conf TaskConfig object
      * @returns task funtion created by gulp. Value returned from gulp.task(taskName).
      */
     // _resolveTaskConfg(conf: TaskConfigWithMutableTaskName): GulpTaskFunction {
-    _resolveTaskConfg(conf: TaskConfig): GulpTaskFunction {
+    protected _resolveTaskConfg(conf: TaskConfig): GulpTaskFunction {
         // const {name, build, dependsOn, triggers, logLevel, group} = conf
         const {name, build, dependsOn, triggers, logLevel} = conf
         if (!name) throw new Error(`Tron:resolveTaskConfig: invalid task name: ${name}`)
@@ -383,75 +458,5 @@ export class Tron {
         // conf.taskName = taskName
         this._taskConfigs.push(conf)
         return gulpTask.unwrap()
-    }
-
-    /**
-     *Convert buildSet to gulp task tree
-     *
-     * @param buildSet buildSet currently being resolved
-     * @param conf original TaskConfig
-     * @returns gulp task function of the gulp task tree constructed from buildSet. undefined there's no task.
-     */
-    _resolveBuildSet(buildSet?: BuildSet): GulpTaskFunction | undefined {
-        if (!buildSet) return
-
-        // buildSet is gulp task name (BuildName)
-        if (is.String(buildSet)) {
-            const gulpTask = gulp.task(buildSet)
-            if (!gulpTask) throw new Error(`Tron:resolveBuildset: Task "${buildSet}" is not found.`)
-            return gulpTask
-        }
-
-        if (is.Function(buildSet)) {
-            // All the function argument to the function is assumed to be BuildFunction,
-            // and it is converted to TaskCobfig object for processing with __resolveBuildSet()
-            const name = `tron-anonymous#${++Tron.annonCount}-${buildSet.name}`
-            return this._resolveTaskConfg({name, build: buildSet})
-        }
-
-        // buildSet is TaskConfig object
-        if (is.Object(buildSet) && Object.hasOwn(buildSet, 'name'))
-            return this._resolveTaskConfg(buildSet as TaskConfig)
-
-        // buildSet is BuildSetSeries or BuildSetParallel
-        return this._resolveBuildSetGroup(buildSet as BuildSetParallel | BuildSetSeries)
-    }
-
-    _resolveBuildSetGroup(
-        buildSet: BuildSetSeries | BuildSetParallel,
-    ): GulpTaskFunction | undefined {
-        // BuildSet is series of BuildSet items
-        if (is.Array(buildSet)) {
-            // Strip redundant outer arrays
-            while (buildSet.length === 1 && is.Array(buildSet[0])) buildSet = buildSet[0]
-
-            const list = []
-            for (const bs of buildSet) {
-                const ret = this._resolveBuildSet(bs)
-                if (ret) list.push(ret)
-            }
-
-            if (list.length === 0) return
-            return list.length > 1 ? gulp.series(list) : list[0]
-        }
-
-        // BuildSet is parallel set of BuildSet items
-        if (is.Object(buildSet) && Object.hasOwn(buildSet, 'set')) {
-            let {set} = buildSet
-            // Strip redundant outer arrays
-            while (set.length === 1 && Array.isArray(set[0])) set = set[0]
-
-            const list = []
-            for (const bs of set) {
-                const ret = this._resolveBuildSet(bs)
-                if (ret) list.push(ret)
-            }
-
-            if (list.length === 0) return
-            return list.length > 1 ? gulp.parallel(list) : list[0]
-        }
-
-        // BuildSet is unknown - throw Error
-        throw new Error(`Tron:resolveBuildSet:Unknown type of buildSet`, {cause: buildSet})
     }
 }

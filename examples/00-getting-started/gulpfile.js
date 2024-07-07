@@ -4,22 +4,18 @@ import {fileURLToPath} from 'node:url'
 import tron from 'gulp-tron'
 import gulpSass from 'gulp-sass'
 import * as dartSass from 'sass'
-import babel from 'gulp-babel'
+import babelG from 'gulp-babel'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-// --- project settings
 const basePath = path.relative(process.cwd(), __dirname)
-// const projectName = path.basename(__dirname)
-// const prefix = projectName
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, 'www')
-const sass = gulpSass(dartSass)
+const sassG = gulpSass(dartSass)
 
 // --- styles
 const scss = {
     name: 'scss',
-    build: bs => bs.src().pipe(sass().on('error', sass.logError)).dest(),
+    build: bs => bs.log(`<scss:build>`).src().pipe(sassG().on('error', sassG.logError)).dest(),
 
     src: path.join(srcRoot, 'scss/**/*.scss'),
     dest: path.join(destRoot, 'css'),
@@ -28,7 +24,7 @@ const scss = {
 // --- scripts
 const scripts = {
     name: 'scripts',
-    build: bs => bs.src().pipe(babel()).dest(),
+    build: bs => bs.log(`<scripts:build>`).src().pipe(babelG()).dest(),
 
     src: path.join(srcRoot, 'js/**/*.js'),
     dest: path.join(destRoot, 'js'),

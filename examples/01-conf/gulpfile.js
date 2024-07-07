@@ -3,12 +3,12 @@ import {fileURLToPath} from 'node:url'
 import tron from 'gulp-tron'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const __filename = path.basename(__dirname)
 
-// --- project settings
-const projectName = path.basename(__dirname)
-const taskOptions = {
-    group: projectName,
-    prefix: true,
+const commonBuildOptions = {
+    sourcemaps: true,
+    // group: projectName,
+    // prefix: true,
 }
 
 // --- standard TaskConfig form
@@ -26,7 +26,7 @@ const b5 = {name: 'b5', dependsOn: b1, triggers: b2}
 tron.createTasks(b3, b4, b5)
 
 // --- g0 has group prefix
-const g0 = {name: 'g0', dependsOn: b1, triggers: b2, ...taskOptions}
+const g0 = {name: 'g0', dependsOn: b1, triggers: b2, ...commonBuildOptions}
 tron.createTasks(g0)
 
 // --- task group with task options. check the gulp tree shape with "pnpm gulp --tasks" command
@@ -41,14 +41,14 @@ const g3 = {
     build: bs => console.log(`${bs.name} executed.`),
     dependsOn: tron.parallel(b1, b2),
 }
-tron.createTasks(g1, g2, g3, taskOptions)
+tron.createTasks(g1, g2, g3, commonBuildOptions)
 
 // --- using task options
 tron.task('b6', bs => console.log(`${bs.name}:className=${bs.className}`))
-tron.task('g4', bs => console.log(`${bs.name}:className=${bs.className}`), taskOptions)
+tron.task('g4', bs => console.log(`${bs.name}:className=${bs.className}`), commonBuildOptions)
 tron.task('g5', bs => console.log(`${bs.name}:className=${bs.className}`), {
     dependsOn: b1,
-    ...taskOptions,
+    ...commonBuildOptions,
 })
 
 tron.task({

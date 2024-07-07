@@ -76,10 +76,9 @@ const coffee = {
     name: 'coffee',
     build(bs) {
         bs.src()
-            // .debug()
             .chain(coffeelintP()) // lint first
             .chain(coffeeP())
-            // .pipe(babelP())
+            .chain(babelP())
             .chain(concatP(bs.opts.outFile))
             .dest()
             .remove('*.map') // exclude map files
@@ -107,10 +106,8 @@ const babel = {
             .chain(babelP(babelOptions))
             .dest()
             .remove('*.map') // exclude map files
-            // .debug()
             .chain(terserP(terserOptions))
             .rename({extname: '.min.js'})
-            // .debug()
             .dest()
     },
     src: [path.join(srcRoot, 'babel/**/*.{js,es6}')],
@@ -162,13 +159,12 @@ tron.task(build)
                 port: port + 100 + Number.parseInt(prefix, 10),
             },
         },
-        // triggers: build,
         // logLevel: 'verbose',
     })
-// .addWatcher({
-//     name: '@dev',
-//     watch: [path.join(destRoot, '**/*.html')],
-//     target: tron.selectTasksAll(),
-//     triggers: build,
-//     logLevel: 'verbose',
-// })
+    .addWatcher({
+        name: '@dev',
+        watch: [path.join(destRoot, '**/*.html')],
+        target: [`!static*`],
+        dependsOn: build,
+        logLevel: 'verbose',
+    })
