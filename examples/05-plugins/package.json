@@ -11,6 +11,6 @@
         "gulp": "^5.0.0",
         "gulp-sass": "^5.1.0",
         "gulp-tron": "workspace:*",
-        "sass": "^1.77.6"
+        "sass": "^1.77.7"
     }
 }

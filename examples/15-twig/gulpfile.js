@@ -1,7 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import {fileURLToPath} from 'node:url'
-import tron, {BuildStream} from 'gulp-tron'
+import tron from 'gulp-tron'
 import {sassP, cleanCssP} from '@gulp-tron/plugin-styles'
 import {terserP} from '@gulp-tron/plugin-scripts'
 import ts from 'gulp-typescript'
@@ -31,22 +31,33 @@ const scss = {
     dest: path.join(destRoot, 'css'),
 }
 
+const tsProject = ts.createProject('tsconfig.json', {declaration: true})
 const scripts = {
     name: 'scripts',
+
     build(bs) {
-        const tsProject = ts.createProject('tsconfig.json')
-        const tsResult = bs.src().pipe(tsProject())
-        const bsJ = new BuildStream(bs.name, bs.opts, tsResult.js)
-        const bsD = new BuildStream(bs.name, bs.opts, tsResult.dts).debug({title: 'tsResult:'})
+        const files = new Map()
+        const reExt = /\.(d\.)?[j,t]s$/
+        bs.src()
+            .peek(file => files.set(file.path.replace(reExt, ''), file))
+            .pipe(tsProject())
+            .peek(file => {
+                const key = file.path.replace(reExt, '')
+                const f = files.get(key)
+                if (!file.stat && f) file.stat = f.stat
+            })
+            .debug('src:')
 
-        bsJ.chain(terserP()) //
+        bs.clone()
+            .remove('*.d.ts')
+            .debug('js stream:')
+            .chain(terserP()) //
             .rename({extname: '.min.js'})
-            .debug('js Stream:')
             .changed()
-            .debug('js Stream changed:')
             .dest()
+            .debug('js:')
 
-        bsD.debug('dts Stream:').dest()
+        bs.filter('*.d.ts').dest().debug('dts:')
     },
 
     src: path.join(srcRoot, 'scripts/**/*.ts'),

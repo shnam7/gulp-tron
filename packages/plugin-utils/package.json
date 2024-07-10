@@ -33,10 +33,10 @@
         "@types/imagemin": "^9.0.0",
         "@types/js-yaml": "^4.0.9",
         "@types/through2": "^2.0.41",
-        "@vitest/coverage-v8": "^1.6.0",
+        "@vitest/coverage-v8": "^2.0.1",
         "gulp-tron": "workspace:*",
-        "rimraf": "^5.0.8",
+        "rimraf": "^6.0.0",
         "typescript": "^5.5.3",
-        "vitest": "^1.6.0"
+        "vitest": "^2.0.1"
     }
 }

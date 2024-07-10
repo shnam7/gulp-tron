@@ -35,9 +35,20 @@ const testMultiCopy = {
 }
 tron.task(testMultiCopy)
 
+const testClone = {
+    name: 'testClone',
+    build(bs) {
+        bs.src().clone().clear().debug('cloned:')
+        bs.debug('org')
+    },
+    src: 'test-src/**/*.*',
+}
+
+tron.task(testMultiCopy)
+
 const build = {
     name: '@build',
-    triggers: tron.series(createTestFiles, testSingleCopy, testMultiCopy),
+    triggers: tron.series(createTestFiles, testSingleCopy, testMultiCopy, testClone),
     clean: ['test-src', 'test-dest'],
 }
 

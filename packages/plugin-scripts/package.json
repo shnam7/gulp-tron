@@ -26,7 +26,7 @@
         "gulp-coffee": "^3.0.3",
         "gulp-coffeelint": "^0.6.0",
         "gulp-concat": "^2.6.1",
-        "gulp-eslint-new": "^2.1.0",
+        "gulp-eslint-new": "^2.2.0",
         "gulp-terser": "^2.1.0"
     },
     "devDependencies": {
@@ -36,10 +36,10 @@
         "@types/gulp-concat": "^0.0.37",
         "@types/gulp-rename": "^2.0.6",
         "@types/gulp-terser": "^1.2.6",
-        "@vitest/coverage-v8": "^1.6.0",
+        "@vitest/coverage-v8": "^2.0.1",
         "gulp-tron": "workspace:*",
-        "rimraf": "^5.0.8",
+        "rimraf": "^6.0.0",
         "typescript": "^5.5.3",
-        "vitest": "^1.6.0"
+        "vitest": "^2.0.1"
     }
 }

@@ -1,13 +1,13 @@
 import process from 'node:process'
 import child_process from 'node:child_process'
-import {Transform, type TransformCallback, type Stream} from 'node:stream'
+import {Transform, type TransformCallback, type Stream, PassThrough} from 'node:stream'
 import fs from 'node:fs'
 import path from 'node:path'
 import debugG, {type DebugOptions} from 'gulp-debug2'
 import filterG from 'gulp-filter'
 import renameG from 'gulp-rename'
 import orderG from 'gulp-order3'
-import changedG, {compareContents} from 'gulp-changed'
+import changedG, {compareLastModifiedTime, compareContents} from 'gulp-changed'
 import browserSync from 'browser-sync'
 import {deleteSync} from 'del'
 import {Mutex} from '@wicle/mutex'
@@ -44,6 +44,7 @@ function _transform(
     flush?: (cb: TransformCallback) => void,
 ): Transform {
     return new Transform({objectMode: true, highWaterMark: 16, transform, flush})
+    // return through.obj(transform, flush)
 }
 
 const clearStreamG = () =>
@@ -70,7 +71,8 @@ const appendG = (...args: Parameters<typeof vinyl.src>) => {
 export class BuildStream {
     static nullStream(): Transform {
         // return through.obj()
-        return _transform()
+        // return _transform()
+        return new PassThrough()
     }
 
     protected _name: string // BuildStream instance name (same as gulp task name)
@@ -153,9 +155,9 @@ export class BuildStream {
         if (!is.Function(opts.sourcemaps)) opts.sourcemaps = Boolean(opts.sourcemaps)
 
         // disable encoding for compatibiliy with gulp 4 in handling binary data such as images
-        opts.encoding ??= false // desfaults to false
+        opts.encoding ??= false // defaults to false
 
-        if (this._srcCalled) return this.clearStream().add(globs, opts)
+        // if (this._srcCalled) return this.clear().add(globs, opts)
 
         this._stream = gulp.src(globs as string, opts)
         this._srcCalled = true
@@ -247,9 +249,37 @@ export class BuildStream {
         if (!dest) return this
 
         const opts = {...options}
-        opts.hasChanged ??= compareContents
+        type T = (srcFile: Vinyl, destPath: string) => Promise<Vinyl | undefined>
 
+        async function compare(srcFile: Vinyl, destPath: string): Promise<Vinyl | undefined> {
+            return (await (compareLastModifiedTime as unknown as T)(srcFile, destPath)) === srcFile
+                ? (compareContents as unknown as T)(srcFile, destPath)
+                : undefined
+        }
+
+        opts.hasChanged ??= compare as unknown as typeof opts.hasChanged
         return this.pipe(changedG(dest as Parameters<typeof changedG>[0], opts))
+    }
+
+    clone(name?: string): BuildStream {
+        const cloned = this.stream.pipe(cloneStreamG())
+        const bs = new BuildStream(name ?? this._name, this._opts, cloned, this._promiseSync)
+        return bs
+    }
+
+    //-------------------------------------------------------------------------
+    // Stream API
+    //-------------------------------------------------------------------------
+    /**
+     * Reset current build stream to null.
+     * Previoius build stream is moved to internal promise queue
+     * for safe closing if it was active.
+     *
+     * @returns this
+     */
+    clear(): this {
+        this._stream = this._stream.pipe(clearStreamG())
+        return this
     }
 
     /**
@@ -383,7 +413,12 @@ export class BuildStream {
                 }
 
                 const copyInfo = `  ${copyCount}) ${srcFile} --> ${dest}`
-                if (destStat && srcStat.mtime <= destStat.mtime && srcStat.size === destStat.size) {
+
+                if (
+                    destStat &&
+                    Math.ceil(srcStat.mtimeMs) <= Math.floor(destStat.mtimeMs) &&
+                    srcStat.size === destStat.size
+                ) {
                     if (opts.logLevel === 'verbose') logger(`${copyInfo} (already exists.)`)
                     continue
                 }
@@ -531,21 +566,6 @@ export class BuildStream {
         return this
     }
 
-    //-------------------------------------------------------------------------
-    // Stream API
-    //-------------------------------------------------------------------------
-    /**
-     * Reset current build stream to null.
-     * Previoius build stream is moved to internal promise queue
-     * for safe closing if it was active.
-     *
-     * @returns this
-     */
-    clearStream(): this {
-        this._stream = this._stream.pipe(clearStreamG())
-        return this
-    }
-
     debug(title?: string, options?: DebugOptions): this
 
     debug(options?: DebugOptions): this
@@ -593,7 +613,7 @@ export class BuildStream {
      * @param peekFunc Function to monitor the contents of the stream.
      * @returns
      */
-    peek(peekFunc?: (file: any) => void, onFinish?: (cb: TransformCallback) => void): this {
+    peek(peekFunc?: (file: Vinyl) => void, onFinish?: (cb: TransformCallback) => void): this {
         return this.intercept(
             peekFunc
                 ? (file, enc, cb) => {

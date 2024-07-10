@@ -328,9 +328,9 @@ Reload the changes to browser-sync, if it is activated.
 BuildStream itself.
 
 
-### bs.clearStream()
+### bs.clear()
 ```ts
-clearStream() => this
+clear() => this
 ```
 Reset current build stream to null. Previoius build stream is moved to internal
 promise queue for safe closing if it was active.
@@ -339,26 +339,10 @@ promise queue for safe closing if it was active.
 BuildStream itself.
 
 
-### bs.pushStream()
-```ts
-pushStream(clearStream: boolean = false) => this
-```
-Push current build stream to internal stack. Optionally resets current build stream.
-
 #### Parameters
 | option | description |
 |:-----:|-----|
-| clearStream | if true, current build stream is cleared. default false. |
-
-#### Return value
-BuildStream itself.
-
-
-### bs.popStream()
-```ts
-popStream() => this
-```
-If pushed stream is available, then clear current and pop the pushed stream back to cuerrent.
+| clear | All files in the current build stream is removed.|
 
 #### Return value
 BuildStream itself.
@@ -438,7 +422,7 @@ tron.createTask({
         let cssFileCount = 0
         bs.src()
             .debug()
-            .peek((file) => {
+            .peek(file => {
                 if (file.path.endsWith('.css')) ++cssFileCount
             })
             .debug(`cssFileCount=${cssFileCount}`)

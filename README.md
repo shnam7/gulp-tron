@@ -266,10 +266,7 @@ Currently following API is provided. Refer to [BuildStream](./docs/02-BuildStrea
 | clean() | Delete clean target specified in `conf.clean` |
 | exec() | Execute external command using shell. |
 | reload() | Reload browser-sync if it is enabled. |
-| clearStream() | Remove all the files from the stream. |
-| pushStream() | Push current to save current stream and then clear the stream. |
-| popStream() | Pop a pushed stream if available. |
-| createStream() | : GulpStream { return _nullStream() }
+| clear() | Remove all the files from the stream. |
 | debug() | Print debug message using [`gulp-debug`](https://github.com/sindresorhus/gulp-debug). |
 | intercept() | Add a function to be modify the contents of the stream.. |
 | peek() | Add a function to monitor the contents of the stream. |

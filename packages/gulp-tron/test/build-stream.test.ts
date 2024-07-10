@@ -144,7 +144,7 @@ describe('.add()', () => {
         const files: string[] = []
         bs.src(__srcGlob)
             .add(__pathname)
-            .peek((file: Vinyl) => files.push(file.basename))
+            .peek(file => files.push(file.basename))
         await pEvent(bs.stream, 'finish')
         expect(files).toEqual([...__srcFiles, path.basename(__pathname)])
     })
@@ -166,7 +166,7 @@ describe('.remove()', () => {
         const files: string[] = []
         bs.src(path.join(__dirname, '*'))
             .remove('!build-stream*')
-            .peek((file: Vinyl) => files.push(file.basename))
+            .peek(file => files.push(file.basename))
         await pEvent(bs.stream, 'finish')
         expect(files).toEqual([path.basename(__pathname)])
     })
@@ -179,9 +179,9 @@ describe('.filter()', () => {
 
         const bs = new BuildStream('test', {src: __srcGlob})
         bs.src()
-            .peek((file: Vinyl) => allFiles.push(file.basename))
+            .peek(file => allFiles.push(file.basename))
             .filter('t*.ts')
-            .peek((file: Vinyl) => tFiles.push(file.basename))
+            .peek(file => tFiles.push(file.basename))
         await pEvent(bs.stream, 'finish')
 
         expect(allFiles.length).toBe(4)
@@ -197,7 +197,7 @@ describe('.rename()', () => {
         const bs = new BuildStream('test', {src: __srcGlob})
         bs.src()
             .rename({extname: 'ts-renamed'})
-            .peek((file: Vinyl) => renamedFiles.push(file.basename))
+            .peek(file => renamedFiles.push(file.basename))
         await pEvent(bs.stream, 'finish')
 
         expect(renamedFiles.length).toBe(4)
@@ -215,9 +215,9 @@ describe('.order()', () => {
         const bs = new BuildStream('test', {src: __srcGlob})
         bs.src()
             .add(path.join(__dirname, '../package.json'))
-            .peek((file: Vinyl) => originalList.push(file.basename))
+            .peek(file => originalList.push(file.basename))
             .order('package.json')
-            .peek((file: Vinyl) => orderedList.push(file.basename))
+            .peek(file => orderedList.push(file.basename))
         await pEvent(bs.stream, 'finish')
 
         expect(originalList.length).toBeGreaterThan(0)
@@ -391,22 +391,22 @@ describe('.copy()', () => {
         const bs = new BuildStream('test')
         bs.src(__srcGlob).copy({src: '*', dest: './dummy'}, {dryRun: true})
         const files: string[] = []
-        bs.peek((file: Vinyl) => files.push(file.basename))
+        bs.peek(file => files.push(file.basename))
         await pEvent(bs.stream, 'finish')
         expect(files).toEqual(__srcFiles)
     })
 })
 
-describe('.clearStream()', () => {
+describe('.clear()', () => {
     it('remove all the files int the build stream.', async () => {
         const bs = new BuildStream('test')
         const files: string[] = []
-        bs.src(__srcGlob).peek((file: Vinyl) => files.push(file.basename))
+        bs.src(__srcGlob).peek(file => files.push(file.basename))
         await pEvent(bs.stream, 'finish')
         expect(files).toEqual(__srcFiles)
 
         files.splice(0, files.length)
-        bs.clearStream().peek((file: Vinyl) => files.push(file.basename))
+        bs.clear().peek(file => files.push(file.basename))
         expect(files.length).toBe(0)
     })
 })

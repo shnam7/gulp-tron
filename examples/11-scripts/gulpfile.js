@@ -119,7 +119,7 @@ const typescript = {
     name: 'typescript',
     build(bs) {
         const tsProject = ts.createProject('src/tsconfig.json')
-        bs.src().pipe(tsProject()).debug().changed().debug().dest()
+        bs.src().pipe(tsProject()).debug('tsOut').debug('result').dest()
     },
 
     src: [path.join(srcRoot, 'typescript/**/*.ts')],
