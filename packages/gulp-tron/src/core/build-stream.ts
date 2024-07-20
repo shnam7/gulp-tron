@@ -13,12 +13,12 @@ import {deleteSync} from 'del'
 import {Mutex} from '@wicle/mutex'
 import type Vinyl from 'vinyl'
 import {pEvent} from 'p-event'
-import vinyl from 'vinyl-fs'
 import through from 'through2'
-import streamqueue from 'streamqueue'
+import {StreamQueue} from 'streamqueue'
 import es from 'event-stream'
 import {globbySync} from 'globby'
-import {is, arrayify} from '../utils/index.js'
+import is from '@wicle/is'
+import {arrayify} from '../utils/index.js'
 import {gulp} from './globals.js'
 import type {
     BuildFunction,
@@ -57,11 +57,11 @@ const cloneStreamG = () =>
         cb(null, file.clone())
     })
 
-const appendG = (...args: Parameters<typeof vinyl.src>) => {
+const appendG = (...args: Parameters<typeof gulp.src>) => {
     const pass = through.obj()
     return es.duplex(
         pass,
-        streamqueue({objectMode: true}, pass, vinyl.src.apply(vinyl.src, args) as Transform),
+        new StreamQueue({objectMode: true}, pass, gulp.src.apply(gulp.src, args) as Transform),
     )
 }
 
@@ -71,7 +71,6 @@ const appendG = (...args: Parameters<typeof vinyl.src>) => {
 export class BuildStream {
     static nullStream(): Transform {
         // return through.obj()
-        // return _transform()
         return new PassThrough()
     }
 
@@ -262,7 +261,7 @@ export class BuildStream {
     }
 
     clone(name?: string): BuildStream {
-        const cloned = this.stream.pipe(cloneStreamG())
+        const cloned = this._stream.pipe(cloneStreamG())
         const bs = new BuildStream(name ?? this._name, this._opts, cloned, this._promiseSync)
         return bs
     }
@@ -297,7 +296,7 @@ export class BuildStream {
     }
 
     on(...args: Parameters<typeof Stream.prototype.on>): this {
-        this.stream.on(...args)
+        this._stream.on(...args)
         return this
     }
 

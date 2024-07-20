@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import tron, {BuildStream} from 'gulp-tron'
+import {BuildStream} from 'gulp-tron'
 import {imageminP} from '../src/index.js'
 
 describe('imagemin', () => {

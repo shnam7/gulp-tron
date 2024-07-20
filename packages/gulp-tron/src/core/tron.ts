@@ -1,6 +1,7 @@
 import browserSync from 'browser-sync'
 import multimatch from 'multimatch'
-import {is, arrayify} from '../utils/index.js'
+import is from '@wicle/is'
+import {arrayify} from '../utils/index.js'
 import {gulp, useGulp} from './globals.js'
 import {BuildStream} from './build-stream.js'
 import type {
@@ -98,9 +99,11 @@ export class Tron {
         buildFunc?: BuildFunction,
         opts: BuildOptions = {},
     ): this {
-        const conf = is.String(nameOrConfig)
-            ? {name: nameOrConfig, build: buildFunc, ...opts}
-            : {...nameOrConfig}
+        const conf = (
+            is.String(nameOrConfig)
+                ? {name: nameOrConfig, build: buildFunc, ...opts}
+                : {...nameOrConfig}
+        ) as TaskConfig
 
         const gulpTask = this._resolveBuildSet(conf)
         if (!gulpTask) throw new Error(`Tron:task: failed to create task "${conf.name}"`)
