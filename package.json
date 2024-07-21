@@ -4,6 +4,7 @@
     "scripts": {
         "dev": "turbo dev --filter gulp-tron --filter=@gulp-tron*",
         "build": "turbo build",
+        "build:tron": "turbo build --filter=./packages/gulp-tron",
         "build:packages": "turbo build --filter=./packages/*",
         "lint": "turbo lint",
         "clean": "run-s clean:examples clean:tools",
@@ -13,7 +14,7 @@
         "reset": "npm-run-all -s clean reset:turbo reset:node",
         "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +",
         "reset:node": "find . -type d -name node_modules -exec rm -rf {} +",
-        "prepare-to-commit": "run-s test  lint build clean"
+        "prepare-to-commit": "run-s build:tron lint test build clean"
     },
     "license": "MIT",
     "engines": {
@@ -24,5 +25,5 @@
         "turbo": "^2.0.9",
         "xo": "^0.59.0"
     },
-    "packageManager": "pnpm@9.5.0+sha512.140036830124618d624a2187b50d04289d5a087f326c9edfc0ccd733d76c4f52c3a313d4fc148794a2a9d81553016004e6742e8cf850670268a7387fc220c903"
+    "packageManager": "pnpm@9.6.0+sha512.38dc6fba8dba35b39340b9700112c2fe1e12f10b17134715a4aa98ccf7bb035e76fd981cf0bb384dfa98f8d6af5481c2bef2f4266a24bfa20c34eb7147ce0b5e"
 }

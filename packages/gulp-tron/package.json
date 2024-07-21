@@ -14,15 +14,15 @@
         "dist/*"
     ],
     "scripts": {
-        "dev": "pnpm run build --watch",
+        "dev": "run-s 'build --watch'",
+        "lint": "tsc --noEmit && xo",
         "build": "tsup src/index.ts --format cjs,esm --dts",
-        "build-minify": "tsup src/index.ts --format cjs,esm --dts --minify",
-        "lint": "tsc && xo",
-        "clean": "rimraf ./dist ./coverage",
+        "build-minify": "run-s 'build --minify'",
         "test": "vitest run --coverage",
         "test:watch": "vitest watch --coverage",
-        "rebuild": "run-s clean build",
-        "prepare-to-commit": "run-s rebuild lint test",
+        "clean": "rimraf ./dist ./coverage",
+        "rebuild": "runs-s clean build",
+        "prepare-to-commit": "run-s lint test build clean",
         "npm-dry-run": "npm publish --dry-run"
     },
     "repository": {
@@ -74,20 +74,20 @@
         "@types/gulp-filter": "^3.0.39",
         "@types/gulp-rename": "^2.0.6",
         "@types/merge-stream": "^1.1.5",
-        "@types/node": "^20.14.11",
+        "@types/node": "^20.14.12",
         "@types/p-event": "^3.0.0",
         "@types/through2": "^2.0.41",
         "@types/vinyl": "^2.0.12",
         "@types/vinyl-fs": "^3.0.5",
-        "@vitest/coverage-v8": "^2.0.3",
+        "@vitest/coverage-v8": "^2.0.4",
         "@wicle/tsconfig": "github:shnam7/wicle-tsconfig",
         "npm-run-all": "^4.1.5",
         "rimraf": "^6.0.1",
-        "tsup": "^8.2.0",
-        "typescript": "^5.5.3",
+        "tsup": "^8.2.3",
+        "typescript": "^5.5.4",
         "vinyl": "^3.0.0",
-        "vitest": "^2.0.3",
-        "xo": "^0.58.0"
+        "vitest": "^2.0.4",
+        "xo": "^0.59.2"
     },
     "engines": {
         "node": ">=16.9"

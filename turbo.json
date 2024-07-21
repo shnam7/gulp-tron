@@ -11,8 +11,12 @@
             "outputs": ["dist/**", "!converag/**"],
             "dependsOn": ["^build"]
         },
-        "lint": {},
-        "test": {},
+        "lint": {
+            "cache": false
+        },
+        "test": {
+            "cache": false
+        },
         "clean": {
             "cache": false
         }

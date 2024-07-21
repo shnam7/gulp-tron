@@ -11,12 +11,13 @@
     },
     "scripts": {
         "dev": "tsc --watch",
+        "lint": "tsc --noEmit && xo",
         "build": "tsc",
-        "xtest": "vitest run --coverage",
-        "xtest:watch": "vitest watch --coverage",
+        "test": "vitest run --coverage",
+        "test:watch": "vitest watch --coverage",
         "clean": "rimraf ./dist ./coverage",
         "rebuild": "runs-s clean build",
-        "prepare-to-commit": "run-p rebuild test",
+        "prepare-to-commit": "run-s lint test build clean",
         "npm-dry-run": "npm publish --dry-run"
     },
     "dependencies": {
@@ -27,7 +28,7 @@
         "gulp-postcss": "^10.0.0",
         "gulp-rtlcss": "^2.0.0",
         "gulp-sass": "^5.1.0",
-        "postcss": "^8.4.39",
+        "postcss": "^8.4.40",
         "postcss-less": "^6.0.0",
         "postcss-reporter": "^7.1.0",
         "postcss-sass": "^0.5.0",
@@ -46,11 +47,11 @@
         "@types/postcss-reporter": "^7.0.5",
         "@types/postcss-sass": "^0.5.0",
         "@types/rtlcss": "^3.5.4",
-        "@vitest/coverage-v8": "^2.0.3",
+        "@vitest/coverage-v8": "^2.0.4",
         "@wicle/tsconfig": "github:shnam7/wicle-tsconfig",
         "gulp-tron": "workspace:*",
         "rimraf": "^6.0.1",
-        "typescript": "^5.5.3",
-        "vitest": "^2.0.3"
+        "typescript": "^5.5.4",
+        "vitest": "^2.0.4"
     }
 }

@@ -334,9 +334,9 @@ describe('.promise()', () => {
         const bs = new BuildStream('test', {src: __srcGlob})
         let i = 0
         const promisePush = async () =>
-            new Promise<void>(res => {
+            new Promise<void>(resolve => {
                 sequence.push(i++)
-                res()
+                resolve()
             })
         bs.src()
         for (let i = 0; i < 100; i++) bs.promise(promisePush())

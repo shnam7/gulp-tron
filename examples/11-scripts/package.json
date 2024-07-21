@@ -24,6 +24,6 @@
         "gulp-tron": "workspace:*",
         "gulp-typescript": "6.0.0-alpha.1",
         "rimraf": "^6.0.1",
-        "typescript": "^5.5.3"
+        "typescript": "^5.5.4"
     }
 }

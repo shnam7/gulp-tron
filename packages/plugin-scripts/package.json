@@ -11,12 +11,13 @@
     },
     "scripts": {
         "dev": "tsc --watch",
+        "lint": "tsc --noEmit && xo",
         "build": "tsc",
-        "xtest": "vitest run --coverage",
-        "xtest:watch": "vitest watch --coverage",
+        "test": "vitest run --coverage",
+        "test:watch": "vitest watch --coverage",
         "clean": "rimraf ./dist ./coverage",
         "rebuild": "runs-s clean build",
-        "prepare-to-commit": "run-p rebuild test",
+        "prepare-to-commit": "run-s lint test build clean",
         "npm-dry-run": "npm publish --dry-run"
     },
     "dependencies": {
@@ -36,10 +37,10 @@
         "@types/gulp-concat": "^0.0.37",
         "@types/gulp-rename": "^2.0.6",
         "@types/gulp-terser": "^1.2.6",
-        "@vitest/coverage-v8": "^2.0.3",
+        "@vitest/coverage-v8": "^2.0.4",
         "gulp-tron": "workspace:*",
         "rimraf": "^6.0.1",
-        "typescript": "^5.5.3",
-        "vitest": "^2.0.3"
+        "typescript": "^5.5.4",
+        "vitest": "^2.0.4"
     }
 }

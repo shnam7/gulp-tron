@@ -323,8 +323,8 @@ export class BuildStream {
     promise(arg1: (() => unknown) | Promise<unknown>): this {
         this._promiseSync =
             arg1 instanceof Promise
-                ? this._promiseSync.then(async () => arg1)
-                : this._promiseSync.then(() => arg1())
+                ? this._promiseSync.then(async () => arg1) // eslint-disable-line promise/prefer-await-to-then
+                : this._promiseSync.then(() => arg1()) // eslint-disable-line promise/prefer-await-to-then
         return this
     }
 
@@ -509,8 +509,9 @@ export class BuildStream {
                         resolve(0)
                     }
                 })
-            }).catch((error: Error) => {
-                this.log(error.message)
+                // eslint-disable-next-line promise/prefer-await-to-then
+            }).catch((error: unknown) => {
+                this.log((error as Error).message)
             }),
         )
         return this
