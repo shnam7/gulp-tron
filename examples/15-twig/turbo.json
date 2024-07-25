@@ -2,13 +2,14 @@
     "extends": ["//"],
     "tasks": {
         "build": {
-            "outputs": ["www/{js,css,images}/**", "./dist/**"]
+            "outputs": ["./dist/**"]
         },
         "clean": {
             "dependsOn": [
                 "gulp-tron#build",
                 "@gulp-tron/plugin-styles#build",
-                "@gulp-tron/plugin-scripts#build"
+                "@gulp-tron/plugin-scripts#build",
+                "@gulp-tron/plugin-utils#build"
             ]
         }
     }

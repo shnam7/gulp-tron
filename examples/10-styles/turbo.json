@@ -6,7 +6,7 @@
             "outputs": ["www/{css}/**"]
         },
         "clean": {
-            "dependsOn": ["gulp-tron#build"]
+            "dependsOn": ["gulp-tron#build", "@gulp-tron/plugin-styles#build"]
         }
     }
 }

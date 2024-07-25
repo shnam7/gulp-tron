@@ -1,0 +1,14 @@
+{
+    "extends": ["//"],
+    "tasks": {
+        "build": {
+            "outputs": ["./dist/**"]
+        },
+        "dev": {
+            "dependsOn": ["gulp-tron#build"]
+        },
+        "lint": {
+            "dependsOn": ["gulp-tron#build"]
+        }
+    }
+}
