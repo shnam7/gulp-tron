@@ -6,7 +6,6 @@ await Promise.resolve()
 class BabelContainer {
     // ES2022: initializer syntax
     _title = 'Babel'
-
     // ES2022: Static class properties
     static staticProperty = 'babelIsCool'
 

@@ -21,8 +21,7 @@
         "npm-dry-run": "npm publish --dry-run"
     },
     "dependencies": {
-        "@babel/core": "^7.24.9",
-        "@babel/preset-env": "^7.24.8",
+        "@babel/core": "^7.25.2",
         "gulp-babel": "^8.0.0",
         "gulp-coffee": "^3.0.3",
         "gulp-coffeelint": "^0.6.0",

@@ -94,7 +94,7 @@ const coffee = {
 }
 
 const babelOptions = {
-    // modules:false option isrequired to generate esm out (using import, not require())
+    // modules:false option is required to generate esm out (using import, not require())
     presets: [['@babel/preset-env', {modules: false}]],
 }
 
