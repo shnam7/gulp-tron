@@ -149,7 +149,7 @@ export class BuildStream {
 
         const opts: SrcOptions = isGlob ? {...options} : globsOrOptions ? {...globsOrOptions} : {}
 
-        // respect opts first, and then check TaskOptions
+        // respect opts first, and then check BuildOptions
         if (!opts.sourcemaps && this.opts.sourcemaps) opts.sourcemaps = this.opts.sourcemaps
         if (!is.Function(opts.sourcemaps)) opts.sourcemaps = Boolean(opts.sourcemaps)
 

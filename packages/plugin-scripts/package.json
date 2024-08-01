@@ -36,10 +36,10 @@
         "@types/gulp-concat": "^0.0.37",
         "@types/gulp-rename": "^2.0.6",
         "@types/gulp-terser": "^1.2.6",
-        "@vitest/coverage-v8": "^2.0.4",
+        "@vitest/coverage-v8": "^2.0.5",
         "gulp-tron": "workspace:*",
         "rimraf": "^6.0.1",
         "typescript": "^5.5.4",
-        "vitest": "^2.0.4"
+        "vitest": "^2.0.5"
     }
 }

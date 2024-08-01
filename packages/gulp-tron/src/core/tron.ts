@@ -57,18 +57,6 @@ export class Tron {
     }
 
     /**
-     * Set gulp instance to use.
-     * Use this function to make sure the gulp instance you want is actuall running
-     *
-     * @param gulpInstance
-     */
-    use(gulpInstance: typeof gulp) {
-        useGulp(gulpInstance)
-    }
-
-    // Get taskConfigs() { return this._taskConfigs }
-
-    /**
      * Create a gulp task with TaskConfig
      *
      * @param conf TaskConfig
@@ -80,8 +68,8 @@ export class Tron {
      * Create a gulp task
      *
      * @param name Task name (mandatory field).
-     * @param build build function. if not specified, default null function is assigned internally.
-     * @param opts TaskConfig object for additional task options
+     * @param build build function. if not specified, default null function is assigned.
+     * @param opts Build options
      * @returns this
      */
     task(name: string, buildFunc?: BuildFunction, opts?: BuildOptions): this
@@ -91,7 +79,7 @@ export class Tron {
      *
      * @param nameOrConfig taskName or TaskConfig.
      * @param buildFunc BuildFunction
-     * @param opts TaskOptions
+     * @param opts BuildOptions
      * @returns this
      */
     task(
@@ -111,7 +99,7 @@ export class Tron {
     }
 
     /**
-     * Alias for task(conf: TaskConfig) or createTasks() with single TaskConfig object.
+     * Alias for `task(conf: TaskConfig)`. Equivalent to calling `createTasks()` with single TaskConfig object.
      *
      * @param conf TaskConfig
      * @returns this
@@ -121,7 +109,7 @@ export class Tron {
     }
 
     /**
-     * Create multiple tasks sequencially.
+     * Create multiple tasks in a given sequence.
      *
      * @param confList List of TaskConfig objects.
      * @returns this
@@ -146,24 +134,22 @@ export class Tron {
     }
 
     /**
-     * Create a task cleaning the output from the build and anything specified in the options.
+     * Create a task cleaning all the clean targets(conf.clean) of the selected tasks,
+     * and optional targets specified in options.clean.
      *
      * @param options cleaner task options.
      */
     addCleaner(options: CleanerOptions = {}): this {
-        const target = this.selectTasks(options.target) ?? this._taskConfigs
-
-        // Let cleanList: string[] = []
-        // for (const task of target) {
-        //     cleanList = [...cleanList, ...arrayify(task.clean)]
-        // }
+        const target = options.target ? this.selectTasks(options.target) : this._taskConfigs
+        if (!target) {
+            console.log(`tron.addCleaner: no task selected. Cleaner task not created.`)
+            return this
+        }
 
         const cleanList = [
             ...target.flatMap(task => arrayify(task.clean)),
             ...arrayify(options.clean),
         ]
-
-        // If (options.clean) cleanList = [...cleanList, ...arrayify(options.clean)]
 
         // eslint-disable-next-line @typescript-eslint/naming-convention
         function __cleanerFunction__(bs: BuildStream) {
@@ -175,13 +161,18 @@ export class Tron {
     }
 
     /**
-     * Create task watching tasks.
+     * Create watcher task, which watches files specified in `conf.watch` of the selected tasks.
      *
      * @param options WatchOptions
      * @returns
      */
     addWatcher(options: WatcherOptions = {}): this {
-        const target = this.selectTasks(options.target) ?? this._taskConfigs
+        const target = options.target ? this.selectTasks(options.target) : this._taskConfigs
+        if (!target) {
+            console.log(`tron.addWatcher: no task selected. Watcher task not created.`)
+            return this
+        }
+
         const taskName = options.name ?? '@watch'
 
         let isWatching = false
@@ -202,7 +193,7 @@ export class Tron {
             }
 
             if (options.browserSync) browserSync.init(options.browserSync || {})
-            for (const task of target) {
+            for (const task of target!) {
                 // Skip the other watchers (watcher should not monitor the other wacthers)
                 if (task.build === __watcherFunction__) continue
 
@@ -234,7 +225,7 @@ export class Tron {
      * Convert the series of buildSet items into buildSet series object
      *
      * @param args list of BuildSet items
-     * @returns BuildSetSeries object of the buildSet list
+     * @returns BuildSetSeries object created from `args`.
      */
     series(...args: BuildSet[]): BuildSetSeries {
         return series(...args)
@@ -244,7 +235,7 @@ export class Tron {
      * Convert the series of buildSet items into buildSet parallel object
      *
      * @param args list of BuildSet items
-     * @returns BuildSetParallel object of the buildSet list
+     * @returns BuildSetParallel object created from `args`.
      */
     parallel(...args: BuildSet[]): BuildSetParallel {
         return parallel(...args)
@@ -262,12 +253,12 @@ export class Tron {
     // }
 
     /**
-     * Get TaskConfigs from Tron task registry.
+     * Select tasks with glob patters.
      *
-     * @param patterns Task name selector pattern.
+     * @param patterns Task name selector patterns.
      * Refer to 'multimatch' for patterns (https://github.com/sindresorhus/multimatch)
      *
-     * @returns Array of TaskConfig's selected. undefined if no task found.
+     * @returns List of selected TaskConfig objects. Undefiend if filter is undefiend or no task found.
      */
     selectTasks(patterns?: string | string[]): TaskConfig[] | undefined {
         if (!patterns) return undefined
@@ -282,20 +273,35 @@ export class Tron {
         return selected.length > 0 ? selected : undefined
     }
 
+    /**
+     * Get all the tasks registered.
+     *
+     * @returns Array of all the TaskConfig objects registered.
+     */
     selectTasksAll(): TaskConfig[] {
         return this._taskConfigs
     }
 
     /**
-     * Find TaskConfig with the name.
+     * Find TaskConfig with a name.
      *
      * @param name task name to look for.
-     * @returns TaskFConfig object found, or undefined.
+     * @returns TaskConfig object if found. Or undefined.
      */
     findTask(name?: string): TaskConfig | undefined {
         for (const t of this._taskConfigs) if (t.name === name) return t
 
         return undefined
+    }
+
+    /**
+     * Set gulp instance to use.
+     * Use this function to make sure you are using the gulp instance you intent to use.
+     *
+     * @param gulpInstance gulp instance to use with tron.
+     */
+    use(gulpInstance: typeof gulp) {
+        useGulp(gulpInstance)
     }
 
     // /**

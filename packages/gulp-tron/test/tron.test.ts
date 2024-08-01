@@ -1,7 +1,7 @@
 import {describe, expect, test, vi} from 'vitest'
 import gulp, {task} from 'gulp'
 import {Tron} from '../src/core/tron.js'
-import {type TaskOptions, type TaskConfig} from '../src/core/types.js'
+import {type TaskConfig} from '../src/core/types.js'
 import {BuildStream} from '../src/core/build-stream.js'
 
 const nextTaskName = (() => {

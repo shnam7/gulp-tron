@@ -68,7 +68,7 @@ export type WatcherOptions = {
     readonly name?: string // Watcher task  name. default value is '@watch'
     readonly target?: string | string[] // Target TaskCo nfig list to look for watch properties
     readonly browserSync?: browserSyncOptions // Browser-optio ns
-    readonly watch?: string | string[] // Override defa ult watch, which is TaskOptions.src
+    readonly watch?: string | string[] // Override default watch, conf.src
     readonly addWatch?: string | string[] // Additional wa tch in addition to watch or default watch
 } & LogOptions
 
