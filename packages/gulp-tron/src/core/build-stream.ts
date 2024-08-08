@@ -33,11 +33,10 @@ import type {
 } from './types.js'
 
 export type CopyParam = {src: string | string[]; dest: string}
-export type CopyOptions = {dryRun?: boolean} & GulpChangedOptions & LogOptions
+export type CopyOptions = {dryRun?: boolean} & LogOptions
 
 type SrcMethod = typeof gulp.src
 type DestMethod = typeof gulp.dest
-type GulpChangedOptions = NonNullable<Parameters<typeof changedG>[1]>
 
 function _transform(
     transform?: (file: Vinyl, enc: BufferEncoding, callback: TransformCallback) => void,
@@ -131,19 +130,14 @@ export class BuildStream {
     //-------------------------------------------------------------------------
     // Build API: Returns value should be 'this'
     //-------------------------------------------------------------------------
-    src(options: SrcOptions): this
-
-    src(globs?: Parameters<SrcMethod>[0], options?: SrcOptions): this
-
     /**
      * The same as gulp.src()
      *
-     * @param globs file globs to add to build stream (string | string[]).
+     * @param globsOrOptions file globs to add to build stream (string | string[]).
      * @param options SrcOptions of gulp.src()
      */
     src(globsOrOptions?: Parameters<SrcMethod>[0] | SrcOptions, options: SrcOptions = {}): this {
         const isGlob = is.String(globsOrOptions) || is.Array(globsOrOptions)
-
         const globs = isGlob ? globsOrOptions : this.opts.src
         if (!globs) return this
 
@@ -171,8 +165,8 @@ export class BuildStream {
      * @param options SrcOptions of gulp.src()
      * @returns this
      */
-    add(globs?: Parameters<SrcMethod>[0], options?: SrcOptions): this {
-        if (globs) {
+    add(globs: Parameters<SrcMethod>[0], options?: SrcOptions): this {
+        if (is.String(globs) || is.Array(globs)) {
             if (this._srcCalled)
                 this._stream = this._stream.pipe(appendG(globs, options)) as GulpStream
             else this.src(globs, options)
@@ -238,7 +232,7 @@ export class BuildStream {
     }
 
     /**
-     * Filter stream files to changed files only comparing to dest path
+     * Filter out (remove) unchanged files in the steam.
      *
      * @param dest
      * @returns this
@@ -260,6 +254,12 @@ export class BuildStream {
         return this.pipe(changedG(dest as Parameters<typeof changedG>[0], opts))
     }
 
+    /**
+     * Clone this BuildStream instance.
+     *
+     * @param name Name of the cloned BuildStream instance.
+     * @returns Cloned BuildStream instance.
+     */
     clone(name?: string): BuildStream {
         const cloned = this._stream.pipe(cloneStreamG())
         const bs = new BuildStream(name ?? this._name, this._opts, cloned, this._promiseSync)
@@ -270,9 +270,7 @@ export class BuildStream {
     // Stream API
     //-------------------------------------------------------------------------
     /**
-     * Reset current build stream to null.
-     * Previoius build stream is moved to internal promise queue
-     * for safe closing if it was active.
+     * Remove all the files in the build stream.
      *
      * @returns this
      */
@@ -282,9 +280,13 @@ export class BuildStream {
     }
 
     /**
-     * The same as gulp.dest()
+     * This is a wrapper to gulp.dest(), but all the parameters are optional.
+     * If destination folder is not provided, the `conf.dest` is used instead.
+     * If both folder argument and `conf.dest` are missing, then current
+     * directory `.` is used.
+     * If options.sourcemaps are not provided, then `conf.sourcemaps` is used.
      *
-     * @param args arguments from original gulp.dest()
+     * @param args THe same arguments as the original gulp.dest()
      * @returns
      */
     dest(...args: Parameters<DestMethod> | undefined[]): this {
@@ -295,20 +297,27 @@ export class BuildStream {
         return this
     }
 
+    /**
+     * Shortcut to bs.stream.on()
+     * Add event handler to stream.     *
+     *
+     * @param args THe same arguments as the original bs.stream.on()
+     * @returns
+     */
     on(...args: Parameters<typeof Stream.prototype.on>): this {
         this._stream.on(...args)
         return this
     }
 
     /**
-     * Add func into internal promise queue
+     * Add func to internal promise queue.
      *
      * @param func function to be added
      */
     promise(func: () => unknown): this
 
     /**
-     * Add promise into internal promise queue
+     * Add promise to internal promise queue.
      *
      * @param promise
      */
@@ -329,7 +338,7 @@ export class BuildStream {
     }
 
     /**
-     * Chain plugin function into build execution sequence
+     * Chain plugin function to build execution sequence.
      *
      * @param func Plugin function
      * @returns this
@@ -360,7 +369,7 @@ export class BuildStream {
     }
 
     /**
-     * Copy files from to destination.
+     * Copy files from source to destination.
      * Copy changed files only compared to destination counterpart.
      * Refer to 'gulp-changed' for the details.
      *
@@ -448,11 +457,11 @@ export class BuildStream {
     }
 
     /**
-     * Delete file in sync mode.
+     * Delete files and folders synchrously.
      *
-     * @param patterns Files to delete.
-     * @param options Options from `del` and LogOptions.
-     * @returns
+     * @param patterns Files and folders to delete in glob pattern.
+     * @param options Delete options.
+     * @returns this
      */
     del(patterns: string | string[], options: DelOptions = {}): this {
         const logger = options.logger ?? this.opts.logger ?? this.logger
@@ -463,7 +472,8 @@ export class BuildStream {
     }
 
     /**
-     * Clean targets specified in TasConfig.clean, and cleans cleanExtra additionally
+     * Delete clean targets specified in `this.opts.clean`
+     * and files and folders specified in `cleanExtra` additionally.
      *
      * @param cleanExtra additional clean target
      * @param options clean options including delOptions to be delivered to this.del()
@@ -518,44 +528,6 @@ export class BuildStream {
     }
 
     /**
-     * Clone this BuildStream
-     *
-     * @returns colned BuildStream
-     */
-    // clone(stream?: GulpStream): BuildStream {
-    //     return new BuildStream(this._name, this._opts, stream || this.cloneStream(), this._promiseSync)
-    // }
-
-    // /**
-    //  * Merge files, GulpStream, or BuildStream into this
-    //  *
-    //  * Notes: stream name of bs is discarded. bs.opts are merged into this.opts
-    //  *
-    //  * @param bs stream to be merged
-    //  * @returns
-    //  */
-    // merge(bs: BuildStream): this
-    // merge(globs: string | string[]): this
-    // merge(stream: NodeJS.ReadableStream): this
-    // merge(target: string | string[] | NodeJS.ReadableStream | BuildStream) {
-    //     if (target instanceof BuildStream) {
-    //         if (target == this) return this
-
-    //         this._stream.pipe(mergeStream(this._stream, target.stream))
-    //         this._opts = { ...this._opts, ...target.opts }
-
-    //         return this
-    //     }
-    //     else if (is.String(target) || is.Array(target)) {
-    //         this._stream.pipe(mergeStream(this._stream, gulp.src(target)))
-    //     }
-    //     else {
-    //         this._stream.pipe(mergeStream(this._stream, target))
-    //     }
-    //     return this
-    // }
-
-    /**
      * Reload the changes to browser-sync, if it is activated.
      *
      * @param options Options to be passed to broiwser-sync.
@@ -571,9 +543,9 @@ export class BuildStream {
     debug(options?: DebugOptions): this
 
     /**
-     * Print debug message using `gulp-debug`
+     * Print debug message using `gulp-debug2`
      *
-     * @param options Options to be passed to `gulp-stream`
+     * @param options Options to be passed to `gulp-debug2`
      * @returns this
      */
     debug(titleOrOptions: string | DebugOptions = {}, otherOptions: DebugOptions = {}): this {
@@ -593,11 +565,12 @@ export class BuildStream {
     }
 
     /**
-     * Add a function to be modify the contents of the stream.
+     * Add a function to modify the contents of the stream.
      *
-     * @param interceptFunc Function to modify the contents of the stream.
+     * @param interceptFunc Function to be called for each file entry in the build stream.
+     * @param onFinish Function to be called after processing all the files in the build stream.
      *
-     * @returns
+     * @returns this
      */
     intercept(
         interceptFunc?: (file: Vinyl, enc: BufferEncoding, cb: TransformCallback) => unknown,
@@ -608,10 +581,11 @@ export class BuildStream {
     }
 
     /**
-     * Add a function to monitor the contents of the stream.
+     * Add a function to monitor the contents of the build stream.
      *
-     * @param peekFunc Function to monitor the contents of the stream.
-     * @returns
+     * @param peekFunc Function to be called for each file entry in the build stream.
+     * @param onFinish Function to be called after processing all the files in the build stream.
+     * @returns this
      */
     peek(peekFunc?: (file: Vinyl) => void, onFinish?: (cb: TransformCallback) => void): this {
         return this.intercept(
@@ -632,8 +606,9 @@ export class BuildStream {
     // Utilities
     //-------------------------------------------------------------------------
     /**
+     * Print message from this BuildStream instance.
      *
-     * @param args
+     * @param args Items to print.
      * @returns
      */
     log(...args: Parameters<typeof console.log>): this {

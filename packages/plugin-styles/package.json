@@ -28,7 +28,7 @@
         "gulp-postcss": "^10.0.0",
         "gulp-rtlcss": "^2.0.0",
         "gulp-sass": "^5.1.0",
-        "postcss": "^8.4.40",
+        "postcss": "^8.4.41",
         "postcss-less": "^6.0.0",
         "postcss-reporter": "^7.1.0",
         "postcss-sass": "^0.5.0",
