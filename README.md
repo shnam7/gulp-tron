@@ -1,18 +1,11 @@
 # gulp-tron
 
-Easy to use, configuration based gulp build manager. Users can create gulp tasks with simple configuration. At the same time, users can defien build function as part of the configuration leveraging BuildStream API.
-
-It provides major two benefits:
-
--   Easy to building task dependency hierarchy.
--   Easy to define build process leveraging BuildStream API.
-
-Focus on build actions, rather than environment setup.
+Easy to use, configuration based gulp build manager. Users can create gulp tasks with simple configurations. At the same time, users can defien build function as part of the configuration.
 
 ## Features
 
 -   Quick and easy gulp task creation using configuration.
--   Rich BuildStream API to help define build process.
+-   Convenient BuildStream API to help define build process.
 -   Easy to add clean and watch tasks with minimal efforts
 -   Browser-sync support in the build configuration.
 -   Easy Plugin support to develop and share build actions.
@@ -30,51 +23,50 @@ yard add -D gulp gulp-tron
 pnpm add -D gulp gulp-tron
 ```
 
-gulp is required as peer dependency, to run gulp-tron.
+gulp is required as peer dependency to run gulp-tron.
 
 ## Quick example: gulpfile.js
 
 ```js
+import path from 'node:path'
+import process from 'node:process'
+import {fileURLToPath} from 'node:url'
 import tron from 'gulp-tron'
-import path from 'path'
 import gulpSass from 'gulp-sass'
 import * as dartSass from 'sass'
-import babel from 'gulp-babel'
-import {fileURLToPath} from 'url'
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+import babelG from 'gulp-babel'
 
-//--- project settings
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const basePath = path.relative(process.cwd(), __dirname)
 const srcRoot = path.join(basePath, 'assets')
 const destRoot = path.join(basePath, 'www')
-const sass = gulpSass(dartSass)
+const sassG = gulpSass(dartSass)
 
-//--- scss build configuration
+// --- styles
 const scss = {
     name: 'scss',
-    build: bs => bs.src().pipe(sass().on('error', sass.logError)).dest(),
+    build: bs => bs.log(`<scss:build>`).src().pipe(sassG().on('error', sassG.logError)).dest(),
 
     src: path.join(srcRoot, 'scss/**/*.scss'),
     dest: path.join(destRoot, 'css'),
 }
 
-//--- scripts build configuration
+// --- scripts
 const scripts = {
     name: 'scripts',
-    build: bs => bs.src().pipe(babel()).dest(),
+    build: bs => bs.log(`<scripts:build>`).src().pipe(babelG()).dest(),
 
     src: path.join(srcRoot, 'js/**/*.js'),
     dest: path.join(destRoot, 'js'),
 }
 
-//--- main build configuration
+// --- main
 const build = {
     name: '@build',
     triggers: tron.parallel(scss, scripts),
     clean: path.join(destRoot, '{css,js}'),
 }
 
-// now create build task. Then it also creates dependent tasks recurrsively.
 tron.task(build)
     .addCleaner()
     .addWatcher({
@@ -100,12 +92,12 @@ Tasks for ~/dev/public/gulp-tron/examples/00-getting-started/gulpfile.js
 
 With this TaskConfig,
 
--   `scss` and `scripts` tasks were created.
+-   `scss` and `scripts` tasks are created.
 -   `@build` task has two parallel tasks: `scss:main` and `script:main`
--   `@clean` and `@watch` tasks were also created.
+-   `@clean` and `@watch` tasks are also created.
 -   `@clean` task captures all the conf.clean properties as clean target automatically.
 -   `@watch` task captures all the conf.src properties as watch target automatically.
--   `bs` is an instance of `BuildStream` automatically created by the task.
+-   `bs` is an instance of `BuildStream` automatically created by the gulp task.
 -   `scss:main` and `script:main` are display names referring to `scss` and `scripts` tasks.
 
 ## Tron
@@ -114,32 +106,15 @@ With this TaskConfig,
 import tron from 'gulp-tron'
 ```
 
-tron is an instance of Tron class, which is gulp task manager. It creates tasks
+tron is an instance of Tron, the gulp task manager. It can create tasks
 with dependency hierarchy based on TaskConfig settings.
 
 `Tron` provides following API.
 Refer to [Tron](./docs/01-Tron.md) for more details.
 
-**Tron API**
-| name | descrption |
-|:-----:|-----|
-| use() | Set gulp instance to use. |
-| task() | Create a gulp task. |
-| createTask() | Alias for task(conf: TaskConfig) or createTasks() with single TaskConfig object. |
-| createTasks() | Create multiple tasks sequencially. |
-| addCleaner() | Create a task cleaning the output from the build and anything specified in the options. |
-| addWatcher() | Create task watching tasks. |
-| series() | Convert the series of buildSet items into buildSet series object. |
-| parallel() | Convert the series of buildSet items into buildSet parallel object. |
-| taskName() | Convert TaskCoinfig name to gulp task name. |
-| selectTasks | Return list of TaskConfig items that matches filter criteris. |
-| selectTasksAll() | Return list of all the TaskConfig items. |
-| findTask() | Find gulp task with name. Returns GulpTaskFunction if found, or undefined. |
-| selectTasksByGroup() | Find TaskConfigs with a group name. |
-
 ## TaskConfig
 
-Object type defining a build task, which has 1-to-1 connection to gulp task. It has one
+Configuration to define build task. It has 1-to-1 connection to gulp task. It has one
 mandatory property, **name**, and many optional optional properties.
 
 ```ts
@@ -157,19 +132,19 @@ tron.createTask(conf)
 readonly name: string
 ```
 
-Name of the TaskConfig. This becomes the gulp task name unless group property specified.
-This is a mandatory field to define a task configuration.
+Name of the TaskConfig instance. It becomses the gulp task name to be created.
+This property is a mandatory.
 
 ### conf.build
 
-The main build function of `BuildFunction` type. This is effectively the body of the gulp task.
+The main build function of type `BuildFunction`. This is effectively the body of the gulp task.
 
 ```ts
 export type BuildFunction = (bs: BuildStream) => void | Promise<any>
 ```
 
 When the gulp task is executed, `BuildStream` instance connected to the this TaskConfig is created
-and passed to the `conf.build` function.
+and passed to the `conf.build` function as first argument.
 
 If not specified, then default null function is used.
 
@@ -193,11 +168,15 @@ It can be of the following:
 **BuildSet Examples**
 
 ```ts
+import tron from 'gulp-tron'
+import gulp from 'gulp'
+
 const build1 = {name: 'build1'}
 const build2 = {name: 'build2', build: bs => console.log(`${bs.name} executed`)}
 function buildFunc(bs) {
-    console.log('gulpTaskFunc: Hello, Lake!')
+    bs.log('gulpTaskFunc: Hello, Lake!')
 }
+
 gulp.task('nativeGulpTask', done => done())
 
 const set01 = [build1] // series of single task. Same as build1
@@ -206,6 +185,11 @@ const set03 = tron.parallel(build1, build2)
 const set04 = tron.series(build1, build2)
 const set05 = [build1, build2] // serial set, the same as set04
 const set06 = tron.parallel(set01, set02, set03, set04, set05)
+
+tron.createTask({
+    name: '@build',
+    dependsOn: set06,
+})
 ```
 
 ### conf.triggers
@@ -220,68 +204,50 @@ The same as conf.dependsOn except that it is executed **after** main build funct
 
 `TaskConfig` can have additional properties as option.
 
-|  opotion   |        type        | description                                                                                                       |
-| :--------: | :----------------: | ----------------------------------------------------------------------------------------------------------------- |
-|   group    |       string       | Task group name.                                                                                                  |
-|   prefix   | boolean or string  | if false, no prefix for taskName. if true, group is used as prefix. if string, it becoms the prefix.              |
-|    src     |       globs        | Source for build operation. The same parameter as gulp.src(). Referenced by bs.src().                             |
-|   order    | string or string[] | Input file(src) ordering. Uses `gulp-order3` plugin. Referenced by bs.src().                                      |
-|    dest    | string or function | Output(destination) directory of the build operation. The same parameter as gulp.dest(). Referenced by bs.dest(). |
-| sourcemaps |      boolean       | If true, enables sourcemaps support. Referenced by bs.dest().                                                     |
+|    name    |        type        | description                                                                  |
+| :--------: | :----------------: | ---------------------------------------------------------------------------- |
+|    src     |       globs        | Source in glob patterns for build operation respected by bs.src()            |
+|   order    | string or string[] | Source file ordering respected by bs.src()                                   |
+|    dest    | string or function | Output(destination) directory of the build operation respected by bs.dest(). |
+| sourcemaps |      boolean       | If true, enables sourcemaps support. Referenced by bs.dest().                |
 
-And Cleaner options, Watcher opotions, and Log options can also be specified in TaskConfig.
-
-**Log Options**
-| opotion | type | description |
-|:-----:|:-----:|-----|
-logLevel?: 'verbose' | 'normal' | 'silent',
-logger?: (...args: any[]) => void
+And Cleaner options, Watcher opotions, Log options can also be specified in TaskConfig.
 
 ### Cleaner Options
 
+|  name   |        type        | description                                                          |
+| :-----: | :----------------: | -------------------------------------------------------------------- |
+|  name?  |       string       | Cleaner task name. default value is '@clean'.                        |
+| target? | string or string[] | Task name selectors in glob patterns to look for `clean` properties. |
+| clean?  | string or string[] | Additional clean list.                                               |
+
+Cleaner Options can also include LogOptions and options to deleteSync() from [`del`](https://github.com/sindresorhus/del).
+
+### Watcher Options
+
+|     name     |        type        | description                                                            |
+| :----------: | :----------------: | ---------------------------------------------------------------------- |
+|    name?     |       string       | Watcher task name. default value is '@watch'.                          |
+|   target?    | string or string[] | Task name selectors in glob patterns to look for `watch` properties.   |
+| browserSync? | browserSyncOptions | Options to [BrowserSync](https://github.com/Browsersync/browser-sync). |
+|    watch?    | string or string[] | Override default watch, conf.src.                                      |
+|  addWatch?   | string or string[] | Additional watch in addition to watch or default watch.                |
+
+### Log Options
+
+|   name    |   type   | description                         |
+| :-------: | :------: | ----------------------------------- |
+| logLevel? |  string  | : 'verbose' or 'normal' or 'silent' |
+|  logger?  | function | `(...args: any[]) => void`          |
+
 ## BuildStream
 
-BuildStream is a wrapper class for gulp stream object returned by gulp.src() function
-with addition API to make gulp programming easier. It is not exactly the gulp stream,
-but it can be used for most gulp operations.
+BuildStream is a wrapper class for gulp stream with additional API to define build process.
+Refer to [BuildStream](./docs/02-BuildStream.md) for more details including the API available.
 
-Currently following API is provided. Refer to [BuildStream](./docs/02-BuildStream.md) for more details.
+## Plugin
 
-**BuildStream API**
-| name | descrption |
-|:-----:|-----|
-| name | Property: TaskConfig name |
-| className | Property: class name of the instance, 'BuildStream' |
-| stream | Property: stream instance created by gulp.src(). |
-| promiseSync | Propery: Internal promise instance handling sequencial sync operations. |
-| opts | Property: TaskConfig object connected to this BuildStream instance. |
-| bs.src() | Create source stream, like gulp.src(). |
-| addSrc() | Add files to current stream. |
-| order() | Sort the input file stream, using [`gulp-order3`](https://github.com/shnam7/gulp-order3) |
-| changed() | Filters out unchanged files from the stream. |
-| dest() | Write stream to the destination folder. |
-| on() | Add event handler to the stream. |
-| promise() | Add promise to be traced before the build process finishes. |
-| then() | Add a function to be executed when all the promises in the build process fulfilled. |
-| pipe() | Pipe streams. Use to chain plugins in the build process. |
-| filter() | Filters the files in the stream using [`gulp-filter`](https://github.com/sindresorhus/gulp-filter) plugin. |
-| rename() | Rename the file in the stream using [`gulp-rename`](https://github.com/hparra/gulp-rename). |
-| copy() | Copy files. Support baych operations. |
-| del() | Delete files using [`del`](https://github.com/sindresorhus/del). |
-| clean() | Delete clean target specified in `conf.clean` |
-| exec() | Execute external command using shell. |
-| reload() | Reload browser-sync if it is enabled. |
-| clear() | Remove all the files from the stream. |
-| debug() | Print debug message using [`gulp-debug`](https://github.com/sindresorhus/gulp-debug). |
-| intercept() | Add a function to be modify the contents of the stream.. |
-| peek() | Add a function to monitor the contents of the stream. |
-| log() | Print log message with task name prefixed. |
-| logger | A property giving access to internal log function. |
-
-## Plugins
-
-Gulp-Tron Plugin is a function returning a PluginFunction. The PluginFunction
-can be chained to build process using bs.pipe().
+Gulp-Tron Plugin is a function returning a PluginFunction, which can be chained using bs.chain().
 
 ```ts
 export type PluginFunction = (bs: BuildStream) => void
@@ -292,21 +258,15 @@ Example:
 ```ts
 // define a plugin: function returning a BuildStream function.
 const hello = msg => bs => {
-    console.log(`${bs.name}:${msg}: custom plugin is running`)
+    bs.log(`${msg}: custom plugin is running`)
 }
 
 // use the plugin
 const build1 = {
     name: 'build1',
-    build: bs => bs.pipe(hello('Hello!')),
+    build: bs => bs.chain(hello('Hello!')),
 }
 ```
-
-For more examples, refer to:
-
--   [@gulp-tron/plugin-scripts](./packages/plugin-scripts/)
--   [@gulp-tron/plugin-styles](./packages/plugin-styles/)
--   [@gulp-tron/plugin-utils](./packages/plugin-utils/)
 
 ## Notes
 
@@ -329,7 +289,7 @@ const build1 = {
 ### gulp instance
 
 Sometimes, you may need gulp instance to directly access the gulp funtions.
-In that case, you can import it from `gulp-trom`.
+In that case, you can get it from `gulp-trom`.
 
 ```ts
 import tron, {gulp} from 'gulp-tron'
@@ -344,8 +304,7 @@ import gulp from 'gulp'
 tron.use(gulp)
 ```
 
-If you experience a situation that gulp tasks are not created without error,
-then try this.
+If you experience a situation that gulp tasks are not created without error, then try this.
 
 ## More Information
 
