@@ -14,6 +14,6 @@
         "gulp-tron": "workspace:*",
         "gulp-zip": "^6.0.0",
         "gulp-imagemin": "^9.1.0",
-        "imagemin-jpegtran": "^7.0.0"
+        "imagemin-jpegtran": "^8.0.0"
     }
 }

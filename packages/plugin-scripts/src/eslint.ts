@@ -8,7 +8,7 @@ import eslintG from 'gulp-eslint-new'
 
 export type EslintOptions = {
     formatter?: Parameters<typeof eslintG.format>[0]
-} & eslintG.GulpESLintOptions
+} & eslintG.GulpESLintNewOptions
 
 /**
  * ESLint Plugin - wrapper for gulp-terser
