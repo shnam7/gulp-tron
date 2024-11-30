@@ -21,12 +21,12 @@
         "npm-dry-run": "npm publish --dry-run"
     },
     "dependencies": {
-        "@babel/core": "^7.25.2",
+        "@babel/core": "^7.26.0",
         "gulp-babel": "^8.0.0",
         "gulp-coffee": "^3.0.3",
         "gulp-coffeelint": "^0.6.0",
         "gulp-concat": "^2.6.1",
-        "gulp-eslint-new": "^2.3.0",
+        "gulp-eslint-new": "^2.4.0",
         "gulp-terser": "^2.1.0"
     },
     "devDependencies": {
@@ -36,10 +36,10 @@
         "@types/gulp-concat": "^0.0.37",
         "@types/gulp-rename": "^2.0.6",
         "@types/gulp-terser": "^1.2.6",
-        "@vitest/coverage-v8": "^2.1.1",
+        "@vitest/coverage-v8": "^2.1.6",
         "gulp-tron": "workspace:*",
         "rimraf": "^6.0.1",
-        "typescript": "^5.6.2",
-        "vitest": "^2.1.1"
+        "typescript": "^5.7.2",
+        "vitest": "^2.1.6"
     }
 }

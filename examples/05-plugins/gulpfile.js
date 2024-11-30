@@ -9,7 +9,7 @@ const basePath = path.relative(process.cwd(), __dirname)
 // const projectName = path.basename(__dirname)
 // const prefix = projectName + ':'
 
-const sassOpts = {includePaths: ['./scss/lib']}
+const sassOpts = {loadPaths: ['./scss/lib']}
 
 // --- custom plugin
 const hello = msg => bs => {
