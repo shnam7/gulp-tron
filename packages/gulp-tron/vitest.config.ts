@@ -1,9 +1,11 @@
-import {coverageConfigDefaults, defineConfig} from 'vitest/config'
+import {defineConfig, coverageConfigDefaults} from 'vitest/config'
 
-export default defineConfig({
+const vitestConfig = defineConfig({
     test: {
         coverage: {
-            exclude: ['__*/**', ...coverageConfigDefaults.exclude],
+            exclude: [ ...coverageConfigDefaults.exclude, '__*/**'],
         },
     },
 })
+
+export default vitestConfig

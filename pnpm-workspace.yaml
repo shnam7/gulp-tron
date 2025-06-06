@@ -1,4 +1,12 @@
 packages:
-    - apps/*
-    - examples/*
-    - packages/*
+  - apps/*
+  - examples/*
+  - packages/*
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - esbuild
+  - gifsicle
+  - jpegtran-bin
+  - mozjpeg
+  - optipng-bin
+  - unrs-resolver

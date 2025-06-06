@@ -10,9 +10,9 @@
     "devDependencies": {
         "@gulp-tron/plugin-scripts": "workspace:*",
         "@gulp-tron/plugin-styles": "workspace:*",
-        "gulp": "^5.0.0",
+        "gulp": "^5.0.1",
         "gulp-tron": "workspace:*",
-        "gulp-zip": "^6.0.0",
+        "gulp-zip": "^6.1.0",
         "gulp-imagemin": "^9.1.0",
         "imagemin-jpegtran": "^8.0.0"
     }

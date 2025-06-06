@@ -9,6 +9,6 @@
     },
     "devDependencies": {
         "gulp-tron": "workspace:*",
-        "gulp": "^5.0.0"
+        "gulp": "^5.0.1"
     }
 }

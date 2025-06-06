@@ -321,7 +321,7 @@ describe('.promise()', () => {
     const sequence: number[] = []
 
     it('accept function.', async () => {
-        sequence.splice(0, sequence.length) // clear array
+        sequence.splice(0) // clear array
         const bs = new BuildStream('test', {src: __srcGlob})
         bs.src()
         for (let i = 0; i < 100; i++) bs.promise(() => sequence.push(i))
@@ -330,7 +330,7 @@ describe('.promise()', () => {
     })
 
     it('accept promise.', async () => {
-        sequence.splice(0, sequence.length)
+        sequence.splice(0)
         const bs = new BuildStream('test', {src: __srcGlob})
         let i = 0
         const promisePush = async () =>
@@ -405,7 +405,7 @@ describe('.clear()', () => {
         await pEvent(bs.stream, 'finish')
         expect(files).toEqual(__srcFiles)
 
-        files.splice(0, files.length)
+        files.splice(0)
         bs.clear().peek(file => files.push(file.basename))
         expect(files.length).toBe(0)
     })

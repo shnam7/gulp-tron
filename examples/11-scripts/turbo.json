@@ -2,7 +2,7 @@
     "extends": ["//"],
     "tasks": {
         "build": {
-            "outputs": ["www/{js,css}/**"]
+            "outputs": ["dist/**"]
         },
         "clean": {
             "dependsOn": ["gulp-tron#build", "@gulp-tron/plugin-scripts#build"]

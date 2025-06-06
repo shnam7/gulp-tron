@@ -38,7 +38,7 @@ const stylelintOptions = {
         // 'function-calc-no-unspaced-operator': null,
 
         // --- surpress warnings from less processing
-        'function-no-unknown': null,
+        'property-value-no-unknown': null,
 
         // --- surpress warnings from postcss processing
         'selector-anb-no-unmatchable': null,

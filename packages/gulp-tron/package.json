@@ -46,12 +46,12 @@
         "builder"
     ],
     "dependencies": {
-        "@wicle/mutex": "^0.9.0",
         "@wicle/is": "^1.0.3",
-        "browser-sync": "^3.0.3",
+        "@wicle/mutex": "^0.9.0",
+        "browser-sync": "^3.0.4",
         "del": "^8.0.0",
         "event-stream": "^4.0.1",
-        "globby": "^14.0.2",
+        "globby": "^14.1.0",
         "gulp-changed": "^5.0.2",
         "gulp-debug2": "^1.0.0",
         "gulp-filter": "^9.0.1",
@@ -73,18 +73,19 @@
         "@types/gulp-filter": "^3.0.39",
         "@types/gulp-rename": "^2.0.6",
         "@types/merge-stream": "^2.0.0",
-        "@types/node": "^22.10.1",
+        "@types/node": "^22.15.30",
         "@types/through2": "^2.0.41",
         "@types/vinyl": "^2.0.12",
-        "@types/vinyl-fs": "^3.0.5",
-        "@vitest/coverage-v8": "^2.1.8",
+        "@types/vinyl-fs": "^3.0.6",
+        "@vitest/coverage-v8": "^3.2.2",
         "@wicle/tsconfig": "github:shnam7/wicle-tsconfig",
         "npm-run-all": "^4.1.5",
         "rimraf": "^6.0.1",
-        "tsup": "^8.3.5",
-        "typescript": "^5.7.2",
-        "vinyl": "^3.0.0",
-        "vitest": "^2.1.8"
+        "tsup": "^8.5.0",
+        "typescript": "^5.8.3",
+        "vinyl": "^3.0.1",
+        "vitest": "^3.2.2",
+        "xo": "^1.0.5"
     },
     "engines": {
         "node": ">=16.9"

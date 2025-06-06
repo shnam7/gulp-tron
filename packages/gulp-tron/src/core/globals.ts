@@ -1,6 +1,6 @@
 import gulp from 'gulp'
 
-// eslint-disable-next-line import/no-mutable-exports
+// eslint-disable-next-line import-x/no-mutable-exports
 let _gulpInstance = gulp
 
 export function useGulp(gulpInstacen: typeof gulp) {

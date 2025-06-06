@@ -25,7 +25,7 @@ const concat = {
     name: 'concat',
     build: bs => bs.src().chain(concatP(bs.opts.outFile)).dest(),
 
-    src: [path.join(basePath, 'concat/*.js')],
+    src: [path.join(basePath, 'assets/concat/*.js')],
     order: ['file2.js', '*.js'],
     dest: path.join(destRoot, 'js'),
     outFile: 'concated.js',

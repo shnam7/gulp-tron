@@ -23,7 +23,7 @@ export type StylelintReporterOptions = pcssReporter.Options
 export const stylelintP =
     (options?: StylelintOptions, reporterOptions: StylelintReporterOptions = {}): PluginFunction =>
     (bs: BuildStream) => {
-        options ||= {rules: {}} // depress 'No configuration provided' error
+        options ??= {rules: {}} // depress 'No configuration provided' error
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         let pcssOptions: pcssG.Options = {parser: options.parser}
