@@ -1,6 +1,12 @@
 {% extends 'base.twig' %}
 {% block l_content %}
     <div class="content">{% markdown '../markdown/index.md' %}{% endmarkdown %}</div>
+    {% apply markdown_to_html %}
+    Title
+    =====
+
+    Hello!
+{% endapply %}
 
 {% endblock %}
 {% block l_sidebar %}

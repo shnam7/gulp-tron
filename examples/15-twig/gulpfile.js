@@ -19,7 +19,7 @@ const projectName = path.basename(__dirname)
 const prefix = projectName
 
 // --- common
-const srcRoot = path.join(basePath, 'assets')
+const srcRoot = path.join(basePath, 'src')
 const destRoot = path.join(basePath, 'dist')
 const port = 5000
 
@@ -106,7 +106,7 @@ const twig = {
             .dest()
     },
 
-    src: [path.join(srcRoot, 'twig/pages/**/*.twig')],
+    src: [path.join(srcRoot, 'twig/pages/**/*.{twig,md}')],
     dest: destRoot,
 
     addWatch: [
