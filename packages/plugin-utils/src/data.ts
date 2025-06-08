@@ -19,12 +19,14 @@ export function loadData(patterns: Globs, options?: LogOptions): DataObject {
 
             if (ext === '.yml' || ext === '.yaml') {
                 let yamlData = yaml.load(fs.readFileSync(file, 'utf8'))
-                if (!is.Object(yamlData)) yamlData = {[path.parse(file).name]: yamlData}
+                yamlData = {[path.parse(file).name]: yamlData}
                 data = {...data, ...(yamlData as DataObject)}
             } else if (ext === '.json')
                 data = {
                     ...data,
-                    ...(JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, unknown>),
+                    [path.parse(file).name]: {
+                        ...(JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, unknown>),
+                    }
                 }
             else throw new Error(`Unknown data file extension: ${ext}`)
         }
