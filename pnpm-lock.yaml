@@ -15,8 +15,8 @@ importers:
         specifier: ^2.5.4
         version: 2.5.4
       xo:
-        specifier: ^1.0.5
-        version: 1.0.5(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0)
+        specifier: ^1.1.0
+        version: 1.1.0(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0)
 
   examples/00-getting-started:
     devDependencies:
@@ -207,15 +207,36 @@ importers:
 
   examples/14-panini:
     devDependencies:
+      '@gulp-tron/plugin-scripts':
+        specifier: workspace:*
+        version: link:../../packages/plugin-scripts
+      '@gulp-tron/plugin-styles':
+        specifier: workspace:*
+        version: link:../../packages/plugin-styles
+      '@gulp-tron/plugin-utils':
+        specifier: workspace:*
+        version: link:../../packages/plugin-utils
       gulp:
         specifier: ^5.0.1
         version: 5.0.1
+      gulp-htmlmin:
+        specifier: ^5.0.1
+        version: 5.0.1
+      gulp-prettier:
+        specifier: ^6.0.0
+        version: 6.0.0
       gulp-tron:
         specifier: workspace:*
         version: link:../../packages/gulp-tron
+      gulp-typescript:
+        specifier: 6.0.0-alpha.1
+        version: 6.0.0-alpha.1(typescript@5.8.3)
       panini:
         specifier: ^1.7.2
         version: 1.7.2
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
 
   examples/15-twig:
     devDependencies:
@@ -362,8 +383,8 @@ importers:
         specifier: ^3.2.2
         version: 3.2.2(@types/node@22.15.30)(less@4.2.0)(sass@1.89.1)(terser@5.31.3)
       xo:
-        specifier: ^1.0.5
-        version: 1.0.5(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0)
+        specifier: ^1.1.0
+        version: 1.1.0(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0)
 
   packages/plugin-scripts:
     dependencies:
@@ -423,8 +444,8 @@ importers:
         specifier: ^3.2.2
         version: 3.2.2(@types/node@22.15.30)(less@4.2.0)(sass@1.89.1)(terser@5.31.3)
       xo:
-        specifier: ^1.0.5
-        version: 1.0.5(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@8.57.0)(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0)
+        specifier: ^1.1.0
+        version: 1.1.0(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@8.57.0)(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0)
 
   packages/plugin-styles:
     dependencies:
@@ -520,8 +541,8 @@ importers:
         specifier: ^3.2.2
         version: 3.2.2(@types/node@22.15.30)(less@4.2.0)(sass@1.89.1)(terser@5.31.3)
       xo:
-        specifier: ^1.0.5
-        version: 1.0.5(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0)
+        specifier: ^1.1.0
+        version: 1.1.0(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0)
 
   packages/plugin-utils:
     dependencies:
@@ -575,8 +596,8 @@ importers:
         specifier: ^3.2.2
         version: 3.2.2(@types/node@22.15.30)(less@4.2.0)(sass@1.89.1)(terser@5.31.3)
       xo:
-        specifier: ^1.0.5
-        version: 1.0.5(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0)
+        specifier: ^1.1.0
+        version: 1.1.0(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0)
 
 packages:
 
@@ -7639,8 +7660,8 @@ packages:
     resolution: {integrity: sha512-QKxVRxiRACQcVuQEYFsI1hhkrMlrXHPegbbd1yn9UHOmRxY+si12nQYzri3vbzt8VdTTRviqcKxcyllFas5z2A==}
     engines: {node: '>=0.4.0'}
 
-  xo@1.0.5:
-    resolution: {integrity: sha512-7eGWuph0NxSroDxDLo2ebXfeP2DrIeUe7L0PPrjzPUEIdFnAfV54Hpnw7QhWzCSLWm99Dn+zz288nltwPIegBQ==}
+  xo@1.1.0:
+    resolution: {integrity: sha512-bolvEHNEV99HkPBOrSRJuH85cMsnOcOJhnoDiaQgj/jFjlPlBpBqt36XlnG3nnZjQtoMySPf+tl4WRKFnN37Nw==}
     engines: {node: '>=20.17'}
     hasBin: true
     peerDependencies:
@@ -15778,7 +15799,7 @@ snapshots:
 
   xmlhttprequest-ssl@2.0.0: {}
 
-  xo@1.0.5(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@8.57.0)(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0):
+  xo@1.1.0(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@8.57.0)(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0):
     dependencies:
       '@eslint-community/eslint-plugin-eslint-comments': 4.5.0(eslint@9.28.0(jiti@2.4.2))
       '@sindresorhus/tsconfig': 7.0.0
@@ -15821,7 +15842,7 @@ snapshots:
       - supports-color
       - typescript
 
-  xo@1.0.5(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0):
+  xo@1.1.0(@types/eslint@9.6.1)(@typescript-eslint/utils@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(jiti@2.4.2)(typescript@5.8.3)(webpack@5.92.0):
     dependencies:
       '@eslint-community/eslint-plugin-eslint-comments': 4.5.0(eslint@9.28.0(jiti@2.4.2))
       '@sindresorhus/tsconfig': 7.0.0

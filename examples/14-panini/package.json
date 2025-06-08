@@ -5,11 +5,19 @@
     "type": "module",
     "scripts": {
         "build": "gulp @build",
-        "clean": "gulp @clean"
+        "clean": "gulp @clean",
+        "watch": "gulp @watch"
     },
     "devDependencies": {
-        "gulp-tron": "workspace:*",
+        "@gulp-tron/plugin-styles": "workspace:*",
+        "@gulp-tron/plugin-scripts": "workspace:*",
+        "@gulp-tron/plugin-utils": "workspace:*",
         "gulp": "^5.0.1",
-        "panini": "^1.7.2"
+        "gulp-tron": "workspace:*",
+        "panini": "^1.7.2",
+        "gulp-htmlmin": "^5.0.1",
+        "gulp-prettier": "^6.0.0",
+        "gulp-typescript": "6.0.0-alpha.1",
+        "typescript": "^5.8.3"
     }
 }
