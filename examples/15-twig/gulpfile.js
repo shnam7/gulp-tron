@@ -23,6 +23,15 @@ const srcRoot = path.join(basePath, 'src')
 const destRoot = path.join(basePath, 'dist')
 const port = 5000
 
+const statics = {
+    name: 'static',
+    build(bs) {
+        bs.src().changed().dest()
+    },
+    src: [path.join(srcRoot, 'static/**/*')],
+    dest: destRoot,
+}
+
 const scss = {
     name: 'scss',
     build: bs => bs.src().chain(sassP()).chain(cleanCssP()).rename({extname: '.min.css'}).dest(),
@@ -120,7 +129,7 @@ const twig = {
 
 const build = {
     name: '@build',
-    triggers: tron.parallel(scss, scripts, twig),
+    triggers: tron.parallel(statics, scss, scripts, twig),
     clean: destRoot,
 }
 
