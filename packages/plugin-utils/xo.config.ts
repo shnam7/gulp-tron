@@ -2,14 +2,16 @@ import {type FlatXoConfig} from 'xo'
 
 const xoConfig: FlatXoConfig = [
     {
-        prettier: 'compat',
+        prettier: true,
+        space: 4,
         rules: {
-            'capitalized-comments': 0,
-            'unicorn/prevent-abbreviations': 0,
-            'function-paren-newline': 0,
-            'implicit-arrow-linebreak': 0,
-            '@typescript-eslint/no-empty-function': 0,
+            'capitalized-comments': 'off',
+            'unicorn/prevent-abbreviations': 'off',
+            'function-paren-newline': 'off',
+            'implicit-arrow-linebreak': 'off',
             'arrow-body-style': ['error', 'as-needed'],
+
+            '@typescript-eslint/no-unsafe-call': 'off',
         },
     },
 ]

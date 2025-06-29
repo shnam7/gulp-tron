@@ -7,7 +7,7 @@ export function bold(options) {
     // options.fn(this) = Handelbars content between {{#bold}} HERE {{/bold}}
     console.log('---', options)
     // const bolder = '<strong>' + options.fn(this) + '</strong>'
-        // return bolder
+    // return bolder
     return options
 }
 

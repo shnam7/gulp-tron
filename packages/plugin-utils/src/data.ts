@@ -26,7 +26,7 @@ export function loadData(patterns: Globs, options?: LogOptions): DataObject {
                     ...data,
                     [path.parse(file).name]: {
                         ...(JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, unknown>),
-                    }
+                    },
                 }
             else throw new Error(`Unknown data file extension: ${ext}`)
         }
@@ -46,12 +46,12 @@ export function dataP(globOrFunc: Globs | DataFunction): PluginFunction
 // export function dataP(obj: DataObject): PluginFunction
 export function dataP(data: Globs | DataFunction): PluginFunction {
     return (bs: BuildStream) => {
-        if (is.String(data) || is.Array(data)) {
+        if (is.String(data) ?? is.Array(data)) {
             const logOptions = {logLevel: bs.opts.logLevel, logger: bs.logger}
             return bs.pipe(dataG(loadData(data as Globs, logOptions)))
         }
 
-        return bs.pipe(dataG(data))
+        return bs.pipe(dataG(data as DataFunction))
     }
 }
 

@@ -33,7 +33,7 @@ export const babelP =
         const opts: GulpBabelOptions = {...options}
         if (!opts.sourceMaps && bs.opts.sourcemaps) opts.sourceMaps = bs.opts.sourcemaps
         if (opts.sourceMaps) {
-            opts.sourceMap = opts.sourceMaps // eslint-disable-line @typescript-eslint/no-unsafe-assignment
+            opts.sourceMap = opts.sourceMaps as unknown
             delete opts.sourceMaps
         }
 

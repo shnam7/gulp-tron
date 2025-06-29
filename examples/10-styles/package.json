@@ -14,7 +14,7 @@
         "lost": "^9.0.2",
         "postcss-color-gray": "^5.0.0",
         "postcss-comment": "^2.0.0",
-        "postcss-preset-env": "^10.2.1",
+        "postcss-preset-env": "^10.2.4",
         "postcss-utilities": "^0.8.4",
         "stylelint-config-recommended": "^16.0.0"
     }

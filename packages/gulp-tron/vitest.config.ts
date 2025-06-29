@@ -3,7 +3,7 @@ import {defineConfig, coverageConfigDefaults} from 'vitest/config'
 const vitestConfig = defineConfig({
     test: {
         coverage: {
-            exclude: [ ...coverageConfigDefaults.exclude, '__*/**'],
+            exclude: [...coverageConfigDefaults.exclude, '__*/**'],
         },
     },
 })

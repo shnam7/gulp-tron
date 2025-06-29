@@ -25,8 +25,7 @@ export const stylelintP =
     (bs: BuildStream) => {
         options ??= {rules: {}} // depress 'No configuration provided' error
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        let pcssOptions: pcssG.Options = {parser: options.parser}
+        let pcssOptions: pcssG.Options = {parser: options.parser as unknown}
         if (!is.Object(options.parser))
             switch (options.parser) {
                 case 'scss': {
