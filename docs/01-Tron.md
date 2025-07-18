@@ -1,7 +1,7 @@
 # Tron API
 
 ```ts
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 ```
 
 Tron is a task manager which creates and manages gulp tasks using configuration defined by TaskConfig object.

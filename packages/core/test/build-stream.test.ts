@@ -4,9 +4,9 @@ import {Transform} from 'node:stream'
 import {type MockInstance, afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import type Vinyl from 'vinyl'
 import {pEvent} from 'p-event'
-import {BuildStream} from '../src/core/build-stream.js'
-import {gulp} from '../src/core/globals.js'
-import {type DestOptions, type SrcOptions, type BuildOptions} from '../src/core/types.js'
+import {BuildStream} from '../src/build-stream.js'
+import {gulp} from '../src/globals.js'
+import {type DestOptions, type SrcOptions, type BuildOptions} from '../src/types.js'
 
 const __pathname = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__pathname)

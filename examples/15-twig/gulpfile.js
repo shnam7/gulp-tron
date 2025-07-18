@@ -1,7 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import {fileURLToPath} from 'node:url'
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 import {sassP, cleanCssP} from '@gulp-tron/plugin-styles'
 import {terserP} from '@gulp-tron/plugin-scripts'
 import ts from 'gulp-typescript'

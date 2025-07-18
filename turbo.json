@@ -1,21 +1,24 @@
 {
-    "$schema": "https://turbo.build/schema.json",
-    "globalDependencies": ["**/.env.*local", "tsconfig.json"],
+    "$schema": "https://turborepo.com/schema.json",
     "tasks": {
         "dev": {
             "cache": false,
             "persistent": true
         },
         "build": {
-            "inputs": ["src/**", "test/**"],
-            "outputs": ["dist/**", "!converag/**"],
+            "cache": true,
+            "inputs": ["src/**", "tsconfig.json"],
+            "outputs": ["dist/**"],
             "dependsOn": ["^build"]
         },
         "lint": {
-            "cache": false
+            "cache": false,
+            "dependsOn": ["^lint"]
         },
         "test": {
-            "cache": false
+            "cache": false,
+            "outputs": ["!converag/**"],
+            "dependsOn": ["build", "^test"]
         },
         "clean": {
             "cache": false

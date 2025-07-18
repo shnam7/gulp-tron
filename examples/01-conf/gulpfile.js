@@ -1,13 +1,13 @@
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const __filename = path.basename(__dirname)
 
 const commonBuildOptions = {
     sourcemaps: true,
-    // group: projectName,
+    // Group: projectName,
     // prefix: true,
 }
 
@@ -26,7 +26,12 @@ const b5 = {name: 'b5', dependsOn: b1, triggers: b2}
 tron.createTasks(b3, b4, b5)
 
 // --- g0 has group prefix
-const g0 = {name: 'g0', dependsOn: b1, triggers: b2, ...commonBuildOptions}
+const g0 = {
+    name: 'g0',
+    dependsOn: b1,
+    triggers: b2,
+    ...commonBuildOptions,
+}
 tron.createTasks(g0)
 
 // --- task group with task options. check the gulp tree shape with "pnpm gulp --tasks" command

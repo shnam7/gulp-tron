@@ -1,15 +1,7 @@
 {
+    "extends": "@gulp-tron/tsconfig/tsconfig.json",
     "compilerOptions": {
-        "target": "ES6",
-        "module": "NodeNext",
-        "moduleResolution": "NodeNext",
-        "declaration": true,
-        "sourceMap": true,
-        "noImplicitAny": true,
-        "noEmitOnError": true,
-        "lib": ["es6", "dom"],
-        "skipLibCheck": true // gulp-typescript issue: ref: https://www.typescriptlang.org/tsconfig/#skipLibCheck
-        // "outDir": "dist/js"
+        "outDir": "./dist"
     },
-    "include": ["./assets/scripts/**/*.ts"]
+    "include": ["./src/**/*.ts"]
 }

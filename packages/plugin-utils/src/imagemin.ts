@@ -1,5 +1,5 @@
-import {type BuildStream, type PluginFunction} from 'gulp-tron'
-import {type Plugin} from 'imagemin'
+import type {BuildStream, PluginFunction} from '@gulp-tron/core'
+import type {Plugin} from 'imagemin'
 import imageminG from 'gulp-imagemin'
 
 export type ImageminOptions = imageminG.Options

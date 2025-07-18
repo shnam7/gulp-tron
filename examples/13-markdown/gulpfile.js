@@ -1,7 +1,7 @@
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import process from 'node:process'
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 import markdownG from 'gulp-markdown'
 import htmlCleanG from 'gulp-htmlclean'
 import prettierG from 'gulp-prettier'
@@ -15,7 +15,7 @@ const projectName = path.basename(__dirname)
 const prefix = projectName
 
 // --- common
-const srcRoot = path.join(basePath, 'assets')
+const srcRoot = path.join(basePath, 'src')
 const destRoot = path.join(basePath, 'dist')
 const portBase = 5000
 

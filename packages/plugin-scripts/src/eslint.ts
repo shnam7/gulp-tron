@@ -3,7 +3,7 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from '@gulp-tron/core'
 import eslintG from 'gulp-eslint-new'
 
 export type EslintOptions = {

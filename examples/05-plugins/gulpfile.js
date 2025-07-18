@@ -1,15 +1,15 @@
 import path from 'node:path'
 import process from 'node:process'
 import {fileURLToPath} from 'node:url'
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 import myScss from './gulp-tron-plugins/my-scss.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const basePath = path.relative(process.cwd(), __dirname)
-// const projectName = path.basename(__dirname)
+// Const projectName = path.basename(__dirname)
 // const prefix = projectName + ':'
 
-const sassOpts = {loadPaths: ['./scss/lib']}
+const sassOptions = {loadPaths: ['./scss/lib']}
 
 // --- custom plugin
 const hello = msg => bs => {
@@ -23,7 +23,7 @@ const customPlugin = {
 
 const customScss = {
     name: 'custom-scss',
-    build: bs => bs.src().chain(myScss(sassOpts)).dest(),
+    build: bs => bs.src().chain(myScss(sassOptions)).dest(),
 
     src: path.join(basePath, 'scss/*.scss'),
     dest: file => file.base,
@@ -34,13 +34,17 @@ const customScss = {
 tron.createTask({
     name: 'intercept-test',
     async build(bs) {
-        // take '*/css' files only
+        // Take '*/css' files only
         bs.src()
             .debug('before:')
             .intercept((file, enc, cb) => {
-                if (file.path.endsWith('.css')) cb(null, file)
-                else cb(null)
-                bs.log(`---`, file.basename)
+                if (file.path.endsWith('.css')) {
+                    cb(null, file)
+                } else {
+                    cb(null)
+                }
+
+                bs.log('---', file.basename)
             })
             .debug('after:')
     },
@@ -50,13 +54,15 @@ tron.createTask({
 tron.createTask({
     name: 'peek-test',
     build(bs) {
-        // take '*/css' files only
+        // Take '*/css' files only
         let cssFileCount = 0
         bs.src()
             .peek(
                 file => {
-                    if (file.path.endsWith('.css')) ++cssFileCount
-                    // bs.log(file.path, cssFileCount)
+                    if (file.path.endsWith('.css')) {
+                        ++cssFileCount
+                    }
+                    // Bs.log(file.path, cssFileCount)
                 },
                 () => {
                     bs.log(`cssFileCount=${cssFileCount}`)

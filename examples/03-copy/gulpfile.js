@@ -1,5 +1,5 @@
-import tron from 'gulp-tron'
-// import path from 'path'
+import tron from '@gulp-tron/core'
+// Import path from 'path'
 // import { fileURLToPath } from 'url'
 // const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -11,7 +11,7 @@ import tron from 'gulp-tron'
 const createTestFiles = {
     name: 'createTestFiles',
     build: bs =>
-        bs.exec(`mkdir -p test-src; touch test-src/test.js test-src/test.css test-src/test.html`),
+        bs.exec('mkdir -p test-src; touch test-src/test.js test-src/test.css test-src/test.html'),
 }
 tron.task(createTestFiles)
 

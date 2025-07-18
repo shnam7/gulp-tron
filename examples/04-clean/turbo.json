@@ -2,10 +2,7 @@
     "extends": ["//"],
     "tasks": {
         "build": {
-            "outputs": ["_build/*"]
-        },
-        "clean": {
-            "dependsOn": ["gulp-tron#build"]
+            "cache": false
         }
     }
 }

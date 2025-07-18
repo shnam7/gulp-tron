@@ -1,5 +1,5 @@
 import type {SpawnOptions} from 'node:child_process'
-import {type Transform} from 'node:stream'
+import type {Transform} from 'node:stream'
 import type {SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback} from 'gulp'
 import type {Options as browserSyncOptions} from 'browser-sync'
 import type {Options as delOptions} from 'del'

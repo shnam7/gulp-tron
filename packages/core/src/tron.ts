@@ -1,7 +1,7 @@
 import browserSync from 'browser-sync'
 import multimatch from 'multimatch'
 import is from '@wicle/is'
-import {arrayify} from '../utils/index.js'
+import arrayify from './utils/arrayify.js'
 import {gulp, useGulp} from './globals.js'
 import {BuildStream} from './build-stream.js'
 import type {
@@ -90,7 +90,7 @@ export class Tron {
         const conf = (
             is.String(nameOrConfig)
                 ? {name: nameOrConfig, build: buildFunc, ...opts}
-                : {...nameOrConfig}
+                : {...(nameOrConfig as TaskConfig)}
         ) as TaskConfig
 
         const gulpTask = this._resolveBuildSet(conf)
@@ -329,21 +329,22 @@ export class Tron {
 
         // buildSet is gulp task name (BuildName)
         if (is.String(buildSet)) {
-            const gulpTask = gulp.task(buildSet)
-            if (!gulpTask) throw new Error(`Tron:resolveBuildset: Task "${buildSet}" is not found.`)
+            const gulpTask = gulp.task(buildSet as string)
+            if (!gulpTask)
+                throw new Error(`Tron:resolveBuildset: Task "${buildSet as string}" is not found.`)
             return gulpTask
         }
 
         if (is.Function(buildSet)) {
             // All the function argument to the function is assumed to be BuildFunction,
             // and it is converted to TaskCobfig object for processing with __resolveBuildSet()
-            const name = `tron-anonymous#${++Tron.annonCount}-${buildSet.name}`
-            return this._resolveTaskConfg({name, build: buildSet})
+            const name = `tron-anonymous#${++Tron.annonCount}-${(buildSet as BuildFunction).name}`
+            return this._resolveTaskConfg({name, build: buildSet as BuildFunction})
         }
 
         // buildSet is TaskConfig object
         if (is.Object(buildSet))
-            return Object.hasOwn(buildSet, 'set')
+            return Object.hasOwn(buildSet as TaskConfig, 'set')
                 ? this._resolveBuildSetGroup(buildSet as BuildSetSeries | BuildSetParallel)
                 : this._resolveTaskConfg(buildSet as TaskConfig)
 
@@ -357,10 +358,11 @@ export class Tron {
         // BuildSet is series of BuildSet items
         if (is.Array(buildSet)) {
             // Strip redundant outer arrays
-            while (buildSet.length === 1 && is.Array(buildSet[0])) buildSet = buildSet[0]
+            while ((buildSet as BuildSet[]).length === 1 && is.Array((buildSet as BuildSet[])[0]))
+                buildSet = (buildSet as BuildSet[])[0] as BuildSetSeries
 
-            const list = []
-            for (const bs of buildSet) {
+            const list = [] as GulpTaskFunction[]
+            for (const bs of buildSet as BuildSet[]) {
                 const ret = this._resolveBuildSet(bs)
                 if (ret) list.push(ret)
             }
@@ -371,7 +373,7 @@ export class Tron {
 
         // BuildSet is parallel set of BuildSet items
         if (is.Object(buildSet) && Object.hasOwn(buildSet, 'set')) {
-            let {set} = buildSet
+            let {set} = buildSet as BuildSetParallel
             // Strip redundant outer arrays
             while (set.length === 1 && Array.isArray(set[0])) set = set[0]
 

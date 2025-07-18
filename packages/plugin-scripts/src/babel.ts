@@ -3,7 +3,7 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from '@gulp-tron/core'
 import babelG from 'gulp-babel'
 
 export type BabelOptions = Parameters<typeof babelG>[0]

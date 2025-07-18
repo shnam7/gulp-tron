@@ -13,6 +13,9 @@ const xoConfig: FlatXoConfig = [
             '@typescript-eslint/no-empty-function': 'off',
 
             '@typescript-eslint/no-unsafe-call': 'off',
+            '@typescript-eslint/naming-convention': 'off',
+            '@typescript-eslint/no-unsafe-argument': 'off',
+            '@typescript-eslint/no-unsafe-assignment': 'off',
         },
     },
 ]

@@ -10,7 +10,7 @@
     "devDependencies": {
         "gulp": "^5.0.1",
         "gulp-sass": "^6.0.1",
-        "gulp-tron": "workspace:*",
+        "@gulp-tron/core": "workspace:*",
         "sass": "^1.89.2"
     }
 }

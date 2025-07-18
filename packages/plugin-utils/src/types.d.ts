@@ -1,5 +1,5 @@
 declare module 'gulp-data' {
-    import {type LogOptions, type GulpStream} from 'gulp-tron'
+    import type {LogOptions, GulpStream} from '@gulp-tron/core'
 
     export type DataObject<T extends Record<string, unknown> = Record<string, unknown>> = T &
         LogOptions

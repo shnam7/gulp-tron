@@ -3,7 +3,7 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from '@gulp-tron/core'
 import coffeelintG from 'gulp-coffeelint'
 
 export type CoffeeLintOptions<T extends Record<string, unknown> = Record<string, unknown>> = T

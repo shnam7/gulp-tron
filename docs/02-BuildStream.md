@@ -495,7 +495,7 @@ Add a function to modify the contents of the stream.
 #### Example
 
 ```ts
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 
 tron.createTask({
     name: 'intercept-test',
@@ -535,7 +535,7 @@ Add a function to monitor the contents of the build stream.
 #### Example
 
 ```ts
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 
 tron.createTask({
     name: 'peek-test',

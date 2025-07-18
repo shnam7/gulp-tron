@@ -31,7 +31,7 @@ gulp is required as peer dependency to run gulp-tron.
 import path from 'node:path'
 import process from 'node:process'
 import {fileURLToPath} from 'node:url'
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 import gulpSass from 'gulp-sass'
 import * as dartSass from 'sass'
 import babelG from 'gulp-babel'
@@ -103,7 +103,7 @@ With this TaskConfig,
 ## Tron
 
 ```ts
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 ```
 
 tron is an instance of Tron, the gulp task manager. It can create tasks
@@ -168,7 +168,7 @@ It can be of the following:
 **BuildSet Examples**
 
 ```ts
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 import gulp from 'gulp'
 
 const build1 = {name: 'build1'}
@@ -292,13 +292,13 @@ Sometimes, you may need gulp instance to directly access the gulp funtions.
 In that case, you can get it from `gulp-trom`.
 
 ```ts
-import tron, {gulp} from 'gulp-tron'
+import tron, {gulp} from '@gulp-tron/core'
 ```
 
 In contrary, if you want to set gulp instance to tron, then use `tron.use()` function.
 
 ```ts
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 import gulp from 'gulp'
 
 tron.use(gulp)

@@ -18,7 +18,7 @@ import {StreamQueue} from 'streamqueue'
 import es from 'event-stream'
 import {globbySync} from 'globby'
 import is from '@wicle/is'
-import {arrayify} from '../utils/index.js'
+import arrayify from './utils/arrayify.js'
 import {gulp} from './globals.js'
 import type {
     BuildFunction,
@@ -141,7 +141,7 @@ export class BuildStream {
         const globs = isGlob ? globsOrOptions : this.opts.src
         if (!globs) return this
 
-        const opts: SrcOptions = isGlob ? {...options} : globsOrOptions ? {...globsOrOptions} : {}
+        const opts: SrcOptions = isGlob ? {...options} : {...(globsOrOptions as SrcOptions)}
 
         // respect opts first, and then check BuildOptions
         if (!opts.sourcemaps && this.opts.sourcemaps) opts.sourcemaps = this.opts.sourcemaps
@@ -200,7 +200,7 @@ export class BuildStream {
     filter(...args: Parameters<typeof filterG>): this {
         let [patterns, opts] = args
         if (!is.Function(patterns)) {
-            patterns = arrayify(patterns)
+            patterns = arrayify(patterns as string)
             if (patterns.length <= 0) return this
             if (patterns.every(pattern => pattern.startsWith('!'))) patterns.unshift('*')
         }
@@ -446,10 +446,10 @@ export class BuildStream {
 
         const optCommon = {logLevel: this._opts.logLevel, logger: this.logger}
         for (const [index, item] of arrayify(arg1).entries()) {
-            if (is.String(item)) _copy(item, arg2 as string, {...optCommon, ...arg3})
+            if (is.String(item)) _copy(item as string, arg2 as string, {...optCommon, ...arg3})
             else {
                 const opts = {...optCommon, ...(arg2 as CopyOptions)}
-                _copy(item.src, item.dest, opts)
+                _copy((item as CopyParam).src, (item as CopyParam).dest, opts)
             }
         }
 

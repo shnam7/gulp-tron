@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import {type BuildStream, type LogOptions, type PluginFunction, arrayify, is} from 'gulp-tron'
+import {type BuildStream, type LogOptions, type PluginFunction, arrayify, is} from '@gulp-tron/core'
 import dataG, {type DataFunction, type DataObject} from 'gulp-data'
-import * as yaml from 'js-yaml'
+import yaml from 'js-yaml'
 import fg from 'fast-glob'
 
 export type Globs = string | string[]
@@ -32,8 +32,8 @@ export function loadData(patterns: Globs, options?: LogOptions): DataObject {
         }
     }
 
-    const patternStr = is.Array(patterns) ? patterns.join(',') : patterns
-    if (options?.logLevel === 'verbose') logger(`loadData:${patternStr}:`, data)
+    const patternStr = is.Array(patterns) ? (patterns as string[]).join(',') : patterns
+    if (options?.logLevel === 'verbose') logger(`loadData:${patternStr.toString()}:`, data)
     return data
 }
 

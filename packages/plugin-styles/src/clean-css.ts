@@ -3,7 +3,7 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from 'gulp-tron'
+import {type BuildStream, type PluginFunction} from '@gulp-tron/core'
 import cleanCssG from 'gulp-clean-css'
 import {type OptionsOutput} from 'clean-css'
 

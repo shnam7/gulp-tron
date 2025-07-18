@@ -1,7 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import {fileURLToPath} from 'node:url'
-import tron from 'gulp-tron'
+import tron from '@gulp-tron/core'
 import {eslintP, terserP, concatP, coffeeP, coffeelintP, babelP} from '@gulp-tron/plugin-scripts'
 import ts from 'gulp-typescript'
 
@@ -46,16 +46,16 @@ const terserOptions = {
     module: true, // enable es6
 }
 
-/** Static files */
+// --- statics
 const statics = {
     name: 'statics',
     build: bs => bs.src().dest(),
 
-    src: ['static/**/*.*'],
+    src: [path.join(srcRoot, 'public/**/*.*')],
     dest: destRoot,
 }
 
-/** Vanilla Javascript */
+// --- Vanilla Javascript
 const vanilla = {
     name: 'vanilla',
     async build(bs) {
@@ -65,7 +65,7 @@ const vanilla = {
             .dest()
     },
 
-    src: [path.join(srcRoot, 'vanilla/**/*.js')],
+    src: [path.join(srcRoot, 'scripts/vanilla/**/*.js')],
     dest: path.join(destRoot, 'js'),
     order: ['sub-1*.js'],
     sourcemaps,
@@ -86,7 +86,7 @@ const coffee = {
             .rename({extname: '.min.js'})
             .dest()
     },
-    src: [path.join(srcRoot, 'coffee/**/*.coffee')],
+    src: [path.join(srcRoot, 'scripts/coffee/**/*.coffee')],
     order: ['*main.coffee'], // use order property to set outFile orders
     dest: path.join(destRoot, 'js/coffee'), // dest: (file) => file.base,
     outFile: 'main.js',
@@ -110,7 +110,7 @@ const babel = {
             .rename({extname: '.min.js'})
             .dest()
     },
-    src: [path.join(srcRoot, 'babel/**/*.{js,es6}')],
+    src: [path.join(srcRoot, 'scripts/babel/**/*.{js,es6}')],
     dest: path.join(destRoot, 'js/babel'),
     sourcemaps,
 }
@@ -122,7 +122,7 @@ const typescript = {
         bs.src().pipe(tsProject()).debug('tsOut').debug('result').dest()
     },
 
-    src: [path.join(srcRoot, 'typescript/**/*.ts')],
+    src: [path.join(srcRoot, 'scripts/typescript/**/*.ts')],
     dest: path.join(destRoot, 'js/typescript'),
     addWatch: [path.join(srcRoot, 'tsconfig.json')],
     sourcemaps,
@@ -135,7 +135,7 @@ const react = {
         const tsProject = ts.createProject('src/tsconfig.json')
         bs.src().pipe(tsProject()).changed().dest()
     },
-    src: [path.join(srcRoot, 'react/**/*.{ts,tsx}')],
+    src: [path.join(srcRoot, 'scripts/react/**/*.{ts,tsx}')],
     dest: path.join(destRoot, 'js/react'),
     addWatch: [path.join(srcRoot, 'tsconfig.json')],
 }

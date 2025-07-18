@@ -1,5 +1,5 @@
 {
-    "name": "gulp-tron",
+    "name": "@gulp-tron/core",
     "version": "1.0.0-alpha.3",
     "description": "Easy to use, flexible gulp build manager",
     "type": "module",
@@ -7,22 +7,27 @@
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
-        "require": "./dist/index.cjs",
-        "import": "./dist/index.js"
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs",
+            "types": "./dist/index.d.ts"
+        },
+        "./*": "./*"
     },
     "files": [
         "dist/*"
     ],
     "scripts": {
-        "dev": "run-s 'build --watch'",
-        "lint": "tsc --noEmit && xo",
-        "build": "tsdown src/index.ts --format cjs,esm --dts",
-        "build-minify": "run-s 'build --minify'",
-        "test": "vitest run --coverage",
-        "test:watch": "vitest watch --coverage",
+        "dev": "run-s build watch",
+        "dev:test": "vitest watch --coverage --coverage.include=src",
+        "build": "run-p build:**",
+        "build:ts": "tsdown src/index.ts --format esm,cjs --dts",
+        "build:ts:types": "tsc --noEmit ",
+        "lint": "xo",
+        "test": "vitest run --coverage --coverage.include=src",
+        "watch": "chokidar 'src/**' -c 'run-p \"build:ts --no-clean\" build:ts:types'",
         "clean": "rimraf ./dist ./coverage",
-        "rebuild": "runs-s clean build",
-        "prepare-to-commit": "run-s lint test build clean",
+        "prepare-to-commit": "run-s clean lint test build clean",
         "npm-dry-run": "npm publish --dry-run"
     },
     "repository": {
@@ -46,7 +51,7 @@
         "builder"
     ],
     "dependencies": {
-        "@wicle/is": "^1.0.3",
+        "@wicle/is": "^1.0.4",
         "@wicle/mutex": "^0.9.0",
         "browser-sync": "^3.0.4",
         "del": "^8.0.0",
@@ -70,22 +75,23 @@
         "@types/event-stream": "^4.0.5",
         "@types/gulp": "^4.0.17",
         "@types/gulp-changed": "^0.0.39",
-        "@types/gulp-filter": "^3.0.39",
+        "@types/gulp-filter": "^3.0.40",
         "@types/gulp-rename": "^2.0.6",
         "@types/merge-stream": "^2.0.0",
-        "@types/node": "^24.0.7",
+        "@types/node": "^24.0.14",
         "@types/through2": "^2.0.41",
         "@types/vinyl": "^2.0.12",
         "@types/vinyl-fs": "^3.0.6",
         "@vitest/coverage-v8": "^3.2.4",
-        "@wicle/tsconfig": "github:shnam7/wicle-tsconfig",
+        "@gulp-tron/tsconfig": "workspace:*",
+        "chokidar-cli": "^3.0.0",
         "npm-run-all": "^4.1.5",
         "rimraf": "^6.0.1",
         "tsdown": "^0.12.9",
         "typescript": "^5.8.3",
         "vinyl": "^3.0.1",
         "vitest": "^3.2.4",
-        "xo": "^1.1.1"
+        "xo": "^1.2.0"
     },
     "engines": {
         "node": ">=16.9"

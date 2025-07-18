@@ -1,7 +1,6 @@
 {
-    "extends": "@wicle/tsconfig/base.json",
+    "extends": "@gulp-tron/tsconfig/tsconfig.json",
     "compilerOptions": {
-        // "typeRoots": ["src", "node_modules/@types"],
         "outDir": "./dist"
     },
     "include": ["./src/**/*.ts"]
