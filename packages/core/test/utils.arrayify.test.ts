@@ -1,30 +1,27 @@
-import {expect, test} from 'vitest'
-import {arrayify} from '../src/utils/arrayify.js'
+import {describe, expect, it} from 'vitest'
+import arrayify from '../src/utils/arrayify.js'
 
-test('array to array: [] --> []', () => {
-    expect(JSON.stringify(arrayify([]))).toBe('[]')
-})
+describe('arrayify', () => {
+    it('should return empty array for undefined', () => {
+        expect(arrayify(undefined)).toEqual([])
+        expect(arrayify()).toEqual([])
+    })
 
-test('undefined to array: undefined --> []', () => {
-    expect(JSON.stringify(arrayify())).toBe('[]')
-})
+    it('should return the same array when input is already an array', () => {
+        const inputArray = [1, 2, 3]
+        expect(arrayify(inputArray)).toBe(inputArray)
+    })
 
-test('false number(zero) to array: 0 --> [0]', () => {
-    expect(JSON.stringify(arrayify(0))).toBe('[0]')
-})
+    it('should wrap single values in an array', () => {
+        expect(arrayify('hello')).toEqual(['hello'])
+        expect(arrayify(42)).toEqual([42])
+        expect(arrayify(true)).toEqual([true])
+        expect(arrayify(null)).toEqual([null])
+    })
 
-test('null to array: null --> [null]', () => {
-    expect(JSON.stringify(arrayify(null))).toBe('[null]')
-})
-
-test(`empty string array: '' --> ['']`, () => {
-    expect(JSON.stringify(arrayify(''))).toBe(`[""]`)
-})
-
-test(`string to array: 'a' --> ['a']`, () => {
-    expect(JSON.stringify(arrayify('a'))).toBe(`["a"]`)
-})
-
-test(`string array to array: ['a'] --> ['a']`, () => {
-    expect(JSON.stringify(arrayify(['a']))).toBe(`["a"]`)
+    it('should handle falsy values correctly', () => {
+        expect(arrayify(0)).toEqual([0])
+        expect(arrayify('')).toEqual([''])
+        expect(arrayify(false)).toEqual([false])
+    })
 })

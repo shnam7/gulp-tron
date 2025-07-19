@@ -16,22 +16,13 @@ import type {
     WatcherOptions,
 } from './types.js'
 
-// --- test if wrapped by gulp.serial() or gulp.parallel()
-// const isGulpSeriesOrParallelTask = (t: any): boolean => /(series|parallel)/.test(t.toString())
-
-// type TaskConfigWithMutableTaskName = Omit<TaskConfig, 'taskName'> & {
-//     -readonly [key in keyof Pick<TaskConfig, 'taskName'>]: TaskConfig[key]
-// }
-
 /**
  * Convert series of buildSet items into buildSet Series object.
  *
  * @param args list of BuildSet items.
  * @returns BuildSetSeries object of the buildSet list.
  */
-export function series(...args: BuildSet[]): BuildSetSeries {
-    return args
-}
+export const series = (...args: BuildSet[]): BuildSetSeries => args
 
 /**
  * Convert series of buildSet items into buildSet Parallel object.
@@ -39,17 +30,18 @@ export function series(...args: BuildSet[]): BuildSetSeries {
  * @param args list of BuildSet items.
  * @returns BuildSetParallel object of the buildSet list.
  */
-export function parallel(...args: BuildSet[]): BuildSetParallel {
-    return {set: args}
-}
+export const parallel = (...args: BuildSet[]): BuildSetParallel => ({set: args})
 
-// --- GBuildManager
+/**
+ * Main Tron class for managing gulp build tasks with modern TypeScript features.
+ * Provides a fluent API for creating and managing build tasks.
+ */
 export class Tron {
-    /** Counter to assigne ID to annonymous tasks */
+    /** Counter to assign ID to anonymous tasks */
     protected static annonCount = 0
 
-    protected _taskConfigs: TaskConfig[]
-    protected _watchTaskNames: string[]
+    protected readonly _taskConfigs: TaskConfig[]
+    protected readonly _watchTaskNames: string[]
 
     constructor() {
         this._taskConfigs = []
@@ -75,26 +67,51 @@ export class Tron {
     task(name: string, buildFunc?: BuildFunction, opts?: BuildOptions): this
 
     /**
-     * Implementation of task() overloading functions
+     * Implementation of task() overloading functions with improved error handling.
      *
      * @param nameOrConfig taskName or TaskConfig.
      * @param buildFunc BuildFunction
      * @param opts BuildOptions
-     * @returns this
+     * @returns this for method chaining
      */
     task(
         nameOrConfig: TaskConfig | string,
         buildFunc?: BuildFunction,
         opts: BuildOptions = {},
     ): this {
-        const conf = (
-            is.String(nameOrConfig)
-                ? {name: nameOrConfig, build: buildFunc, ...opts}
-                : {...(nameOrConfig as TaskConfig)}
-        ) as TaskConfig
+        // Enhanced type guard with validation
+        const isTaskConfig = (value: unknown): value is TaskConfig =>
+            typeof value === 'object' &&
+            value !== null &&
+            'name' in value &&
+            typeof (value as TaskConfig).name === 'string'
 
-        const gulpTask = this._resolveBuildSet(conf)
-        if (!gulpTask) throw new Error(`Tron:task: failed to create task "${conf.name}"`)
+        const isValidTaskName = (name: string): boolean =>
+            name.length > 0 && name.trim() === name && !/[<>:"/\\|?*]/.test(name)
+
+        const conf: TaskConfig = isTaskConfig(nameOrConfig)
+            ? {...nameOrConfig}
+            : (() => {
+                  const taskName = nameOrConfig
+                  if (!isValidTaskName(taskName)) {
+                      throw new Error(
+                          `Tron:task: invalid task name "${taskName}" - must be non-empty, trimmed, and contain no special characters`,
+                      )
+                  }
+
+                  return {name: taskName, build: buildFunc, ...opts}
+              })()
+
+        // Validate final configuration
+        if (!conf.name || !isValidTaskName(conf.name)) {
+            throw new Error(`Tron:task: invalid task configuration - name must be valid`)
+        }
+
+        const gulpTask = this._resolveTaskConfg(conf)
+        if (!gulpTask) {
+            throw new Error(`Tron:task: failed to create task "${conf.name}"`)
+        }
+
         return this
     }
 
@@ -109,24 +126,27 @@ export class Tron {
     }
 
     /**
-     * Create multiple tasks in a given sequence.
+     * Create multiple tasks in a given sequence with improved type safety.
      *
      * @param confList List of TaskConfig objects.
-     * @returns this
+     * @returns this for method chaining
      */
-    createTasks(...confList: Array<TaskConfig | BuildOptions>): this {
-        let taskOptions: Omit<BuildOptions, 'name'> = {}
-        confList = confList.filter(conf => {
-            if (!Object.hasOwn(conf, 'name')) {
-                taskOptions = {...taskOptions, ...conf}
-                return false
-            }
+    createTasks(...confList: TaskConfig[]): this {
+        const taskOptions: Omit<BuildOptions, 'name'> = {}
 
+        // Enhanced type guard for better filtering
+        const isTaskConfig = (conf: TaskConfig | BuildOptions): conf is TaskConfig =>
+            'name' in conf && typeof conf.name === 'string' && conf.name.length > 0
+
+        // Separate task configs from shared options
+        const configs = confList.filter(conf => {
+            if (!isTaskConfig(conf)) return false
             return true
         })
 
-        for (const conf of arrayify(confList)) {
-            const taskConf: TaskConfig = {...(conf as TaskConfig), ...taskOptions}
+        // Process each valid task configuration
+        for (const conf of arrayify(configs)) {
+            const taskConf: TaskConfig = {...conf, ...taskOptions}
             this.task(taskConf)
         }
 
@@ -137,12 +157,13 @@ export class Tron {
      * Create a task cleaning all the clean targets(conf.clean) of the selected tasks,
      * and optional targets specified in options.clean.
      *
-     * @param options cleaner task options.
+     * @param options cleaner task options with default values.
+     * @returns this for method chaining
      */
     addCleaner(options: CleanerOptions = {}): this {
         const target = options.target ? this.selectTasks(options.target) : this._taskConfigs
         if (!target) {
-            console.log(`tron.addCleaner: no task selected. Cleaner task not created.`)
+            console.log('tron.addCleaner: no task selected. Cleaner task not created.')
             return this
         }
 
@@ -151,62 +172,72 @@ export class Tron {
             ...arrayify(options.clean),
         ]
 
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        function __cleanerFunction__(bs: BuildStream) {
+        // Use arrow function with explicit name for better debugging
+        const cleanerFunction = (bs: BuildStream): void => {
             bs.clean(cleanList)
         }
 
-        this.task({name: '@clean', ...options, build: __cleanerFunction__})
+        // Set function name for better stack traces
+        Object.defineProperty(cleanerFunction, 'name', {value: '__cleanerFunction__'})
+
+        this.task({name: '@clean', ...options, build: cleanerFunction})
         return this
     }
 
     /**
      * Create watcher task, which watches files specified in `conf.watch` of the selected tasks.
+     * Uses modern TypeScript features for better type safety and performance.
      *
-     * @param options WatchOptions
-     * @returns
+     * @param options WatchOptions with default values
+     * @returns this for method chaining
      */
     addWatcher(options: WatcherOptions = {}): this {
         const target = options.target ? this.selectTasks(options.target) : this._taskConfigs
         if (!target) {
-            console.log(`tron.addWatcher: no task selected. Watcher task not created.`)
+            console.log('tron.addWatcher: no task selected. Watcher task not created.')
             return this
         }
 
         const taskName = options.name ?? '@watch'
-
         let isWatching = false
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        function __watcherFunction__(bs: BuildStream) {
+
+        // Use arrow function with better typing
+        const watcherFunction = (bs: BuildStream): void => {
             // Watch task should not run repeatedly on change detection.
             if (isWatching) return
 
-            function _handleChangeEvent(watcher: ReturnType<typeof gulp.watch>, logLevel?: string) {
-                if (options.browserSync) watcher.on('change', browserSync.reload)
+            // Helper function with improved typing
+            const handleChangeEvent = (
+                watcher: ReturnType<typeof gulp.watch>,
+                logLevel?: string,
+            ): void => {
+                if (options.browserSync) {
+                    watcher.on('change', browserSync.reload)
+                }
+
                 watcher.on('change', (path: string) => {
                     if (logLevel !== 'silent') {
-                        let msg = `change detected:'${path}`
-                        if (options.browserSync) msg += ' reloaded.'
-                        bs.log(msg)
+                        const reloadMsg = options.browserSync ? ' reloaded.' : ''
+                        bs.log(`change detected:'${path}${reloadMsg}`)
                     }
                 })
             }
 
-            if (options.browserSync) browserSync.init(options.browserSync || {})
-            for (const task of target!) {
-                // Skip the other watchers (watcher should not monitor the other wacthers)
-                if (task.build === __watcherFunction__) continue
+            // Initialize browser-sync if configured
+            if (options.browserSync) {
+                browserSync.init(options.browserSync)
+            }
 
-                const watched: string[] = [
-                    ...arrayify(task.watch ?? task.src),
-                    ...arrayify(task.addWatch),
-                ]
+            // Set up watchers for each target task
+            for (const task of target) {
+                // Skip the other watchers (watcher should not monitor the other watchers)
+                if (task.build === watcherFunction) continue
+
+                const watched = [...arrayify(task.watch ?? task.src), ...arrayify(task.addWatch)]
 
                 if (watched.length > 0) {
-                    // bs.log(`Watching '${task.taskName}':[${watched.join(' ')}]`)
-                    bs.log(`Watching '${task.name}':[${watched.join(', ')}]`)
-                    _handleChangeEvent(
-                        // gulp.watch(watched, gulp.task(task.taskName ?? '')),
+                    bs.log(`Watching '${task.name}': [${watched.join(', ')}]`)
+                    handleChangeEvent(
                         gulp.watch(watched, gulp.task(task.name ?? '')),
                         task.logLevel,
                     )
@@ -216,7 +247,10 @@ export class Tron {
             isWatching = true
         }
 
-        this.task({...options, name: taskName, build: __watcherFunction__})
+        // Set function name for better debugging
+        Object.defineProperty(watcherFunction, 'name', {value: '__watcherFunction__'})
+
+        this.task({...options, name: taskName, build: watcherFunction})
         this._watchTaskNames.push(taskName)
         return this
     }
@@ -253,45 +287,47 @@ export class Tron {
     // }
 
     /**
-     * Select tasks with glob patters.
+     * Select tasks with glob patterns using modern array methods.
      *
      * @param patterns Task name selector patterns.
      * Refer to 'multimatch' for patterns (https://github.com/sindresorhus/multimatch)
      *
-     * @returns List of selected TaskConfig objects. Undefiend if filter is undefiend or no task found.
+     * @returns List of selected TaskConfig objects. Undefined if filter is undefined or no task found.
      */
     selectTasks(patterns?: string | string[]): TaskConfig[] | undefined {
         if (!patterns) return undefined
-        patterns = arrayify(patterns)
-        if (patterns.length > 0 && patterns.every(pattern => pattern.startsWith('!')))
-            patterns.unshift('*')
+
+        const normalizedPatterns = arrayify(patterns)
+        const patternsToUse =
+            normalizedPatterns.length > 0 &&
+            normalizedPatterns.every(pattern => pattern.startsWith('!'))
+                ? ['*', ...normalizedPatterns]
+                : normalizedPatterns
 
         const selected = this._taskConfigs.filter(
-            task => multimatch(task.name, patterns).length > 0,
+            task => multimatch(task.name, patternsToUse).length > 0,
         )
 
         return selected.length > 0 ? selected : undefined
     }
 
     /**
-     * Get all the tasks registered.
+     * Get all the tasks registered using modern getter syntax.
      *
      * @returns Array of all the TaskConfig objects registered.
      */
-    selectTasksAll(): TaskConfig[] {
-        return this._taskConfigs
+    selectTasksAll(): readonly TaskConfig[] {
+        return [...this._taskConfigs]
     }
 
     /**
-     * Find TaskConfig with a name.
+     * Find TaskConfig with a name using modern array method.
      *
      * @param name task name to look for.
      * @returns TaskConfig object if found. Or undefined.
      */
     findTask(name?: string): TaskConfig | undefined {
-        for (const t of this._taskConfigs) if (t.name === name) return t
-
-        return undefined
+        return this._taskConfigs.find(task => task.name === name)
     }
 
     /**
@@ -318,110 +354,122 @@ export class Tron {
     // }
 
     /**
-     *Convert buildSet to gulp task tree
+     * Convert buildSet to gulp task tree with improved type safety and error handling.
      *
      * @param buildSet buildSet currently being resolved
-     * @param conf original TaskConfig
-     * @returns gulp task function of the gulp task tree constructed from buildSet. undefined there's no task.
+     * @returns gulp task function of the gulp task tree constructed from buildSet. undefined if there's no task.
      */
     protected _resolveBuildSet(buildSet?: BuildSet): GulpTaskFunction | undefined {
-        if (!buildSet) return
+        if (!buildSet) return undefined
 
         // buildSet is gulp task name (BuildName)
         if (is.String(buildSet)) {
-            const gulpTask = gulp.task(buildSet as string)
-            if (!gulpTask)
-                throw new Error(`Tron:resolveBuildset: Task "${buildSet as string}" is not found.`)
+            const taskName = buildSet as string
+            const gulpTask = gulp.task(taskName)
+            if (!gulpTask) {
+                throw new Error(`Tron:resolveBuildSet: Task "${taskName}" is not found.`)
+            }
+
             return gulpTask
         }
 
         if (is.Function(buildSet)) {
-            // All the function argument to the function is assumed to be BuildFunction,
-            // and it is converted to TaskCobfig object for processing with __resolveBuildSet()
-            const name = `tron-anonymous#${++Tron.annonCount}-${(buildSet as BuildFunction).name}`
-            return this._resolveTaskConfg({name, build: buildSet as BuildFunction})
+            // All function arguments are assumed to be BuildFunction,
+            // and converted to TaskConfig object for processing
+            const functionName = (buildSet as BuildFunction).name || 'buildFunc'
+            const anonymousName = `tron-anonymous#${++Tron.annonCount}-${functionName}`
+            return this._resolveTaskConfg({name: anonymousName, build: buildSet as BuildFunction})
         }
 
         // buildSet is TaskConfig object
-        if (is.Object(buildSet))
+        if (is.Object(buildSet)) {
             return Object.hasOwn(buildSet as TaskConfig, 'set')
                 ? this._resolveBuildSetGroup(buildSet as BuildSetSeries | BuildSetParallel)
                 : this._resolveTaskConfg(buildSet as TaskConfig)
+        }
 
         // buildSet is BuildSetSeries or BuildSetParallel
         return this._resolveBuildSetGroup(buildSet as BuildSetParallel | BuildSetSeries)
     }
 
+    /**
+     * Resolve a BuildSetGroup with enhanced type safety and modern array methods.
+     *
+     * @param buildSet BuildSetSeries or BuildSetParallel to resolve
+     * @returns Gulp task function for the resolved group
+     */
     protected _resolveBuildSetGroup(
         buildSet: BuildSetSeries | BuildSetParallel,
     ): GulpTaskFunction | undefined {
         // BuildSet is series of BuildSet items
         if (is.Array(buildSet)) {
-            // Strip redundant outer arrays
-            while ((buildSet as BuildSet[]).length === 1 && is.Array((buildSet as BuildSet[])[0]))
-                buildSet = (buildSet as BuildSet[])[0] as BuildSetSeries
-
-            const list = [] as GulpTaskFunction[]
-            for (const bs of buildSet as BuildSet[]) {
-                const ret = this._resolveBuildSet(bs)
-                if (ret) list.push(ret)
+            // Strip redundant outer arrays using modern array methods
+            let resolvedBuildSet = buildSet as BuildSet[]
+            while (resolvedBuildSet.length === 1 && is.Array(resolvedBuildSet[0])) {
+                resolvedBuildSet = resolvedBuildSet[0] as BuildSetSeries
             }
 
-            if (list.length === 0) return
-            return list.length > 1 ? gulp.series(list) : list[0]
+            const tasks = resolvedBuildSet
+                .map(bs => this._resolveBuildSet(bs))
+                .filter((task): task is GulpTaskFunction => task !== undefined)
+
+            if (tasks.length === 0) return undefined
+            return tasks.length > 1 ? gulp.series(tasks) : tasks[0]
         }
 
         // BuildSet is parallel set of BuildSet items
         if (is.Object(buildSet) && Object.hasOwn(buildSet, 'set')) {
             let {set} = buildSet as BuildSetParallel
-            // Strip redundant outer arrays
-            while (set.length === 1 && Array.isArray(set[0])) set = set[0]
-
-            const list = []
-            for (const bs of set) {
-                const ret = this._resolveBuildSet(bs)
-                if (ret) list.push(ret)
+            // Strip redundant outer arrays using modern array methods
+            while (set.length === 1 && Array.isArray(set[0])) {
+                set = set[0]
             }
 
-            if (list.length === 0) return
-            return list.length > 1 ? gulp.parallel(list) : list[0]
+            const tasks = set
+                .map(bs => this._resolveBuildSet(bs))
+                .filter((task): task is GulpTaskFunction => task !== undefined)
+
+            if (tasks.length === 0) return undefined
+            return tasks.length > 1 ? gulp.parallel(tasks) : tasks[0]
         }
 
-        // BuildSet is unknown - throw Error
-        throw new Error(`Tron:resolveBuildSet:Unknown type of buildSet`, {cause: buildSet})
+        // BuildSet is unknown - throw Error with enhanced error message
+        throw new Error(`Tron:resolveBuildSetGroup: Unknown type of buildSet`, {cause: buildSet})
     }
 
     /**
-     * Create gulp task with the data in TaskConfig object.
+     * Create gulp task with the data in TaskConfig object using modern patterns.
      *
      * @param conf TaskConfig object
-     * @returns task funtion created by gulp. Value returned from gulp.task(taskName).
+     * @returns task function created by gulp. Value returned from gulp.task(taskName).
      */
-    // _resolveTaskConfg(conf: TaskConfigWithMutableTaskName): GulpTaskFunction {
     protected _resolveTaskConfg(conf: TaskConfig): GulpTaskFunction {
-        // const {name, build, dependsOn, triggers, logLevel, group} = conf
         const {name, build, dependsOn, triggers, logLevel} = conf
-        if (!name) throw new Error(`Tron:resolveTaskConfig: invalid task name: ${name}`)
-        if (
-            (name === '@clean' && conf.build?.name !== '__cleanerFunction__') ||
-            (name === '@watch' && conf.build?.name !== '__watcherFunction__')
-        ) {
+
+        if (!name) {
+            throw new Error(`Tron:resolveTaskConfig: invalid task name: ${name}`)
+        }
+
+        // Check for reserved task names with improved error messages
+        const isReservedClean = name === '@clean' && conf.build?.name !== '__cleanerFunction__'
+        const isReservedWatch = name === '@watch' && conf.build?.name !== '__watcherFunction__'
+
+        if (isReservedClean || isReservedWatch) {
             throw new Error(
-                `Tron:resolveTaskConfig:invalid task name:'${name}' is a reserved task name.`,
+                `Tron:resolveTaskConfig: invalid task name: '${name}' is a reserved task name.`,
             )
         }
 
-        // const prefix =
-        //     conf.prefix === true ? group : conf.prefix === false ? undefined : conf.prefix
-        // const taskName = prefix ? `${prefix}${name}` : name
         const taskName = name
 
-        if (gulp.task(taskName) && logLevel === 'verbose')
-            console.log(`Tron:resolveBuildSet:gulp task ${taskName} already exists. skipping...`)
+        if (gulp.task(taskName) && logLevel === 'verbose') {
+            console.log(`Tron:resolveBuildSet: gulp task ${taskName} already exists. skipping...`)
+        }
 
         let gulpTask = gulp.task(taskName)
         if (gulpTask) return gulpTask.unwrap()
 
+        // Create main task function with enhanced async handling
         const main: GulpTaskFunction = async done => {
             if (build) {
                 const bs = new BuildStream(taskName, conf)
@@ -431,42 +479,42 @@ export class Tron {
             done()
         }
 
-        main.displayName = `${taskName}:main`
+        // Set function display name for better debugging
+        Object.defineProperty(main, 'displayName', {
+            value: `${taskName}:main`,
+            configurable: true,
+        })
 
-        // Sanity check: taskName must be unique.
-        if (this.findTask(taskName))
-            throw new Error(`Tron:resolveTaskConfig:taskName ${taskName} already registerd.`)
+        // Sanity check: taskName must be unique
+        if (this.findTask(taskName)) {
+            throw new Error(`Tron:resolveTaskConfig: taskName ${taskName} already registered.`)
+        }
 
         const tasks: GulpTaskFunction[] = []
         const deps = this._resolveBuildSet(dependsOn)
         const trigs = this._resolveBuildSet(triggers)
 
+        // Build task array using modern conditional logic
         if (deps) tasks.push(deps)
-        // Create mainTask if no deps and no trigs, to make this task(taskName) created and exist.
+
+        // Create mainTask if build exists or if no deps and no trigs
         if (build ?? (!deps && !trigs)) {
-            // If (tasks.length === 1 && (deps || trigs)) mainTask.displayName = `${taskName}:main`
             tasks.push(main)
         }
 
         if (trigs) tasks.push(trigs)
 
-        // Now tasks would have at least 1 entry
+        // Create gulp task with modern spread operator and nullish coalescing
         if (tasks.length > 1) {
             gulp.task(taskName, gulp.series(...tasks))
         } else {
             gulp.task(taskName, tasks[0]!)
         }
 
-        // This always return valid task Function because taskName proved not exist in task registry
-        // at the start: if (gulp.task(taskName) && logLevel === 'verbose') ...
+        // This always returns valid task Function because taskName was proven not to exist
         gulpTask = gulp.task(taskName)!
-        // if (!gulpTask)
-        //     throw new Error(
-        //         `Tron:resolveBuildSet:unexpected failure in creating gulp task ${taskName}.`,
-        //     )
 
-        // Gulp task successfully created.
-        // conf.taskName = taskName
+        // Gulp task successfully created - store configuration
         this._taskConfigs.push(conf)
         return gulpTask.unwrap()
     }

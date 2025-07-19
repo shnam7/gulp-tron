@@ -1,84 +1,78 @@
-import type {SpawnOptions} from 'node:child_process'
 import type {Transform} from 'node:stream'
 import type {SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback} from 'gulp'
-import type {Options as browserSyncOptions} from 'browser-sync'
-import type {Options as delOptions} from 'del'
+import type {Options as BrowserSyncOptions} from 'browser-sync'
+import type {Options as DelBaseOptions} from 'del'
 import type {BuildStream} from './build-stream.js'
 
 /*****************************************************************************
  *  Common Types
  *****************************************************************************/
+
+// --- Gulp types
 export type GulpStream = Transform | NodeJS.ReadWriteStream
 export type GulpTaskName = string
 export type GulpTaskFunction = TaskFunction
 export type GulpTaskFunctionCallback = TaskFunctionCallback
-// export type TaskSelector = (string | RegExp) | Array<string | RegExp>
-// export type TaskSelector = string | string[]
 
+// --- Log types
+export type LogLevel = 'verbose' | 'normal' | 'silent'
 export type LogOptions = {
-    logLevel?: 'verbose' | 'normal' | 'silent'
-    logger?: (...args: any[]) => void
+    readonly logLevel?: LogLevel
+    readonly logger?: (...args: readonly unknown[]) => void
 }
 
+// --- Utility types
 export type SrcOptions = NonNullable<Parameters<SrcMethod>[1]>
 export type DestOptions = NonNullable<Parameters<DestMethod>[1]>
 export type SourceMaps = SrcOptions['sourcemaps'] & DestOptions['sourcemaps']
+export type DelOptions = DelBaseOptions & LogOptions
 
-export type ExecOptions = SpawnOptions & LogOptions
-
-export type DelOptions = delOptions & LogOptions
-
+// --- Clean options
 export type CleanOptions = DelOptions
 
-/*****************************************************************************
- *  Build Types
- *****************************************************************************/
-export type BuildFunction = (bs: BuildStream) => void | Promise<any>
+// --- Build Types -----------------------------------------------------------
 
-// --- Tron Task types
+export type BuildFunction = (bs: BuildStream) => void | Promise<unknown>
+
 export type TaskConfig = {
-    readonly name: string // Build name
-    // readonly taskName?: string // gulp task name. To be set by Tron when the gulp task is created.
-    readonly build?: BuildFunction // Main build function
-    readonly dependsOn?: BuildSet // BuildSet to be executed before main build function
-    readonly triggers?: BuildSet // BuildSet to be executed after main build function
+    readonly name: string
+    readonly build?: BuildFunction
+    readonly dependsOn?: BuildSet
+    readonly triggers?: BuildSet
 } & BuildOptions
 
+// --- Build Options
 export type BuildOptions = {
-    // readonly grou p?: string // Task group name
-    // readonly pref ix?: boolean | string // If false, no prefix for taskName. if true, group is used as prefix. if string, it becoms the prefix.
-    readonly src?: Parameters<SrcMethod>[0] // Source for bu ild operation
-    readonly order?: string | string[] // Input file(sr c) ordering
-    readonly dest?: Parameters<DestMethod>[0] // Output(destin ation) directory of the build operation
-    readonly sourcemaps?: boolean // Sourcemaps op tion to gulp.src() and gulp.dest()
+    readonly src?: Parameters<SrcMethod>[0] // Source files for build operation
+    readonly order?: string | string[] // Input file ordering patterns
+    readonly dest?: Parameters<DestMethod>[0] // Output destination directory
+    readonly sourcemaps?: boolean // Sourcemaps option for gulp.src() and gulp.dest()
 } & Omit<CleanerOptions, 'name'> &
     Omit<WatcherOptions, 'name'> &
     LogOptions
 
-// --- Cleaner t ypes
+// --- Cleaner options
 export type CleanerOptions = {
-    readonly name?: string // Cleaner task  name. default value is '@clean'
-    readonly target?: string | string[] // Target TaskCo nfig list to look for clean properties
-    readonly clean?: string | string[] // Additional cl ean list
+    readonly name?: string // Cleaner task name (default: '@clean
+    readonly target?: string | string[] // Target TaskConfig list to look for clean properties
+    readonly clean?: string | string[] // Additional clean patterns
 } & CleanOptions &
     LogOptions
 
-// --- Watcher t ypes
+// --- Watcher Options
 export type WatcherOptions = {
-    readonly name?: string // Watcher task name. default value is '@watch'
-    readonly target?: string | string[] // Target TaskCo nfig list to look for watch properties
-    readonly browserSync?: browserSyncOptions // Browser-optio ns
-    readonly watch?: string | string[] // Override default watch, conf.src
-    readonly addWatch?: string | string[] // Additional wa tch in addition to watch or default watch
+    readonly name?: string // Watcher task name (default: '@watch')
+    readonly target?: string | string[] // Target TaskConfig list to look for watch properties
+    readonly browserSync?: BrowserSyncOptions // Browser-sync configuration options
+    readonly watch?: string | string[] // Override default watch patterns (replaces conf.src)
+    readonly addWatch?: string | string[] // Additional watch patterns (supplements watch or default)
 } & LogOptions
 
-// --- BuildSet
+// --- BuildSet types
 export type BuildSet = GulpTaskName | BuildFunction | TaskConfig | BuildSetSeries | BuildSetParallel
-
 export type BuildSetSeries = BuildSet[]
-export type BuildSetParallel = {set: BuildSet[]}
+export type BuildSetParallel = {readonly set: BuildSet[]}
 
-/*****************************************************************************
- *  Plugin Types
- *****************************************************************************/
+// --- Plugin Types ----------------------------------------------------------
+
 export type PluginFunction = (bs: BuildStream) => void

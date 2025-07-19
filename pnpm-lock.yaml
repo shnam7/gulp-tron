@@ -330,9 +330,6 @@ importers:
       streamqueue:
         specifier: ^2.0.0
         version: 2.0.0
-      through2:
-        specifier: ^4.0.2
-        version: 4.0.2
     devDependencies:
       '@gulp-tron/tsconfig':
         specifier: workspace:*
@@ -361,9 +358,6 @@ importers:
       '@types/node':
         specifier: ^24.0.14
         version: 24.0.14
-      '@types/through2':
-        specifier: ^2.0.41
-        version: 2.0.41
       '@types/vinyl':
         specifier: ^2.0.12
         version: 2.0.12
@@ -379,6 +373,9 @@ importers:
       npm-run-all:
         specifier: ^4.1.5
         version: 4.1.5
+      prettier:
+        specifier: ^3.6.2
+        version: 3.6.2
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -6434,11 +6431,6 @@ packages:
   prettier-linter-helpers@1.0.0:
     resolution: {integrity: sha512-GbK2cP9nraSSUF9N2XwUwqfzlAFlMNYYl+ShE/V+H8a9uNl/oUqB1w2EL54Jh0OlyRSd8RfWYJ3coVS4TROP2w==}
     engines: {node: '>=6.0.0'}
-
-  prettier@3.2.5:
-    resolution: {integrity: sha512-3/GWa9aOC0YeD7LUfvOG2NiDyhOWRvt1k+rcKhOuYnMY24iiCphgneUfJDyFXd6rZCAnuLBv6UeAULtrhT/F4A==}
-    engines: {node: '>=14'}
-    hasBin: true
 
   prettier@3.6.2:
     resolution: {integrity: sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==}
@@ -12760,7 +12752,7 @@ snapshots:
   gulp-prettier@6.0.0:
     dependencies:
       plugin-error: 2.0.1
-      prettier: 3.2.5
+      prettier: 3.6.2
 
   gulp-rename@2.1.0: {}
 
@@ -14550,8 +14542,6 @@ snapshots:
   prettier-linter-helpers@1.0.0:
     dependencies:
       fast-diff: 1.3.0
-
-  prettier@3.2.5: {}
 
   prettier@3.6.2: {}
 

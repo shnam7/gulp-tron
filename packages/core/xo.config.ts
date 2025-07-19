@@ -12,6 +12,12 @@ const xoConfig: FlatXoConfig = [
             'arrow-body-style': ['error', 'as-needed'],
             '@typescript-eslint/no-empty-function': 'off',
 
+            // Allow single line functions/methods
+            'brace-style': ['error', '1tbs', {allowSingleLine: true}],
+            'object-curly-newline': ['error', {consistent: true}],
+            'newline-before-return': 'off',
+            'padding-line-between-statements': 'off',
+
             '@typescript-eslint/no-unsafe-call': 'off',
             '@typescript-eslint/no-unsafe-assignment': 'off',
             '@typescript-eslint/no-unsafe-return': 'off',

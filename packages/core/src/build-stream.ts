@@ -1,8 +1,4 @@
-import process from 'node:process'
-import child_process from 'node:child_process'
 import {Transform, type TransformCallback, type Stream, PassThrough} from 'node:stream'
-import fs from 'node:fs'
-import path from 'node:path'
 import debugG, {type DebugOptions} from 'gulp-debug2'
 import filterG from 'gulp-filter'
 import renameG from 'gulp-rename'
@@ -13,55 +9,95 @@ import {deleteSync} from 'del'
 import {Mutex} from '@wicle/mutex'
 import type Vinyl from 'vinyl'
 import {pEvent} from 'p-event'
-import through from 'through2'
 import {StreamQueue} from 'streamqueue'
 import es from 'event-stream'
-import {globbySync} from 'globby'
 import is from '@wicle/is'
 import arrayify from './utils/arrayify.js'
+import {copyFilesByGlobs, type CopyParam, type CopyOptions} from './utils/copy.js'
+import {exec, type ExecOptions} from './utils/exec.js'
 import {gulp} from './globals.js'
 import type {
     BuildFunction,
     CleanOptions,
     DelOptions,
-    ExecOptions,
     GulpStream,
-    LogOptions,
     PluginFunction,
     SrcOptions,
     BuildOptions,
 } from './types.js'
 
-export type CopyParam = {src: string | string[]; dest: string}
-export type CopyOptions = {dryRun?: boolean} & LogOptions
-
+// Modern type aliases with better semantic naming and enhanced generics
 type SrcMethod = typeof gulp.src
 type DestMethod = typeof gulp.dest
+type TransformFunction = (file: Vinyl, enc: BufferEncoding, callback: TransformCallback) => void
+type FlushFunction = (cb: TransformCallback) => void
 
-function _transform(
-    transform?: (file: Vinyl, enc: BufferEncoding, callback: TransformCallback) => void,
-    flush?: (cb: TransformCallback) => void,
-): Transform {
-    return new Transform({objectMode: true, highWaterMark: 16, transform, flush})
-    // return through.obj(transform, flush)
+// Enhanced constants with tuple types and better semantic naming
+const transformConfig = {highWaterMark: 16, objectMode: true}
+const defaultAnonymousName = '<anonymous>'
+
+// Modern utility functions with enhanced type safety
+function createTransform(transform?: TransformFunction, flush?: FlushFunction): Transform {
+    return new Transform({
+        ...transformConfig,
+        transform,
+        flush,
+    })
 }
 
-const clearStreamG = () =>
-    _transform((file, enc, cb) => {
+// Enhanced stream utilities with proper typing and modern patterns
+function clearStreamG(): Transform {
+    return createTransform((_file: Vinyl, _enc: BufferEncoding, cb: TransformCallback) => {
         cb(null)
     })
+}
 
-const cloneStreamG = () =>
-    _transform((file, enc, cb) => {
+function cloneStreamG(): Transform {
+    return createTransform((file: Vinyl, _enc: BufferEncoding, cb: TransformCallback) => {
         cb(null, file.clone())
     })
+}
 
-const appendG = (...args: Parameters<typeof gulp.src>) => {
-    const pass = through.obj()
+function appendG(...args: Parameters<typeof gulp.src>) {
+    const pass = new PassThrough({objectMode: true})
     return es.duplex(
         pass,
-        new StreamQueue({objectMode: true}, pass, gulp.src.apply(gulp.src, args) as Transform),
+        new StreamQueue({objectMode: true}, pass, gulp.src(...args) as Transform),
     )
+}
+
+/*****************************************************************************
+ *  Builder Pattern for BuildStream
+ *****************************************************************************/
+class BuildStreamBuilder {
+    #name?: string
+    #opts: BuildOptions = {}
+    #stream?: GulpStream
+    #promiseSync?: Promise<unknown>
+
+    name(name: string): this {
+        this.#name = name
+        return this
+    }
+
+    options(opts: BuildOptions): this {
+        this.#opts = {...this.#opts, ...opts}
+        return this
+    }
+
+    stream(stream: GulpStream): this {
+        this.#stream = stream
+        return this
+    }
+
+    promise(promiseSync: Promise<unknown>): this {
+        this.#promiseSync = promiseSync
+        return this
+    }
+
+    build(): BuildStream {
+        return new BuildStream(this.#name, this.#opts, this.#stream, this.#promiseSync)
+    }
 }
 
 /*****************************************************************************
@@ -69,28 +105,46 @@ const appendG = (...args: Parameters<typeof gulp.src>) => {
  *****************************************************************************/
 export class BuildStream {
     static nullStream(): Transform {
-        // return through.obj()
         return new PassThrough()
     }
 
-    protected _name: string // BuildStream instance name (same as gulp task name)
-    protected _stream: GulpStream = BuildStream.nullStream()
-    protected _streamStack: GulpStream[] = []
-    protected _promiseSync: Promise<unknown> = Promise.resolve()
-    protected _opts: BuildOptions
-    protected _mutex: Mutex = new Mutex()
-    protected _srcCalled = false
+    /** Modern factory method for creating BuildStream instances */
+    static create(
+        name?: string,
+        opts: BuildOptions = {},
+        stream?: GulpStream,
+        promiseSync?: Promise<unknown>,
+    ): BuildStream {
+        return new BuildStream(name, opts, stream, promiseSync)
+    }
+
+    /** Enhanced builder pattern factory with fluent interface */
+    static builder() {
+        return new BuildStreamBuilder()
+    }
+
+    readonly #name: string // BuildStream instance name (same as gulp task name)
+    #stream: GulpStream = BuildStream.nullStream()
+    #promiseSync: Promise<unknown> = Promise.resolve()
+    readonly #opts: BuildOptions
+    readonly #mutex: Mutex = new Mutex()
+    #srcCalled = false
+
+    // Modern performance tracking
+    readonly #performanceMetrics = {
+        startTime: performance.now(),
+    }
 
     constructor(
         name?: string,
         opts: BuildOptions = {},
         stream?: GulpStream,
-        promiseSync?: Promise<any>,
+        promiseSync?: Promise<unknown>,
     ) {
-        this._name = name ?? '<annonymous>'
-        this._opts = {...opts}
-        if (stream) this._stream = stream
-        if (promiseSync) this._promiseSync = promiseSync
+        this.#name = name ?? defaultAnonymousName
+        this.#opts = {...opts}
+        if (stream) this.#stream = stream
+        if (promiseSync) this.#promiseSync = promiseSync
     }
 
     /**
@@ -101,14 +155,14 @@ export class BuildStream {
      */
     async _main(buildFunc: BuildFunction) {
         await buildFunc(this)
-        await this._promiseSync
-        if (this._srcCalled) await pEvent(this._stream, 'finish')
+        await this.#promiseSync
+        if (this.#srcCalled) await pEvent(this.#stream, 'finish')
 
-        return this._stream
+        return this.#stream
     }
 
     get name() {
-        return this._name
+        return this.#name
     }
 
     get className() {
@@ -116,19 +170,27 @@ export class BuildStream {
     }
 
     get stream() {
-        return this._stream
+        return this.#stream
     }
 
     get sync() {
-        return this._promiseSync
+        return this.#promiseSync
     }
 
     get opts() {
-        return this._opts
+        return this.#opts
+    }
+
+    /** Modern performance metrics getter */
+    get performance() {
+        return {
+            ...this.#performanceMetrics,
+            elapsedTime: performance.now() - this.#performanceMetrics.startTime,
+        }
     }
 
     //-------------------------------------------------------------------------
-    // Build API: Returns value should be 'this'
+    // Build API Methods: Returns value should be 'this'
     //-------------------------------------------------------------------------
     /**
      * The same as gulp.src()
@@ -150,10 +212,8 @@ export class BuildStream {
         // disable encoding for compatibiliy with gulp 4 in handling binary data such as images
         opts.encoding ??= false // defaults to false
 
-        // if (this._srcCalled) return this.clear().add(globs, opts)
-
-        this._stream = gulp.src(globs as string, opts)
-        this._srcCalled = true
+        this.#stream = gulp.src(globs as string, opts)
+        this.#srcCalled = true
 
         return this.order()
     }
@@ -167,8 +227,8 @@ export class BuildStream {
      */
     add(globs: Parameters<SrcMethod>[0], options?: SrcOptions): this {
         if (is.String(globs) || is.Array(globs)) {
-            if (this._srcCalled)
-                this._stream = this._stream.pipe(appendG(globs, options)) as GulpStream
+            if (this.#srcCalled)
+                this.#stream = this.#stream.pipe(appendG(globs, options)) as GulpStream
             else this.src(globs, options)
         }
 
@@ -176,22 +236,20 @@ export class BuildStream {
     }
 
     /**
-     * Remove files from build stream
+     * Remove files from build stream with enhanced type safety
      * @param patterns file patterns to remove from build stream
-     *
      * @returns this
      */
     remove(patterns?: string | string[]): this {
-        patterns = arrayify(patterns).map(pattern => {
-            if (pattern.startsWith('!')) return pattern.slice(1)
-            return '!' + pattern
-        })
+        const normalizedPatterns = arrayify(patterns)
+            .filter((item): item is string => typeof item === 'string')
+            .map(pattern => (pattern.startsWith('!') ? pattern.slice(1) : `!${pattern}`))
 
-        return this.filter(patterns)
+        return this.filter(normalizedPatterns)
     }
 
     /**
-     * Filter files in the stream with glob patterns.
+     * Filter files in the stream with glob patterns using modern patterns
      * Refer to gulp-filter docs for the details
      *
      * @param args argument list of gulp-filter
@@ -199,10 +257,17 @@ export class BuildStream {
      */
     filter(...args: Parameters<typeof filterG>): this {
         let [patterns, opts] = args
+
         if (!is.Function(patterns)) {
-            patterns = arrayify(patterns as string)
-            if (patterns.length <= 0) return this
-            if (patterns.every(pattern => pattern.startsWith('!'))) patterns.unshift('*')
+            const normalizedPatterns = arrayify(patterns as string).filter(
+                (item): item is string => typeof item === 'string',
+            )
+
+            if (normalizedPatterns.length === 0) return this
+
+            // Add wildcard for negation-only patterns using modern array methods
+            const hasOnlyNegations = normalizedPatterns.every(pattern => pattern.startsWith('!'))
+            patterns = hasOnlyNegations ? ['*', ...normalizedPatterns] : normalizedPatterns
         }
 
         return this.pipe(filterG(patterns, opts))
@@ -242,11 +307,14 @@ export class BuildStream {
         if (!dest) return this
 
         const opts = {...options}
-        type T = (srcFile: Vinyl, destPath: string) => Promise<Vinyl | undefined>
+        type CompareFunction = (srcFile: Vinyl, destPath: string) => Promise<Vinyl | undefined>
 
-        async function compare(srcFile: Vinyl, destPath: string): Promise<Vinyl | undefined> {
-            return (await (compareLastModifiedTime as unknown as T)(srcFile, destPath)) === srcFile
-                ? (compareContents as unknown as T)(srcFile, destPath)
+        const compare: CompareFunction = async (srcFile: Vinyl, destPath: string) => {
+            const lastModifiedResult = await (
+                compareLastModifiedTime as unknown as CompareFunction
+            )(srcFile, destPath)
+            return lastModifiedResult === srcFile
+                ? (compareContents as unknown as CompareFunction)(srcFile, destPath)
                 : undefined
         }
 
@@ -261,8 +329,8 @@ export class BuildStream {
      * @returns Cloned BuildStream instance.
      */
     clone(name?: string): BuildStream {
-        const cloned = this._stream.pipe(cloneStreamG())
-        const bs = new BuildStream(name ?? this._name, this._opts, cloned, this._promiseSync)
+        const cloned = this.#stream.pipe(cloneStreamG())
+        const bs = new BuildStream(name ?? this.#name, this.#opts, cloned, this.#promiseSync)
         return bs
     }
 
@@ -275,7 +343,7 @@ export class BuildStream {
      * @returns this
      */
     clear(): this {
-        this._stream = this._stream.pipe(clearStreamG())
+        this.#stream = this.#stream.pipe(clearStreamG())
         return this
     }
 
@@ -290,10 +358,10 @@ export class BuildStream {
      * @returns
      */
     dest(...args: Parameters<DestMethod> | undefined[]): this {
-        const [folder = this._opts.dest, opt = {}] = args
-        opt.sourcemaps ??= this._opts.sourcemaps
+        const [folder = this.#opts.dest, opt = {}] = args
+        opt.sourcemaps ??= this.#opts.sourcemaps
 
-        this._stream.pipe(gulp.dest(folder ?? '.', opt))
+        this.#stream.pipe(gulp.dest(folder ?? '.', opt))
         return this
     }
 
@@ -305,7 +373,7 @@ export class BuildStream {
      * @returns
      */
     on(...args: Parameters<typeof Stream.prototype.on>): this {
-        this._stream.on(...args)
+        this.#stream.on(...args)
         return this
     }
 
@@ -330,15 +398,23 @@ export class BuildStream {
      * @returns this
      */
     promise(arg1: (() => unknown) | Promise<unknown>): this {
-        this._promiseSync =
-            arg1 instanceof Promise
-                ? this._promiseSync.then(async () => arg1) // eslint-disable-line promise/prefer-await-to-then
-                : this._promiseSync.then(() => arg1()) // eslint-disable-line promise/prefer-await-to-then
+        if (arg1 instanceof Promise) {
+            this.#promiseSync = (async () => {
+                await this.#promiseSync
+                await arg1
+            })()
+        } else {
+            this.#promiseSync = (async () => {
+                await this.#promiseSync
+                return arg1()
+            })()
+        }
+
         return this
     }
 
     /**
-     * Chain plugin function to build execution sequence.
+     * Chain plugin function to build execution sequence with proper promise handling
      *
      * @param func Plugin function
      * @returns this
@@ -357,7 +433,7 @@ export class BuildStream {
      */
     pipe(gulpPlugin: GulpStream | Transform, options?: {end?: boolean}): this {
         try {
-            this._stream = this._stream.pipe(gulpPlugin, options)
+            this.#stream = this.#stream.pipe(gulpPlugin, options)
         } catch (error: any) {
             // preventive message to avoid confusion between gulp plugin and tron plugin.
             throw is.Function(gulpPlugin)
@@ -393,63 +469,13 @@ export class BuildStream {
         arg2?: string | CopyOptions,
         arg3: CopyOptions = {},
     ): this {
-        /** function copying changed files only */
-        function _copy(globs: string | string[], dest: string, opts: CopyOptions = {}) {
-            const logger = opts.logger ?? console.log
-            const filesToCopy = globbySync(globs)
-
-            if (opts.logLevel !== 'silent')
-                logger(`copy:['${arrayify(globs).join(', ')}'] => '${dest}':`)
-
-            let srcStat
-            let destStat
-            let copyCount = 0
-
-            for (let srcFile of filesToCopy) {
-                srcFile = path.relative(process.cwd(), srcFile)
-                const destFile = path.relative(
-                    process.cwd(),
-                    path.join(dest, path.basename(srcFile)),
-                )
-
-                ++copyCount
-                srcStat = fs.statSync(srcFile)
-                try {
-                    destStat = fs.statSync(destFile)
-                } catch (error: any) {
-                    if (error.code !== 'ENOENT') throw error as Error
-                }
-
-                const copyInfo = `  ${copyCount}) ${srcFile} --> ${dest}`
-
-                if (
-                    destStat &&
-                    Math.ceil(srcStat.mtimeMs) <= Math.floor(destStat.mtimeMs) &&
-                    srcStat.size === destStat.size
-                ) {
-                    if (opts.logLevel === 'verbose') logger(`${copyInfo} (already exists.)`)
-                    continue
-                }
-
-                if (opts.logLevel === 'verbose') logger(`${copyInfo}`)
-                if (!opts.dryRun) {
-                    fs.mkdirSync(dest, {recursive: true})
-                    fs.copyFileSync(srcFile, destFile)
-                }
-            }
-
-            if (opts.logLevel !== 'silent') {
-                const plural = `file${filesToCopy.length > 1 ? 's' : ''}`
-                logger(`  >>>: ${filesToCopy.length} ${plural} copied.`)
-            }
-        }
-
-        const optCommon = {logLevel: this._opts.logLevel, logger: this.logger}
-        for (const [index, item] of arrayify(arg1).entries()) {
-            if (is.String(item)) _copy(item as string, arg2 as string, {...optCommon, ...arg3})
-            else {
+        const optCommon = {logLevel: this.#opts.logLevel, logger: this.logger}
+        for (const [, item] of arrayify(arg1).entries()) {
+            if (is.String(item)) {
+                copyFilesByGlobs(item as string, arg2 as string, {...optCommon, ...arg3})
+            } else {
                 const opts = {...optCommon, ...(arg2 as CopyOptions)}
-                _copy((item as CopyParam).src, (item as CopyParam).dest, opts)
+                copyFilesByGlobs((item as CopyParam).src, (item as CopyParam).dest, opts)
             }
         }
 
@@ -472,58 +498,45 @@ export class BuildStream {
     }
 
     /**
-     * Delete clean targets specified in `this.opts.clean`
-     * and files and folders specified in `cleanExtra` additionally.
+     * Delete clean targets with enhanced type safety and modern patterns
      *
      * @param cleanExtra additional clean target
      * @param options clean options including delOptions to be delivered to this.del()
      * @returns this
      */
     clean(cleanExtra: string | string[] = [], options: CleanOptions = {}): this {
-        const cleanList = [...arrayify(this.opts.clean), ...arrayify(cleanExtra)]
+        const cleanList = [
+            ...arrayify(this.opts.clean).filter((item): item is string => typeof item === 'string'),
+            ...arrayify(cleanExtra).filter((item): item is string => typeof item === 'string'),
+        ]
 
         const logger = options.logger ?? this.logger
-        if (options.logLevel !== 'silent') logger(`cleaning:[${arrayify(cleanList).join(', ')}]`)
-        options.logLevel = 'silent'
+        if (options.logLevel !== 'silent') {
+            logger(`cleaning:[${cleanList.join(', ')}]`)
+        }
 
-        return this.del(cleanList, options)
+        const updatedOptions = {...options, logLevel: 'silent' as const}
+        return this.del(cleanList, updatedOptions)
     }
 
     /**
-     * Execute `command` passing it to shell.
+     * Execute command with enhanced error handling and modern patterns
      *
      * @param command command to be executed.
-     * @param options LogOptions & Ooptions to be passed to child_process.spawn().
-     * @returns
+     * @param options ExecOptions to be passed to child_process.spawn().
+     * @returns this
      */
-    exec(command: string, options: ExecOptions): this {
-        if (this.opts.logLevel !== 'silent') this.log(`Executing command:'${command}'`)
-        const [cmd, ...args] = command.split(' ')
-        if (!cmd) return this
+    exec(command: string, options: ExecOptions = {}): this {
+        if (this.opts.logLevel !== 'silent') this.log(`Executing command: '${command}'`)
 
-        const opts: ExecOptions = {shell: true, stdio: 'pipe', ...options}
-        const childProcess = child_process.spawn(cmd, args, opts)
-        childProcess.stdout?.pipe(process.stdout)
-        childProcess.stderr?.pipe(process.stderr)
+        // Validate command early and handle empty commands gracefully
+        try {
+            this.promise(exec(command, options))
+        } catch (error) {
+            // Convert synchronous validation errors to rejected promises
+            this.promise(Promise.reject(error instanceof Error ? error : new Error(String(error))))
+        }
 
-        this.promise(
-            new Promise((resolve, reject) => {
-                childProcess.on('exit', (error: any) => {
-                    if (error) {
-                        reject(
-                            new Error(
-                                `Tron:exec:"${cmd} ${args.join(' ')}" exited with error:${error}`,
-                            ),
-                        )
-                    } else {
-                        resolve(0)
-                    }
-                })
-                // eslint-disable-next-line promise/prefer-await-to-then
-            }).catch((error: unknown) => {
-                this.log((error as Error).message)
-            }),
-        )
         return this
     }
 
@@ -557,9 +570,9 @@ export class BuildStream {
             title: 'debug:',
             logger: titleOrOptions.logger ?? this.logger,
             ...titleOrOptions,
-            mutex: this._mutex,
+            mutex: this.#mutex,
         }
-        this._stream &&= this._stream.pipe(debugG(options))
+        this.#stream &&= this.#stream.pipe(debugG(options))
 
         return this
     }
@@ -576,12 +589,12 @@ export class BuildStream {
         interceptFunc?: (file: Vinyl, enc: BufferEncoding, cb: TransformCallback) => unknown,
         onFinish?: (cb: TransformCallback) => void,
     ): this {
-        this.pipe(_transform(interceptFunc, onFinish))
+        this.pipe(createTransform(interceptFunc, onFinish))
         return this
     }
 
     /**
-     * Add a function to monitor the contents of the build stream.
+     * Add a function to monitor the contents of the build stream with modern patterns
      *
      * @param peekFunc Function to be called for each file entry in the build stream.
      * @param onFinish Function to be called after processing all the files in the build stream.
@@ -590,15 +603,17 @@ export class BuildStream {
     peek(peekFunc?: (file: Vinyl) => void, onFinish?: (cb: TransformCallback) => void): this {
         return this.intercept(
             peekFunc
-                ? (file, enc, cb) => {
+                ? (file, _enc, cb) => {
                       peekFunc(file)
                       cb(null, file)
                   }
                 : undefined,
-            cb => {
-                if (onFinish) onFinish(cb)
-                cb()
-            },
+            onFinish
+                ? cb => {
+                      onFinish(cb)
+                      cb()
+                  }
+                : undefined,
         )
     }
 
@@ -606,24 +621,29 @@ export class BuildStream {
     // Utilities
     //-------------------------------------------------------------------------
     /**
-     * Print message from this BuildStream instance.
+     * Print message from this BuildStream instance with modern patterns
      *
      * @param args Items to print.
-     * @returns
+     * @returns this
      */
     log(...args: Parameters<typeof console.log>): this {
-        if (args.length <= 0) return this
-        if (is.String(args[0])) args[0] = `${this.name}::${args[0]}`
-        else args.unshift(`${this.name}::`)
+        if (args.length === 0) return this
+
+        const [firstArg, ...restArgs] = args
+        const prefixedArgs = is.String(firstArg)
+            ? [`${this.name}::${firstArg}`, ...restArgs]
+            : [`${this.name}::`, firstArg, ...restArgs]
 
         const logger = this.opts.logger ?? console.log
-        logger(...args)
-        // logger(`${this.name}::`, ...args)
+        logger(...prefixedArgs)
 
         return this
     }
 
-    get logger(): typeof console.log {
-        return (...args: Parameters<typeof console.log>) => this.log(...args)
+    /** Modern logger getter with normal function */
+    get logger() {
+        return (...args: Parameters<typeof console.log>) => {
+            return this.log(...args)
+        }
     }
 }

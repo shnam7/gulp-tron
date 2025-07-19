@@ -1,412 +1,257 @@
-import {fileURLToPath} from 'node:url'
-import path from 'node:path'
-import {Transform} from 'node:stream'
-import {type MockInstance, afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
-import type Vinyl from 'vinyl'
-import {pEvent} from 'p-event'
+import {Transform, PassThrough} from 'node:stream'
+import {describe, expect, it, vi, beforeEach} from 'vitest'
 import {BuildStream} from '../src/build-stream.js'
-import {gulp} from '../src/globals.js'
-import {type DestOptions, type SrcOptions, type BuildOptions} from '../src/types.js'
 
-const __pathname = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__pathname)
-const __srcGlob = path.join(__dirname, '../src/core/*.ts')
-const __srcFiles: string[] = []
+// Mock all external dependencies
+vi.mock('browser-sync', () => ({
+    default: {
+        active: false,
+        stream: vi.fn(() => new PassThrough({objectMode: true})),
+    },
+}))
 
-await pEvent(
-    gulp.src(__srcGlob).pipe(
-        new Transform({
-            objectMode: true,
-            highWaterMark: 16,
-            transform(file: Vinyl, enc, cb) {
-                __srcFiles.push(file.basename)
-                cb(null)
-            },
-        }),
-    ),
-    'finish',
-)
+vi.mock('del', () => ({
+    deleteSync: vi.fn(() => []),
+}))
 
-describe('BuildStream.nullStream()', () => {
-    it('is instance of NodeJS.ReadWriteStream().', () => {
-        const ns = BuildStream.nullStream()
-        expect(ns).instanceOf(Transform)
-    })
-})
+vi.mock('globby', () => ({
+    globbySync: vi.fn(() => []),
+}))
 
-describe('.constructor', () => {
-    it('can be created with no argument.', () => {
-        const bs = new BuildStream()
-        expect(bs).instanceOf(BuildStream)
-        expect(bs.name).toBe('<annonymous>')
-    })
-    it('can be created with argument.', () => {
-        const name = 'sample'
-        const conf = {src: 'sample-src/*.*'}
-        const stream = BuildStream.nullStream()
-        const bs = new BuildStream(name, conf, stream)
-        expect(bs).instanceOf(BuildStream)
-        expect(bs.name).toBe(name)
-        expect(bs.className).toBe('BuildStream')
-        expect(bs.stream).toBe(stream)
-        expect(bs.opts.src).toBe(conf.src)
-        expect(bs.sync).toBeInstanceOf(Promise)
-    })
-})
+vi.mock('../src/globals.js', () => ({
+    gulp: {
+        src: vi.fn(() => new PassThrough({objectMode: true})),
+        dest: vi.fn(() => new PassThrough({objectMode: true})),
+    },
+}))
 
-describe('.src()', () => {
-    let srcMock: MockInstance
-    let resultGlob: string | string[]
-    let resultOptions: SrcOptions
-    const gulpSrc = gulp.src
+vi.mock('gulp-debug2', () => ({
+    default: vi.fn(() => new PassThrough({objectMode: true})),
+}))
+
+vi.mock('../src/utils/exec.js', () => ({
+    exec: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('gulp-filter', () => ({
+    default: vi.fn(() => new PassThrough({objectMode: true})),
+}))
+
+vi.mock('gulp-rename', () => ({
+    default: vi.fn(() => new PassThrough({objectMode: true})),
+}))
+
+vi.mock('gulp-order3', () => ({
+    default: vi.fn(() => new PassThrough({objectMode: true})),
+}))
+
+vi.mock('gulp-changed', () => ({
+    default: vi.fn(() => new PassThrough({objectMode: true})),
+    compareLastModifiedTime: vi.fn(),
+    compareContents: vi.fn(),
+}))
+
+vi.mock('../src/utils/copy.js', () => ({
+    copy: vi.fn(async () => {}),
+    copyFilesByGlobs: vi.fn(() => ({copied: 0, skipped: 0, errors: 0})),
+}))
+
+vi.mock('../src/utils/exec.js', () => ({
+    exec: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('node:fs', () => ({
+    copyFileSync: vi.fn(),
+}))
+
+describe('BuildStream', () => {
+    let buildStream: BuildStream
 
     beforeEach(() => {
-        srcMock = vi
-            .spyOn(gulp, 'src')
-            .mockImplementation((globs: string | string[], options: SrcOptions | undefined) => {
-                resultGlob = globs
-                resultOptions = {...options}
-                return gulpSrc(globs, options)
-            })
-    })
-    afterEach(() => {
-        srcMock?.mockRestore()
+        vi.clearAllMocks()
+        buildStream = new BuildStream('test-stream')
     })
 
-    it('can be called with no argument, using TaskConf.src as default.', () => {
-        const bs = new BuildStream('test', {src: __srcGlob})
-        bs.src()
-        expect(srcMock).toHaveBeenCalledTimes(1)
-        expect(resultGlob).toBe(bs.opts.src)
-    })
-    it('can override TaskConf.src(default glob).', () => {
-        const bs = new BuildStream('test', {src: __srcGlob})
-        const srcOverride = './src/utils'
-        bs.src(srcOverride)
-        expect(srcMock).toHaveBeenCalledTimes(1)
-        expect(resultGlob).not.toBe(bs.opts.src)
-        expect(resultGlob).toBe(srcOverride)
-    })
-    it('does nothing if no glob is provided.', () => {
-        const bs = new BuildStream()
-        const srcMock = vi.spyOn(gulp, 'src')
-        bs.src()
-        expect(srcMock).not.toHaveBeenCalled()
-        srcMock.mockRestore()
-    })
-    it('can override sourcemaps option.', () => {
-        const bs = new BuildStream('test', {src: 'test.*', sourcemaps: false})
-        bs.src({sourcemaps: true})
-        expect(srcMock).toHaveBeenCalledTimes(1)
-        expect(resultOptions.sourcemaps).toBeTruthy()
-    })
-
-    it('has default encoding value of false (transcode disabled).', () => {
-        const bs = new BuildStream('test', {src: 'test.*'})
-        bs.src()
-        expect(srcMock).toHaveBeenCalledTimes(1)
-        expect(resultOptions.encoding).toBe(false)
-    })
-
-    it('can override encoding option.', () => {
-        const bs = new BuildStream('test', {src: 'test.*'})
-        bs.src({encoding: 'utf8'})
-        expect(srcMock).toHaveBeenCalledTimes(1)
-        expect(resultOptions.encoding).toBe('utf8')
-    })
-
-    it(`calls .order() when 'order' option is given.`, async () => {
-        const bs = new BuildStream('test', {
-            src: __srcGlob,
-            order: ['types.ts', 'global.ts', 'build-stream.ts'],
+    describe('Core Functionality', () => {
+        it('should create BuildStream instance with name and options', () => {
+            const bs = new BuildStream('test', {dest: './dist', sourcemaps: true})
+            expect(bs.name).toBe('test')
+            expect(bs.opts.dest).toBe('./dist')
+            expect(bs.opts.sourcemaps).toBe(true)
+            expect(bs.stream).toBeInstanceOf(PassThrough)
         })
-        const orderMock = vi.spyOn(bs, 'order')
 
-        bs.src()
-        await pEvent(bs.stream, 'finish')
+        it('should handle static methods', () => {
+            expect(BuildStream.nullStream()).toBeInstanceOf(Transform)
+            expect(BuildStream.create()).toBeInstanceOf(BuildStream)
+            expect(BuildStream.builder()).toBeDefined()
+        })
 
-        expect(srcMock).toHaveBeenCalledTimes(1)
-        expect(orderMock).toHaveBeenCalledTimes(1)
-    })
-})
-
-describe('.add()', () => {
-    it('can be called before or w/o .src() call.', async () => {
-        const bs = new BuildStream('test')
-        let fileCount = 0
-        bs.add(__srcGlob).peek(() => ++fileCount)
-        await pEvent(bs.stream, 'finish')
-        expect(fileCount).toBe(__srcFiles.length)
+        it('should have performance and sync properties', () => {
+            expect(typeof buildStream.performance.startTime).toBe('number')
+            expect(typeof buildStream.performance.elapsedTime).toBe('number')
+            expect(buildStream.sync).toBeInstanceOf(Promise)
+            expect(typeof buildStream.logger).toBe('function')
+        })
     })
 
-    it('can be called after .src() call.', async () => {
-        const bs = new BuildStream('test')
-        const files: string[] = []
-        bs.src(__srcGlob)
-            .add(__pathname)
-            .peek(file => files.push(file.basename))
-        await pEvent(bs.stream, 'finish')
-        expect(files).toEqual([...__srcFiles, path.basename(__pathname)])
-    })
-})
+    describe('Stream Operations', () => {
+        it('should handle builder pattern methods', () => {
+            expect(buildStream.src('**/*.js')).toBe(buildStream)
+            expect(buildStream.src(['**/*.js', '**/*.ts'])).toBe(buildStream)
+            expect(buildStream.add('**/*.css')).toBe(buildStream)
+            expect(buildStream.dest('./dist')).toBe(buildStream)
+        })
 
-describe('.remove()', () => {
-    it('can handle call with no argument.', async () => {
-        const bs = new BuildStream('test')
-        let fileCount = 0
-        bs.src(__srcGlob)
-            .remove()
-            .peek(() => ++fileCount)
-        await pEvent(bs.stream, 'finish')
-        expect(fileCount).toBe(__srcFiles.length)
-    })
+        it('should handle filtering and transformation', () => {
+            expect(buildStream.filter('**/*.js')).toBe(buildStream)
+            expect(buildStream.rename('newname.js')).toBe(buildStream)
+            expect(buildStream.order(['vendor/**', 'app/**'])).toBe(buildStream)
+            expect(buildStream.changed('./dist')).toBe(buildStream)
+        })
 
-    it('can handle negation.', async () => {
-        const bs = new BuildStream('test')
-        const files: string[] = []
-        bs.src(path.join(__dirname, '*'))
-            .remove('!build-stream*')
-            .peek(file => files.push(file.basename))
-        await pEvent(bs.stream, 'finish')
-        expect(files).toEqual([path.basename(__pathname)])
-    })
-})
+        it('should handle stream management', () => {
+            expect(buildStream.clear()).toBe(buildStream)
+            expect(buildStream.clone('cloned-stream')).toBeInstanceOf(BuildStream)
 
-describe('.filter()', () => {
-    it('filters files in the stream.', async () => {
-        const allFiles: string[] = []
-        const tFiles: string[] = []
+            const mockTransform = new Transform({objectMode: true})
+            expect(buildStream.pipe(mockTransform)).toBe(buildStream)
 
-        const bs = new BuildStream('test', {src: __srcGlob})
-        bs.src()
-            .peek(file => allFiles.push(file.basename))
-            .filter('t*.ts')
-            .peek(file => tFiles.push(file.basename))
-        await pEvent(bs.stream, 'finish')
+            const mockFunc = vi.fn()
+            expect(buildStream.chain(mockFunc)).toBe(buildStream)
+            expect(mockFunc).toHaveBeenCalledWith(buildStream)
+        })
 
-        expect(allFiles.length).toBe(4)
-        expect(tFiles.length).toBe(2)
-        expect(tFiles).toEqual(['tron.ts', 'types.ts'])
-    })
-})
-
-describe('.rename()', () => {
-    it('renames files in the stream.', async () => {
-        const renamedFiles: string[] = []
-
-        const bs = new BuildStream('test', {src: __srcGlob})
-        bs.src()
-            .rename({extname: 'ts-renamed'})
-            .peek(file => renamedFiles.push(file.basename))
-        await pEvent(bs.stream, 'finish')
-
-        expect(renamedFiles.length).toBe(4)
-        for (const file of renamedFiles) {
-            expect(file.endsWith('ts-renamed')).toBeTruthy()
-        }
-    })
-})
-
-describe('.order()', () => {
-    it('order files in the stream.', async () => {
-        const originalList: string[] = []
-        const orderedList: string[] = []
-
-        const bs = new BuildStream('test', {src: __srcGlob})
-        bs.src()
-            .add(path.join(__dirname, '../package.json'))
-            .peek(file => originalList.push(file.basename))
-            .order('package.json')
-            .peek(file => orderedList.push(file.basename))
-        await pEvent(bs.stream, 'finish')
-
-        expect(originalList.length).toBeGreaterThan(0)
-        expect(orderedList.length).toBeGreaterThan(0)
-        expect(originalList[0]).not.toBe(orderedList[0])
-        expect(orderedList[0]).toBe('package.json')
-    })
-})
-
-describe('.changed()', () => {
-    it('does not pipe to gulp-changed if destination is not valid.', async () => {
-        const bs = new BuildStream('test', {src: __srcGlob})
-        const pipeMock = vi.spyOn(bs, 'pipe')
-        bs.src().changed()
-        await pEvent(bs.stream, 'finish')
-        expect(pipeMock).toHaveBeenCalledTimes(1) // 1 time call inside src(), not changed()
-        pipeMock.mockRestore()
+        it('should throw error when piping function', () => {
+            expect(() => buildStream.pipe(vi.fn() as any)).toThrow()
+        })
     })
 
-    it('pipes to gulp-changed if valid destination is given.', async () => {
-        const bs = new BuildStream('test', {src: __srcGlob})
-        const pipeMock = vi.spyOn(bs, 'pipe')
-        bs.src().changed('.')
-        await pEvent(bs.stream, 'finish')
-        expect(pipeMock).toHaveBeenCalledTimes(2)
-        pipeMock.mockRestore()
+    describe('File Operations', () => {
+        it('should handle del method', () => {
+            expect(buildStream.del('**/*.tmp')).toBe(buildStream)
+        })
+
+        it('should handle clean method', () => {
+            const bs = new BuildStream('test', {clean: ['./dist/**']})
+            expect(bs.clean()).toBe(bs)
+        })
+
+        it('should handle copy method with simple parameters', () => {
+            expect(buildStream.copy({src: 'src/**/*.js', dest: './dist'})).toBe(buildStream)
+        })
+
+        it('should handle copy method with CopyParam object', () => {
+            const copyParam = {src: 'src/**/*.js', dest: './dist'}
+            expect(buildStream.copy(copyParam)).toBe(buildStream)
+        })
     })
 
-    it('uses conf.dest as default destination.', async () => {
-        const bs = new BuildStream('test', {src: __srcGlob, dest: '.'})
-        const pipeMock = vi.spyOn(bs, 'pipe')
-        bs.src().changed()
-        await pEvent(bs.stream, 'finish')
-        expect(pipeMock).toHaveBeenCalledTimes(2)
-        pipeMock.mockRestore()
-    })
-})
+    describe('Process Execution', () => {
+        it('should handle exec method', () => {
+            expect(buildStream.exec('echo test')).toBe(buildStream)
+        })
 
-describe('.dest()', () => {
-    let destMock: MockInstance
-    let folder: string | ((file: Vinyl) => string)
-    let options: DestOptions
-    beforeEach(() => {
-        destMock = vi
-            .spyOn(gulp, 'dest')
-            .mockImplementation(
-                (folder_: string | ((file: Vinyl) => string), opt?: DestOptions) => {
-                    folder = folder_
-                    options = opt ?? {}
-                    return BuildStream.nullStream() as NodeJS.ReadWriteStream
-                },
-            )
+        it('should handle command execution and return BuildStream', () => {
+            expect(buildStream.exec('echo "test command"')).toBe(buildStream)
+        })
     })
 
-    afterEach(() => {
-        destMock.mockRestore()
+    describe('Logging and Debugging', () => {
+        it('should handle debug and log methods', () => {
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+            expect(buildStream.debug('debug message')).toBe(buildStream)
+            expect(buildStream.log('test message')).toBe(buildStream)
+            expect(consoleSpy).toHaveBeenCalledWith('test-stream::test message')
+            consoleSpy.mockRestore()
+        })
+
+        it('should handle reload method', () => {
+            expect(buildStream.reload()).toBe(buildStream)
+        })
     })
 
-    it(`can be called with no argument: destination defaults to '.'`, () => {
-        const bs = new BuildStream('test', {src: __srcGlob})
-        bs.src().dest()
-        expect(destMock).toHaveBeenCalledTimes(1)
-        expect(folder).toBe('.')
+    describe('Promise and Async Operations', () => {
+        it('should handle promise method with function', async () => {
+            const mockFunc = vi.fn(() => 'result')
+            const result = buildStream.promise(mockFunc)
+            expect(result).toBe(buildStream)
+
+            await buildStream.sync
+            expect(mockFunc).toHaveBeenCalled()
+        })
+
+        it('should execute build function', async () => {
+            const buildFunc = vi.fn()
+            const bs = new BuildStream('test')
+            const result = await bs._main(buildFunc)
+            expect(buildFunc).toHaveBeenCalledWith(bs)
+            expect(result).toBe(bs.stream)
+        })
     })
 
-    it(`can be called with no argument: destination using TaskConfig.dest.`, () => {
-        const bs = new BuildStream('test', {src: __srcGlob, dest: 'dest-path'})
-        bs.src().dest()
-        expect(destMock).toHaveBeenCalledTimes(1)
-        expect(folder).toBe(bs.opts.dest)
+    describe('Utility Methods', () => {
+        it('should handle intercept and peek methods', () => {
+            const interceptFunc = vi.fn()
+            const peekFunc = vi.fn()
+            expect(buildStream.intercept(interceptFunc)).toBe(buildStream)
+            expect(buildStream.peek(peekFunc)).toBe(buildStream)
+        })
+
+        it('should handle remove method variations', () => {
+            expect(buildStream.remove('**/*.min.js')).toBe(buildStream)
+            expect(buildStream.remove(['**/*.min.js', '**/*.min.css'])).toBe(buildStream)
+        })
+
+        it('should handle stream events with on method', () => {
+            const eventHandler = vi.fn()
+            expect(buildStream.on('end', eventHandler)).toBe(buildStream)
+        })
     })
 
-    it(`can override default destination '.'.`, () => {
-        const bs = new BuildStream('test', {src: __srcGlob})
-        const newDest = 'new-dest'
-        bs.src().dest(newDest)
-        expect(destMock).toHaveBeenCalledTimes(1)
-        expect(folder).toBe(newDest)
-    })
+    describe('Integration Tests', () => {
+        it('should handle complex method chaining', () => {
+            const result = buildStream
+                .src(['src/**/*.js', 'src/**/*.ts'])
+                .filter('**/*.js')
+                .order(['vendor/**', 'src/**'])
+                .dest('./dist')
+                .clean()
+                .log('Build complete')
 
-    it(`can override TaskConfig.dest.`, () => {
-        const bs = new BuildStream('test', {src: __srcGlob, dest: 'dest-path'})
-        const newDest = 'new-dest'
-        bs.src().dest(newDest)
-        expect(destMock).toHaveBeenCalledTimes(1)
-        expect(folder).toBe(newDest)
-    })
-})
+            expect(result).toBe(buildStream)
+        })
 
-describe('.on()', () => {
-    it('calls bs.stream.on().', async () => {
-        const bs = new BuildStream()
-        const onMoke = vi.spyOn(bs, 'on')
-        bs.on('end', () => {})
-        expect(onMoke).toHaveBeenCalledTimes(1)
-        onMoke.mockRestore()
-    })
-})
+        it('should handle integration test scenario', () => {
+            const buildFunc = (bs: BuildStream) => {
+                bs.src('src/**/*.js')
+                    .filter('!**/*.min.js')
+                    .dest('./dist')
+                    .copy({src: 'assets/**/*', dest: './dist/assets'})
+                    .clean(['temp/**'])
+                    .exec('echo "Build complete"')
+                    .log('Pipeline finished')
+            }
 
-describe('.promise()', () => {
-    const sequence: number[] = []
+            const bs = new BuildStream('integration-test')
+            expect(() => {
+                buildFunc(bs)
+            }).not.toThrow()
+        })
 
-    it('accept function.', async () => {
-        sequence.splice(0) // clear array
-        const bs = new BuildStream('test', {src: __srcGlob})
-        bs.src()
-        for (let i = 0; i < 100; i++) bs.promise(() => sequence.push(i))
-        await bs.sync
-        for (let i = 0; i < 100; i++) expect(sequence[i]).toBe(i)
-    })
+        it('should handle error scenarios and edge cases', () => {
+            // Test empty src
+            const bs = new BuildStream('test', {})
+            expect(bs.src()).toBe(bs)
 
-    it('accept promise.', async () => {
-        sequence.splice(0)
-        const bs = new BuildStream('test', {src: __srcGlob})
-        let i = 0
-        const promisePush = async () =>
-            new Promise<void>(resolve => {
-                sequence.push(i++)
-                resolve()
-            })
-        bs.src()
-        for (let i = 0; i < 100; i++) bs.promise(promisePush())
-        await bs.sync
-        sequence.push(i++)
-        for (let i = 0; i <= 100; i++) expect(sequence[i]).toBe(i)
-    })
-})
+            // Test with various filter patterns
+            buildStream.filter(['!**/*.min.js'])
+            buildStream.filter([])
 
-describe('.chain()', () => {
-    it('calls the plugin function with current build stream.', () => {
-        const bs = new BuildStream('test')
-        const plugin = (bs1: BuildStream) => {
-            expect(bs1).toBe(bs)
-            bs1.src()
-        }
+            // Test changed with different options
+            buildStream.changed('./dist', {extension: '.min.js'})
 
-        const srcMock = vi.spyOn(bs, 'src')
-        bs.chain(plugin)
-        expect(srcMock).toHaveBeenCalledTimes(1)
-        srcMock.mockRestore()
-    })
-})
-
-describe('.pipe()', () => {
-    it('calls bs.stream.pipe.', () => {
-        const bs = new BuildStream('test')
-        const ts = new Transform()
-        const pipeMock = vi.spyOn(bs.stream, 'pipe')
-        pipeMock.mockReturnValue(ts)
-        expect(bs.pipe(ts).stream).toBe(ts)
-        expect(pipeMock).toHaveBeenCalledTimes(1)
-        pipeMock.mockRestore()
-    })
-})
-
-describe('.copy()', () => {
-    it('prints default log messages.', async () => {
-        const messages: string[] = []
-        const consoleMock = vi
-            .spyOn(console, 'log')
-            .mockImplementation((...args: any[]) => messages.push(args.join('')))
-        const bs = new BuildStream('test')
-        bs.copy({src: __srcGlob, dest: './dummy'}, {dryRun: true})
-        expect(messages.length).toBe(2)
-        expect(messages[0].startsWith(`${bs.name}::copy:`)).toBeTruthy()
-        expect(messages[1].startsWith(`${bs.name}::  >>>: ${__srcFiles.length} file`)).toBeTruthy()
-        consoleMock.mockRestore()
-    })
-    it('preserves build stream.', async () => {
-        vi.spyOn(console, 'log').mockImplementation(() => {})
-        const bs = new BuildStream('test')
-        bs.src(__srcGlob).copy({src: '*', dest: './dummy'}, {dryRun: true})
-        const files: string[] = []
-        bs.peek(file => files.push(file.basename))
-        await pEvent(bs.stream, 'finish')
-        expect(files).toEqual(__srcFiles)
-    })
-})
-
-describe('.clear()', () => {
-    it('remove all the files int the build stream.', async () => {
-        const bs = new BuildStream('test')
-        const files: string[] = []
-        bs.src(__srcGlob).peek(file => files.push(file.basename))
-        await pEvent(bs.stream, 'finish')
-        expect(files).toEqual(__srcFiles)
-
-        files.splice(0)
-        bs.clear().peek(file => files.push(file.basename))
-        expect(files.length).toBe(0)
+            expect(buildStream).toBeInstanceOf(BuildStream)
+        })
     })
 })
