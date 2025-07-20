@@ -31,7 +31,7 @@ const customScss = {
     clean: [path.join(basePath, 'scss/*.{css,map}')],
 }
 
-tron.createTask({
+tron.task({
     name: 'intercept-test',
     async build(bs) {
         // Take '*/css' files only
@@ -51,7 +51,7 @@ tron.createTask({
     src: [path.join(basePath, 'scss/*.*')],
 })
 
-tron.createTask({
+tron.task({
     name: 'peek-test',
     build(bs) {
         // Take '*/css' files only

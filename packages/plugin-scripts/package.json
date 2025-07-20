@@ -45,9 +45,9 @@
         "@gulp-tron/core": "workspace:*",
         "chokidar-cli": "^3.0.0",
         "rimraf": "^6.0.1",
-        "tsdown": "^0.12.9",
+        "tsdown": "^0.13.0",
         "typescript": "^5.8.3",
         "vitest": "^3.2.4",
-        "xo": "^1.2.0"
+        "xo": "^1.2.1"
     }
 }

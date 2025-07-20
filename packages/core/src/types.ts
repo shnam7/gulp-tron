@@ -1,12 +1,10 @@
 import type {Transform} from 'node:stream'
-import type {SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback} from 'gulp'
+import type {SrcMethod, DestMethod, TaskFunction, TaskFunctionCallback, Gulp} from 'gulp'
 import type {Options as BrowserSyncOptions} from 'browser-sync'
 import type {Options as DelBaseOptions} from 'del'
 import type {BuildStream} from './build-stream.js'
 
-/*****************************************************************************
- *  Common Types
- *****************************************************************************/
+// --- Common Types ------------------------------------------------------------
 
 // --- Gulp types
 export type GulpStream = Transform | NodeJS.ReadWriteStream
@@ -26,20 +24,19 @@ export type SrcOptions = NonNullable<Parameters<SrcMethod>[1]>
 export type DestOptions = NonNullable<Parameters<DestMethod>[1]>
 export type SourceMaps = SrcOptions['sourcemaps'] & DestOptions['sourcemaps']
 export type DelOptions = DelBaseOptions & LogOptions
-
-// --- Clean options
 export type CleanOptions = DelOptions
 
-// --- Build Types -----------------------------------------------------------
+// --- Build Types ------------------------------------------------------------
 
-export type BuildFunction = (bs: BuildStream) => void | Promise<unknown>
-
+// --- Task types
 export type TaskConfig = {
-    readonly name: string
+    readonly name: GulpTaskName
     readonly build?: BuildFunction
     readonly dependsOn?: BuildSet
     readonly triggers?: BuildSet
 } & BuildOptions
+
+export type TaskBlock = Omit<TaskConfig, 'dependsOn' | 'triggers'>
 
 // --- Build Options
 export type BuildOptions = {
@@ -69,10 +66,23 @@ export type WatcherOptions = {
 } & LogOptions
 
 // --- BuildSet types
+export type BuildFunction = (bs: BuildStream) => void | Promise<unknown>
 export type BuildSet = GulpTaskName | BuildFunction | TaskConfig | BuildSetSeries | BuildSetParallel
 export type BuildSetSeries = BuildSet[]
 export type BuildSetParallel = {readonly set: BuildSet[]}
 
-// --- Plugin Types ----------------------------------------------------------
+// --- Plugin Types -----------------------------------------------------------
 
 export type PluginFunction = (bs: BuildStream) => void
+
+// --- Utility functions ------------------------------------------------------
+
+export const isValidTaskName = (name: string): boolean =>
+    name.length > 0 && name.trim() === name && !/["/\\|?*]/.test(name)
+
+export const isTaskConfig = (value: unknown): value is TaskConfig =>
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    typeof (value as TaskConfig).name === 'string' &&
+    isValidTaskName((value as TaskConfig).name)

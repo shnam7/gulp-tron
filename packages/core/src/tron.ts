@@ -2,18 +2,22 @@ import browserSync from 'browser-sync'
 import multimatch from 'multimatch'
 import is from '@wicle/is'
 import arrayify from './utils/arrayify.js'
-import {gulp, useGulp} from './globals.js'
+import {gulp} from './globals.js'
 import {BuildStream} from './build-stream.js'
-import type {
-    BuildFunction,
-    BuildSet,
-    BuildSetParallel,
-    BuildSetSeries,
-    CleanerOptions,
-    GulpTaskFunction,
-    TaskConfig,
-    BuildOptions,
-    WatcherOptions,
+import {
+    type BuildFunction,
+    type BuildSet,
+    type BuildSetParallel,
+    type BuildSetSeries,
+    type CleanerOptions,
+    type GulpTaskFunction,
+    type TaskConfig,
+    type BuildOptions,
+    type WatcherOptions,
+    isValidTaskName,
+    isTaskConfig,
+    type GulpTaskName,
+    type TaskBlock,
 } from './types.js'
 
 /**
@@ -40,12 +44,18 @@ export class Tron {
     /** Counter to assign ID to anonymous tasks */
     protected static annonCount = 0
 
-    protected readonly _taskConfigs: TaskConfig[]
-    protected readonly _watchTaskNames: string[]
+    // protected readonly _taskConfigs: TaskConfig[]
+    readonly #taskBlocks: Map<GulpTaskName, TaskBlock>
+    // readonly #watchTaskNames: string[]
+
+    get taskCount(): number {
+        return this.#taskBlocks.size
+    }
 
     constructor() {
-        this._taskConfigs = []
-        this._watchTaskNames = []
+        // this._taskConfigs = []
+        this.#taskBlocks = new Map<string, TaskBlock>()
+        // this.#watchTaskNames = []
     }
 
     /**
@@ -71,58 +81,25 @@ export class Tron {
      *
      * @param nameOrConfig taskName or TaskConfig.
      * @param buildFunc BuildFunction
-     * @param opts BuildOptions
+     * @param options BuildOptions
      * @returns this for method chaining
      */
     task(
-        nameOrConfig: TaskConfig | string,
+        nameOrConfig: TaskConfig | GulpTaskName,
         buildFunc?: BuildFunction,
-        opts: BuildOptions = {},
+        options: BuildOptions = {},
     ): this {
-        // Enhanced type guard with validation
-        const isTaskConfig = (value: unknown): value is TaskConfig =>
-            typeof value === 'object' &&
-            value !== null &&
-            'name' in value &&
-            typeof (value as TaskConfig).name === 'string'
-
-        const isValidTaskName = (name: string): boolean =>
-            name.length > 0 && name.trim() === name && !/[<>:"/\\|?*]/.test(name)
-
         const conf: TaskConfig = isTaskConfig(nameOrConfig)
-            ? {...nameOrConfig}
-            : (() => {
-                  const taskName = nameOrConfig
-                  if (!isValidTaskName(taskName)) {
-                      throw new Error(
-                          `Tron:task: invalid task name "${taskName}" - must be non-empty, trimmed, and contain no special characters`,
-                      )
-                  }
+            ? {...nameOrConfig, ...options}
+            : {name: nameOrConfig, build: buildFunc, ...options}
 
-                  return {name: taskName, build: buildFunc, ...opts}
-              })()
+        if (!conf.name || !isValidTaskName(conf.name))
+            throw new Error(`Tron:task: invalid task name: ${conf.name}`)
 
-        // Validate final configuration
-        if (!conf.name || !isValidTaskName(conf.name)) {
-            throw new Error(`Tron:task: invalid task configuration - name must be valid`)
-        }
-
-        const gulpTask = this._resolveTaskConfg(conf)
-        if (!gulpTask) {
+        if (!this._resolveTaskConfig(conf))
             throw new Error(`Tron:task: failed to create task "${conf.name}"`)
-        }
 
         return this
-    }
-
-    /**
-     * Alias for `task(conf: TaskConfig)`. Equivalent to calling `createTasks()` with single TaskConfig object.
-     *
-     * @param conf TaskConfig
-     * @returns this
-     */
-    createTask(conf: TaskConfig): this {
-        return this.task(conf)
     }
 
     /**
@@ -132,22 +109,12 @@ export class Tron {
      * @returns this for method chaining
      */
     createTasks(...confList: TaskConfig[]): this {
-        const taskOptions: Omit<BuildOptions, 'name'> = {}
-
-        // Enhanced type guard for better filtering
-        const isTaskConfig = (conf: TaskConfig | BuildOptions): conf is TaskConfig =>
-            'name' in conf && typeof conf.name === 'string' && conf.name.length > 0
-
         // Separate task configs from shared options
-        const configs = confList.filter(conf => {
-            if (!isTaskConfig(conf)) return false
-            return true
-        })
+        const configs = confList.filter(conf => isTaskConfig(conf))
 
         // Process each valid task configuration
-        for (const conf of arrayify(configs)) {
-            const taskConf: TaskConfig = {...conf, ...taskOptions}
-            this.task(taskConf)
+        for (const conf of configs) {
+            this.task(conf)
         }
 
         return this
@@ -161,16 +128,12 @@ export class Tron {
      * @returns this for method chaining
      */
     addCleaner(options: CleanerOptions = {}): this {
-        const target = options.target ? this.selectTasks(options.target) : this._taskConfigs
-        if (!target) {
-            console.log('tron.addCleaner: no task selected. Cleaner task not created.')
-            return this
-        }
+        const targetTaskNames = this.selectTasks(options.target ?? '*')
+        const taskBlocks = targetTaskNames
+            .map(name => this.findTask(name))
+            .filter(task => task !== undefined)
 
-        const cleanList = [
-            ...target.flatMap(task => arrayify(task.clean)),
-            ...arrayify(options.clean),
-        ]
+        const cleanList = taskBlocks.flatMap(task => arrayify(task.clean))
 
         // Use arrow function with explicit name for better debugging
         const cleanerFunction = (bs: BuildStream): void => {
@@ -192,11 +155,10 @@ export class Tron {
      * @returns this for method chaining
      */
     addWatcher(options: WatcherOptions = {}): this {
-        const target = options.target ? this.selectTasks(options.target) : this._taskConfigs
-        if (!target) {
-            console.log('tron.addWatcher: no task selected. Watcher task not created.')
-            return this
-        }
+        const targetTaskName = this.selectTasks(options.target ?? '*')
+        const taskBlocks = targetTaskName
+            .map(name => this.findTask(name))
+            .filter(task => task !== undefined)
 
         const taskName = options.name ?? '@watch'
         let isWatching = false
@@ -229,7 +191,7 @@ export class Tron {
             }
 
             // Set up watchers for each target task
-            for (const task of target) {
+            for (const task of taskBlocks) {
                 // Skip the other watchers (watcher should not monitor the other watchers)
                 if (task.build === watcherFunction) continue
 
@@ -251,7 +213,7 @@ export class Tron {
         Object.defineProperty(watcherFunction, 'name', {value: '__watcherFunction__'})
 
         this.task({...options, name: taskName, build: watcherFunction})
-        this._watchTaskNames.push(taskName)
+        // this.#watchTaskNames.push(taskName)
         return this
     }
 
@@ -294,21 +256,18 @@ export class Tron {
      *
      * @returns List of selected TaskConfig objects. Undefined if filter is undefined or no task found.
      */
-    selectTasks(patterns?: string | string[]): TaskConfig[] | undefined {
-        if (!patterns) return undefined
+    selectTasks(patterns?: string | string[]): GulpTaskName[] {
+        const patternList = arrayify(patterns).filter(pattern => pattern.length > 0)
+        if (patternList.length === 0) return []
 
-        const normalizedPatterns = arrayify(patterns)
-        const patternsToUse =
-            normalizedPatterns.length > 0 &&
-            normalizedPatterns.every(pattern => pattern.startsWith('!'))
-                ? ['*', ...normalizedPatterns]
-                : normalizedPatterns
+        if (patternList.every(pattern => pattern.startsWith('!'))) patternList.unshift('*')
 
-        const selected = this._taskConfigs.filter(
-            task => multimatch(task.name, patternsToUse).length > 0,
-        )
+        const selected = this.#taskBlocks
+            .keys()
+            .toArray()
+            .filter(taskName => multimatch(taskName, patternList).length > 0)
 
-        return selected.length > 0 ? selected : undefined
+        return selected.length > 0 ? selected : []
     }
 
     /**
@@ -316,8 +275,8 @@ export class Tron {
      *
      * @returns Array of all the TaskConfig objects registered.
      */
-    selectTasksAll(): readonly TaskConfig[] {
-        return [...this._taskConfigs]
+    selectTasksAll(): readonly GulpTaskName[] {
+        return this.#taskBlocks.keys().toArray()
     }
 
     /**
@@ -326,8 +285,8 @@ export class Tron {
      * @param name task name to look for.
      * @returns TaskConfig object if found. Or undefined.
      */
-    findTask(name?: string): TaskConfig | undefined {
-        return this._taskConfigs.find(task => task.name === name)
+    findTask(name?: string): TaskBlock | undefined {
+        return name ? this.#taskBlocks.get(name) : undefined
     }
 
     /**
@@ -336,9 +295,9 @@ export class Tron {
      *
      * @param gulpInstance gulp instance to use with tron.
      */
-    use(gulpInstance: typeof gulp) {
-        useGulp(gulpInstance)
-    }
+    // use(gulpInstance: typeof gulp) {
+    //     useGulp(gulpInstance)
+    // }
 
     // /**
     //  * Select TaskConfigs with the group name.
@@ -378,14 +337,14 @@ export class Tron {
             // and converted to TaskConfig object for processing
             const functionName = (buildSet as BuildFunction).name || 'buildFunc'
             const anonymousName = `tron-anonymous#${++Tron.annonCount}-${functionName}`
-            return this._resolveTaskConfg({name: anonymousName, build: buildSet as BuildFunction})
+            return this._resolveTaskConfig({name: anonymousName, build: buildSet as BuildFunction})
         }
 
         // buildSet is TaskConfig object
         if (is.Object(buildSet)) {
             return Object.hasOwn(buildSet as TaskConfig, 'set')
                 ? this._resolveBuildSetGroup(buildSet as BuildSetSeries | BuildSetParallel)
-                : this._resolveTaskConfg(buildSet as TaskConfig)
+                : this._resolveTaskConfig(buildSet as TaskConfig)
         }
 
         // buildSet is BuildSetSeries or BuildSetParallel
@@ -443,12 +402,10 @@ export class Tron {
      * @param conf TaskConfig object
      * @returns task function created by gulp. Value returned from gulp.task(taskName).
      */
-    protected _resolveTaskConfg(conf: TaskConfig): GulpTaskFunction {
+    protected _resolveTaskConfig(conf: TaskConfig): GulpTaskFunction {
         const {name, build, dependsOn, triggers, logLevel} = conf
 
-        if (!name) {
-            throw new Error(`Tron:resolveTaskConfig: invalid task name: ${name}`)
-        }
+        if (!name) throw new Error(`Tron:resolveTaskConfig: invalid task name: ${name}`)
 
         // Check for reserved task names with improved error messages
         const isReservedClean = name === '@clean' && conf.build?.name !== '__cleanerFunction__'
@@ -462,33 +419,28 @@ export class Tron {
 
         const taskName = name
 
-        if (gulp.task(taskName) && logLevel === 'verbose') {
-            console.log(`Tron:resolveBuildSet: gulp task ${taskName} already exists. skipping...`)
-        }
+        // if (gulp.task(taskName) && logLevel === 'verbose')
+        //     console.log(`Tron:resolveBuildSet: gulp task ${taskName} already exists. skipping...`)
 
-        let gulpTask = gulp.task(taskName)
-        if (gulpTask) return gulpTask.unwrap()
+        // let gulpTask = gulp.task(taskName)
+        // if (gulpTask) return gulpTask.unwrap()
 
         // Create main task function with enhanced async handling
         const main: GulpTaskFunction = async done => {
             if (build) {
                 const bs = new BuildStream(taskName, conf)
-                return bs._main(build)
+                return BuildStream.main(bs, build)
             }
 
             done()
         }
 
-        // Set function display name for better debugging
-        Object.defineProperty(main, 'displayName', {
-            value: `${taskName}:main`,
-            configurable: true,
-        })
+        main.displayName = `${taskName}:main`
 
         // Sanity check: taskName must be unique
-        if (this.findTask(taskName)) {
-            throw new Error(`Tron:resolveTaskConfig: taskName ${taskName} already registered.`)
-        }
+        // if (this.findTask(taskName)) {
+        //     throw new Error(`Tron:resolveTaskConfig: taskName ${taskName} already registered.`)
+        // }
 
         const tasks: GulpTaskFunction[] = []
         const deps = this._resolveBuildSet(dependsOn)
@@ -511,11 +463,13 @@ export class Tron {
             gulp.task(taskName, tasks[0]!)
         }
 
-        // This always returns valid task Function because taskName was proven not to exist
-        gulpTask = gulp.task(taskName)!
-
+        const taskBlock = {...conf} // make sure name not to be changed by options
+        delete taskBlock.dependsOn
+        delete taskBlock.triggers
         // Gulp task successfully created - store configuration
-        this._taskConfigs.push(conf)
-        return gulpTask.unwrap()
+        this.#taskBlocks.set(conf.name, taskBlock)
+
+        // This always returns valid task Function because taskName was proven not to exist
+        return gulp.task(taskName)!.unwrap()
     }
 }

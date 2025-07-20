@@ -13,39 +13,44 @@ import {StreamQueue} from 'streamqueue'
 import es from 'event-stream'
 import is from '@wicle/is'
 import arrayify from './utils/arrayify.js'
-import {copyFilesByGlobs, type CopyParam, type CopyOptions} from './utils/copy.js'
-import {exec, type ExecOptions} from './utils/exec.js'
+import {copy, type CopyParam, type CopyOptions} from './utils/copy.js'
+import {exec, type ExecOptions, flushAllStdio, type Glob, isGlob} from './utils/index.js'
 import {gulp} from './globals.js'
-import type {
-    BuildFunction,
-    CleanOptions,
-    DelOptions,
-    GulpStream,
-    PluginFunction,
-    SrcOptions,
-    BuildOptions,
+import {
+    type BuildFunction,
+    type CleanOptions,
+    type DelOptions,
+    type GulpStream,
+    type PluginFunction,
+    type SrcOptions,
+    type BuildOptions,
 } from './types.js'
 
-// Modern type aliases with better semantic naming and enhanced generics
+// --- Type aliases
 type SrcMethod = typeof gulp.src
 type DestMethod = typeof gulp.dest
 type TransformFunction = (file: Vinyl, enc: BufferEncoding, callback: TransformCallback) => void
 type FlushFunction = (cb: TransformCallback) => void
+type TransformOptions = Stream.TransformOptions
 
-// Enhanced constants with tuple types and better semantic naming
+// --- Constants with tuple types and better semantic naming
 const transformConfig = {highWaterMark: 16, objectMode: true}
-const defaultAnonymousName = '<anonymous>'
+const defaultAnonymousTaskName = '<anonymous>'
 
-// Modern utility functions with enhanced type safety
-function createTransform(transform?: TransformFunction, flush?: FlushFunction): Transform {
+// --- Utility functions
+function createTransform(
+    transform?: TransformFunction,
+    flush?: FlushFunction,
+    options?: TransformOptions,
+): Transform {
     return new Transform({
         ...transformConfig,
+        ...options,
         transform,
         flush,
     })
 }
 
-// Enhanced stream utilities with proper typing and modern patterns
 function clearStreamG(): Transform {
     return createTransform((_file: Vinyl, _enc: BufferEncoding, cb: TransformCallback) => {
         cb(null)
@@ -67,40 +72,6 @@ function appendG(...args: Parameters<typeof gulp.src>) {
 }
 
 /*****************************************************************************
- *  Builder Pattern for BuildStream
- *****************************************************************************/
-class BuildStreamBuilder {
-    #name?: string
-    #opts: BuildOptions = {}
-    #stream?: GulpStream
-    #promiseSync?: Promise<unknown>
-
-    name(name: string): this {
-        this.#name = name
-        return this
-    }
-
-    options(opts: BuildOptions): this {
-        this.#opts = {...this.#opts, ...opts}
-        return this
-    }
-
-    stream(stream: GulpStream): this {
-        this.#stream = stream
-        return this
-    }
-
-    promise(promiseSync: Promise<unknown>): this {
-        this.#promiseSync = promiseSync
-        return this
-    }
-
-    build(): BuildStream {
-        return new BuildStream(this.#name, this.#opts, this.#stream, this.#promiseSync)
-    }
-}
-
-/*****************************************************************************
  *  Gulp Stream Wrapper providing API for build processing.
  *****************************************************************************/
 export class BuildStream {
@@ -108,26 +79,55 @@ export class BuildStream {
         return new PassThrough()
     }
 
-    /** Modern factory method for creating BuildStream instances */
-    static create(
-        name?: string,
-        opts: BuildOptions = {},
-        stream?: GulpStream,
-        promiseSync?: Promise<unknown>,
-    ): BuildStream {
-        return new BuildStream(name, opts, stream, promiseSync)
+    static through(
+        transform?: TransformFunction,
+        flush?: FlushFunction,
+        options?: TransformOptions,
+    ): Transform {
+        const _transform = ((file, enc, cb) => {
+            let cbCalled = false
+            const _cbWrpper = ((error: Error | undefined, data?: Vinyl) => {
+                cb(error ?? null, data)
+                cbCalled = true
+            }) as unknown as TransformCallback
+
+            if (transform) transform(file, enc, _cbWrpper)
+            if (!cbCalled) cb()
+        }) satisfies TransformFunction
+
+        const _flush = (cb => {
+            let cbCalled = false
+            const _cbWrapper = ((error: Error | undefined, data?: Vinyl) => {
+                cb(error ?? null, data)
+                cbCalled = true
+            }) as unknown as TransformCallback
+
+            if (flush) flush(_cbWrapper)
+            if (!cbCalled) cb()
+        }) satisfies FlushFunction
+
+        return createTransform(_transform, _flush, options)
     }
 
-    /** Enhanced builder pattern factory with fluent interface */
-    static builder() {
-        return new BuildStreamBuilder()
+    /**
+     * main build function to be executed by gulp task
+     * @param bs BuildStream created by gulp task.
+     * @param buildFunc BuildFunction from TaskConfig (`conf.build`).
+     * @returns void or A promise to be waited by gulp task.
+     */
+    static async main(bs: BuildStream, buildFunc: BuildFunction) {
+        await buildFunc(bs)
+        await bs.#promiseQ
+        if (bs.#srcCalled) await pEvent(bs.#stream, 'finish')
+
+        return bs.#stream
     }
 
     readonly #name: string // BuildStream instance name (same as gulp task name)
-    #stream: GulpStream = BuildStream.nullStream()
-    #promiseSync: Promise<unknown> = Promise.resolve()
     readonly #opts: BuildOptions
     readonly #mutex: Mutex = new Mutex()
+    #stream: GulpStream = BuildStream.nullStream().end() // call end() to make sure 'finish' event is emitted even src is not called
+    #promiseQ: Promise<unknown> = Promise.resolve()
     #srcCalled = false
 
     // Modern performance tracking
@@ -139,26 +139,12 @@ export class BuildStream {
         name?: string,
         opts: BuildOptions = {},
         stream?: GulpStream,
-        promiseSync?: Promise<unknown>,
+        promiseQ?: Promise<unknown>,
     ) {
-        this.#name = name ?? defaultAnonymousName
+        this.#name = name ?? defaultAnonymousTaskName
         this.#opts = {...opts}
         if (stream) this.#stream = stream
-        if (promiseSync) this.#promiseSync = promiseSync
-    }
-
-    /**
-     * main build function to be executed by gulp task
-     * @param bs BuildStream created by gulp task.
-     * @param buildFunc BuildFunction from TaskConfig (`conf.build`).
-     * @returns void or A promise to be waited by gulp task.
-     */
-    async _main(buildFunc: BuildFunction) {
-        await buildFunc(this)
-        await this.#promiseSync
-        if (this.#srcCalled) await pEvent(this.#stream, 'finish')
-
-        return this.#stream
+        if (promiseQ) this.#promiseQ = promiseQ
     }
 
     get name() {
@@ -173,12 +159,16 @@ export class BuildStream {
         return this.#stream
     }
 
-    get sync() {
-        return this.#promiseSync
+    get promiseQ() {
+        return this.#promiseQ
     }
 
     get opts() {
         return this.#opts
+    }
+
+    get logger() {
+        return (...args: Parameters<typeof console.log>) => this.log(...args)
     }
 
     /** Modern performance metrics getter */
@@ -199,11 +189,18 @@ export class BuildStream {
      * @param options SrcOptions of gulp.src()
      */
     src(globsOrOptions?: Parameters<SrcMethod>[0] | SrcOptions, options: SrcOptions = {}): this {
-        const isGlob = is.String(globsOrOptions) || is.Array(globsOrOptions)
-        const globs = isGlob ? globsOrOptions : this.opts.src
-        if (!globs) return this
+        globsOrOptions ??= this.#opts.src
 
-        const opts: SrcOptions = isGlob ? {...options} : {...(globsOrOptions as SrcOptions)}
+        let globs: Glob
+        let opts: SrcOptions
+
+        if (isGlob(globsOrOptions)) {
+            globs = globsOrOptions
+            opts = {...options}
+        } else {
+            globs = this.opts.src ?? ''
+            opts = {...globsOrOptions, ...options}
+        }
 
         // respect opts first, and then check BuildOptions
         if (!opts.sourcemaps && this.opts.sourcemaps) opts.sourcemaps = this.opts.sourcemaps
@@ -225,12 +222,9 @@ export class BuildStream {
      * @param options SrcOptions of gulp.src()
      * @returns this
      */
-    add(globs: Parameters<SrcMethod>[0], options?: SrcOptions): this {
-        if (is.String(globs) || is.Array(globs)) {
-            if (this.#srcCalled)
-                this.#stream = this.#stream.pipe(appendG(globs, options)) as GulpStream
-            else this.src(globs, options)
-        }
+    add(globs: Parameters<SrcMethod>[0], options: SrcOptions = {}): this {
+        if (this.#srcCalled) this.#stream = this.#stream.pipe(appendG(globs, options)) as GulpStream
+        else this.src(globs, options)
 
         return this
     }
@@ -323,15 +317,116 @@ export class BuildStream {
     }
 
     /**
-     * Clone this BuildStream instance.
+     * Copy files from source to destination.
+     * Copy changed files only compared to destination counterpart.
+     * Refer to 'gulp-changed' for the details.
      *
-     * @param name Name of the cloned BuildStream instance.
-     * @returns Cloned BuildStream instance.
+     * @param globs Source files to copy
+     * @param destPath destination path to copy
+     * @param opts CopyOptions
      */
-    clone(name?: string): BuildStream {
-        const cloned = this.#stream.pipe(cloneStreamG())
-        const bs = new BuildStream(name ?? this.#name, this.#opts, cloned, this.#promiseSync)
-        return bs
+    copy(globs: Glob, destPath: string, opts: CopyOptions): this
+
+    /**
+     * Copy files from multiple sources to multiple destinations.
+     *
+     * @params params list of CopyParam (src to dest pairs)
+     * @param opts CopyOptions
+     */
+    copy(params: CopyParam | CopyParam[], opts?: CopyOptions): this
+
+    /** implementation details */
+    copy(
+        arg1: Glob | CopyParam | CopyParam[],
+        arg2?: string | CopyOptions,
+        arg3: CopyOptions = {},
+    ): this {
+        copy(arg1, arg2, arg3)
+
+        return this
+    }
+
+    /**
+     * Delete files and folders synchrously.
+     *
+     * @param patterns Files and folders to delete in glob pattern.
+     * @param options Delete options.
+     * @returns this
+     */
+    del(patterns: Glob, options: DelOptions = {}): this {
+        const logger = options.logger ?? this.opts.logger ?? this.logger
+        if (options.logLevel !== 'silent') logger(`deleting:[${arrayify(patterns).join(', ')}]`)
+
+        deleteSync(patterns, options)
+        return this
+    }
+
+    /**
+     * Delete clean targets with enhanced type safety and modern patterns
+     *
+     * @param cleanExtra additional clean target
+     * @param options clean options including delOptions to be delivered to this.del()
+     * @returns this
+     */
+    clean(cleanExtra: string | string[] = [], options: CleanOptions = {}): this {
+        const cleanList = [...arrayify(this.opts.clean), ...arrayify(cleanExtra)]
+
+        const logger = options.logger ?? this.logger
+        if (options.logLevel !== 'silent') {
+            logger(`cleaning:[${cleanList.join(', ')}]`)
+        }
+
+        return this.del(cleanList, {...options, logLevel: 'silent'})
+    }
+
+    /**
+     * Execute command with enhanced error handling and modern patterns
+     *
+     * @param command command to be executed.
+     * @param options ExecOptions to be passed to child_process.spawn().
+     * @returns this
+     */
+    exec(command: string, options: ExecOptions = {}): this {
+        if (this.opts.logLevel !== 'silent') this.log(`Executing command: '${command}'`)
+
+        // Validate command early and handle empty commands gracefully
+        try {
+            this.promise(exec(command, options))
+        } catch (error) {
+            // Convert synchronous validation errors to rejected promises
+            this.promise(Promise.reject(error instanceof Error ? error : new Error(String(error))))
+        }
+
+        return this
+    }
+
+    /**
+     * This is a wrapper to gulp.dest(), but all the parameters are optional.
+     * If destination folder is not provided, the `conf.dest` is used instead.
+     * If both folder argument and `conf.dest` are missing, then current
+     * directory `.` is used.
+     * If options.sourcemaps are not provided, then `conf.sourcemaps` is used.
+     *
+     * @param args THe same arguments as the original gulp.dest()
+     * @returns
+     */
+    dest(...args: Parameters<DestMethod> | undefined[]): this {
+        const [folder = this.#opts.dest, opts = {}] = args
+        opts.sourcemaps ??= this.#opts.sourcemaps
+
+        this.#stream.pipe(gulp.dest(folder ?? '.', opts))
+        return this
+    }
+
+    /**
+     * Reload the changes to browser-sync, if it is activated.
+     *
+     * @param options Options to be passed to broiwser-sync.
+     * @returns BuildStream itself.
+     */
+    reload(options?: browserSync.StreamOptions): this {
+        if (browserSync.active) this.pipe(browserSync.stream(options))
+        return this
     }
 
     //-------------------------------------------------------------------------
@@ -348,21 +443,15 @@ export class BuildStream {
     }
 
     /**
-     * This is a wrapper to gulp.dest(), but all the parameters are optional.
-     * If destination folder is not provided, the `conf.dest` is used instead.
-     * If both folder argument and `conf.dest` are missing, then current
-     * directory `.` is used.
-     * If options.sourcemaps are not provided, then `conf.sourcemaps` is used.
+     * Clone this BuildStream instance.
      *
-     * @param args THe same arguments as the original gulp.dest()
-     * @returns
+     * @param name Name of the cloned BuildStream instance.
+     * @returns Cloned BuildStream instance.
      */
-    dest(...args: Parameters<DestMethod> | undefined[]): this {
-        const [folder = this.#opts.dest, opt = {}] = args
-        opt.sourcemaps ??= this.#opts.sourcemaps
-
-        this.#stream.pipe(gulp.dest(folder ?? '.', opt))
-        return this
+    clone(name?: string): BuildStream {
+        const cloned = this.#stream.pipe(cloneStreamG())
+        const bs = new BuildStream(name ?? this.#name, this.#opts, cloned, this.#promiseQ)
+        return bs
     }
 
     /**
@@ -399,14 +488,14 @@ export class BuildStream {
      */
     promise(arg1: (() => unknown) | Promise<unknown>): this {
         if (arg1 instanceof Promise) {
-            this.#promiseSync = (async () => {
-                await this.#promiseSync
+            this.#promiseQ = (async () => {
+                await this.#promiseQ
                 await arg1
             })()
         } else {
-            this.#promiseSync = (async () => {
-                await this.#promiseSync
-                return arg1()
+            this.#promiseQ = (async () => {
+                await this.#promiseQ
+                await arg1()
             })()
         }
 
@@ -427,127 +516,13 @@ export class BuildStream {
     /**
      * Add gulp-plugin into build execution sequence
      *
-     * @param gulpPlugin gulp plugin
+     * @param plugin gulp plugin
      * @param options gulp-plugin options
      * @returns this
      */
-    pipe(gulpPlugin: GulpStream | Transform, options?: {end?: boolean}): this {
-        try {
-            this.#stream = this.#stream.pipe(gulpPlugin, options)
-        } catch (error: any) {
-            // preventive message to avoid confusion between gulp plugin and tron plugin.
-            throw is.Function(gulpPlugin)
-                ? new Error(`Tron:error: use bs.chain() to use tron Plugin.`)
-                : (error as Error)
-        }
+    pipe(plugin: GulpStream | Transform, options?: {end?: boolean}): this {
+        this.#stream = this.#stream.pipe(plugin, options)
 
-        return this
-    }
-
-    /**
-     * Copy files from source to destination.
-     * Copy changed files only compared to destination counterpart.
-     * Refer to 'gulp-changed' for the details.
-     *
-     * @param globs Source files to copy
-     * @param destPath destination path to copy
-     * @param opts CopyOptions
-     */
-    copy(globs: string | string[], destPath: string, opts: CopyOptions): this
-
-    /**
-     * Copy files from multiple sources to multiple destinations.
-     *
-     * @params params list of CopyParam (src to dest pairs)
-     * @param opts CopyOptions
-     */
-    copy(params?: CopyParam | CopyParam[], opts?: CopyOptions): this
-
-    /** implementation details */
-    copy(
-        arg1?: string | string[] | CopyParam | CopyParam[],
-        arg2?: string | CopyOptions,
-        arg3: CopyOptions = {},
-    ): this {
-        const optCommon = {logLevel: this.#opts.logLevel, logger: this.logger}
-        for (const [, item] of arrayify(arg1).entries()) {
-            if (is.String(item)) {
-                copyFilesByGlobs(item as string, arg2 as string, {...optCommon, ...arg3})
-            } else {
-                const opts = {...optCommon, ...(arg2 as CopyOptions)}
-                copyFilesByGlobs((item as CopyParam).src, (item as CopyParam).dest, opts)
-            }
-        }
-
-        return this
-    }
-
-    /**
-     * Delete files and folders synchrously.
-     *
-     * @param patterns Files and folders to delete in glob pattern.
-     * @param options Delete options.
-     * @returns this
-     */
-    del(patterns: string | string[], options: DelOptions = {}): this {
-        const logger = options.logger ?? this.opts.logger ?? this.logger
-        if (options.logLevel !== 'silent') logger(`deleting:[${arrayify(patterns).join(', ')}]`)
-
-        deleteSync(patterns, options)
-        return this
-    }
-
-    /**
-     * Delete clean targets with enhanced type safety and modern patterns
-     *
-     * @param cleanExtra additional clean target
-     * @param options clean options including delOptions to be delivered to this.del()
-     * @returns this
-     */
-    clean(cleanExtra: string | string[] = [], options: CleanOptions = {}): this {
-        const cleanList = [
-            ...arrayify(this.opts.clean).filter((item): item is string => typeof item === 'string'),
-            ...arrayify(cleanExtra).filter((item): item is string => typeof item === 'string'),
-        ]
-
-        const logger = options.logger ?? this.logger
-        if (options.logLevel !== 'silent') {
-            logger(`cleaning:[${cleanList.join(', ')}]`)
-        }
-
-        const updatedOptions = {...options, logLevel: 'silent' as const}
-        return this.del(cleanList, updatedOptions)
-    }
-
-    /**
-     * Execute command with enhanced error handling and modern patterns
-     *
-     * @param command command to be executed.
-     * @param options ExecOptions to be passed to child_process.spawn().
-     * @returns this
-     */
-    exec(command: string, options: ExecOptions = {}): this {
-        if (this.opts.logLevel !== 'silent') this.log(`Executing command: '${command}'`)
-
-        // Validate command early and handle empty commands gracefully
-        try {
-            this.promise(exec(command, options))
-        } catch (error) {
-            // Convert synchronous validation errors to rejected promises
-            this.promise(Promise.reject(error instanceof Error ? error : new Error(String(error))))
-        }
-
-        return this
-    }
-
-    /**
-     * Reload the changes to browser-sync, if it is activated.
-     *
-     * @param options Options to be passed to broiwser-sync.
-     * @returns BuildStream itself.
-     */
-    reload(options?: browserSync.StreamOptions): this {
-        if (browserSync.active) this.pipe(browserSync.stream(options))
         return this
     }
 
@@ -589,7 +564,8 @@ export class BuildStream {
         interceptFunc?: (file: Vinyl, enc: BufferEncoding, cb: TransformCallback) => unknown,
         onFinish?: (cb: TransformCallback) => void,
     ): this {
-        this.pipe(createTransform(interceptFunc, onFinish))
+        this.pipe(BuildStream.through(interceptFunc, onFinish))
+        // this.pipe(createTransform(interceptFunc, onFinish))
         return this
     }
 
@@ -601,25 +577,43 @@ export class BuildStream {
      * @returns this
      */
     peek(peekFunc?: (file: Vinyl) => void, onFinish?: (cb: TransformCallback) => void): this {
-        return this.intercept(
-            peekFunc
-                ? (file, _enc, cb) => {
-                      peekFunc(file)
-                      cb(null, file)
-                  }
-                : undefined,
-            onFinish
-                ? cb => {
-                      onFinish(cb)
-                      cb()
-                  }
-                : undefined,
-        )
+        return this.intercept(peekFunc, onFinish)
+        // return this.intercept(
+        //     peekFunc
+        //         ? (file, _enc, cb) => {
+        //               peekFunc(file)
+        //               cb(null, file)
+        //           }
+        //         : undefined,
+        //     onFinish
+        //         ? cb => {
+        //               onFinish(cb)
+        //               cb()
+        //           }
+        //         : undefined,
+        // )
     }
 
     //-------------------------------------------------------------------------
     // Utilities
     //-------------------------------------------------------------------------
+    async sync(): Promise<void> {
+        await this.#promiseQ
+        await flushAllStdio()
+    }
+
+    /**
+     * Synchronize the build stream with the internal promise queue.
+     * This is useful to ensure that all the promises are resolved before
+     * finishing the build stream.
+     *
+     * @returns Promise that resolves when the build stream is finished.
+     */
+    async finish() {
+        await this.sync()
+        await pEvent(this.#stream, 'finish')
+    }
+
     /**
      * Print message from this BuildStream instance with modern patterns
      *
@@ -640,10 +634,9 @@ export class BuildStream {
         return this
     }
 
-    /** Modern logger getter with normal function */
-    get logger() {
-        return (...args: Parameters<typeof console.log>) => {
-            return this.log(...args)
-        }
+    detachStream(): GulpStream {
+        const detachedStream = this.#stream
+        this.#stream = BuildStream.nullStream().end() // reset the stream to null
+        return detachedStream
     }
 }

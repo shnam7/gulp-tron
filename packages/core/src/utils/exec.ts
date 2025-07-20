@@ -4,6 +4,10 @@ import type {LogOptions} from '../types.js'
 
 /** Type for execution options combining spawn options with logging */
 export type ExecOptions = SpawnOptions & LogOptions
+export type ExecResult = {
+    exitCode?: number
+    message?: string
+}
 
 /** Type for command parsing result */
 type ParsedCommand = {
@@ -56,16 +60,22 @@ function createChildProcess(
 async function processToPromise(
     childProcess: child_process.ChildProcess,
     command: string,
-): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
+): Promise<ExecResult> {
+    return new Promise<ExecResult>((resolve, reject) => {
         childProcess.on('exit', (exitCode: number | undefined) => {
-            if (exitCode && exitCode !== 0)
-                reject(new Error(`Command "${command}" exited with code: ${exitCode}`))
-            else resolve()
+            const message =
+                exitCode === 0 ? '' : `Command "${command}" exited with code: ${exitCode}`
+            resolve({exitCode, message})
+
+            // if (exitCode && exitCode !== 0)
+            //     reject(new Error(`Command "${command}" exited with code: ${exitCode}`))
+            // else resolve({})
         })
 
         childProcess.on('error', (error: Error) => {
-            reject(new Error(`Failed to execute "${command}": ${error.message}`))
+            // reject(new Error(`Failed to execute "${command}": ${error.message}`))
+            const message = `Failed to execute "${command}": ${error.message}`
+            resolve({message})
         })
     })
 }
@@ -76,20 +86,18 @@ async function processToPromise(
  * @param options Execution options
  * @returns Process execution result with child process and promise
  */
-export async function exec(command: string, options: ExecOptions = {}): Promise<void> {
+export async function exec(command: string, options: ExecOptions = {}): Promise<ExecResult> {
     const logger = options.logger ?? console.log
 
     const parsed = parseCommand(command)
-    if (!parsed.isValid) throw new Error(`Invalid command: '${command}'`)
+    if (!parsed.isValid) return {message: `Invalid command: '${command}'`}
 
     const childProcess = createChildProcess(parsed.cmd, parsed.args, options)
-    try {
-        await processToPromise(childProcess, command)
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        logger(errorMessage)
-        throw error // Re-throw the error so callers can handle it
-    }
+
+    const ret = await processToPromise(childProcess, command)
+    if (options.logLevel !== 'silent') logger(ret.message)
+
+    return ret
 }
 
 export default exec

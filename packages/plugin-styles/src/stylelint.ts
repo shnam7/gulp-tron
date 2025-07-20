@@ -49,7 +49,6 @@ export const stylelintP =
                 // throw new Error(`stylelintP:Not supported parcer type: ${options.parser}`)
             }
 
-        // console.log(`---111`, pcssOptions, is.Object(options.parser))
         bs.pipe(pcssG([stylelint(options), pcssReporter(reporterOptions)], pcssOptions)).on(
             'error',
             (e: Error) => {

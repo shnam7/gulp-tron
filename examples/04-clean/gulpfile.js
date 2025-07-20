@@ -46,4 +46,4 @@ const build = {
     triggers: tron.parallel(copier, dummyCleaner),
 }
 
-tron.createTask(build).addCleaner()
+tron.task(build).addCleaner()

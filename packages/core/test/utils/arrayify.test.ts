@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import arrayify from '../src/utils/arrayify.js'
+import arrayify from '../../src/utils/arrayify.js'
 
 describe('arrayify', () => {
     it('should return empty array for undefined', () => {
