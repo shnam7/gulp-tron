@@ -9,7 +9,7 @@
     },
     "devDependencies": {
         "@gulp-tron/plugin-styles": "workspace:*",
-        "@gulp-tron/core": "workspace:*",
+        "gulp-tron": "workspace:*",
         "gulp-htmlclean": "^2.7.22",
         "gulp-markdown": "^8.0.0",
         "gulp-prettier": "^6.0.0",

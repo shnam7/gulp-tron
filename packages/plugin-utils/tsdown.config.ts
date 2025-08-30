@@ -11,7 +11,7 @@ export default defineConfig({
         'js-yaml',
         'fast-glob',
         '@wicle/is',
-        '@gulp-tron/core',
+        'gulp-tron',
     ],
     platform: 'node',
     target: 'node18',

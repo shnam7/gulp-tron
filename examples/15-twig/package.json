@@ -16,10 +16,10 @@
         "gulp": "^5.0.1",
         "gulp-htmlmin": "^5.0.1",
         "gulp-prettier": "^6.0.0",
-        "@gulp-tron/core": "workspace:*",
+        "gulp-tron": "workspace:*",
         "gulp-typescript": "6.0.0-alpha.1",
         "gulp-twig": "^1.2.0",
         "twig-markdown": "^1.1.0",
-        "typescript": "^5.8.3"
+        "typescript": "^5.9.2"
     }
 }

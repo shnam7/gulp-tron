@@ -1,4 +1,4 @@
-import tron from '@gulp-tron/core'
+import tron from 'gulp-tron'
 // Import path from 'path'
 // import { fileURLToPath } from 'url'
 // const __dirname = path.dirname(fileURLToPath(import.meta.url))

@@ -39,8 +39,8 @@
         "postcss-reporter": "^7.1.0",
         "postcss-sass": "^0.5.0",
         "postcss-scss": "^4.0.9",
-        "sass": "^1.89.2",
-        "stylelint": "^16.22.0"
+        "sass": "^1.91.0",
+        "stylelint": "^16.23.1"
     },
     "devDependencies": {
         "@types/clean-css": "^4.2.11",
@@ -55,12 +55,12 @@
         "@types/rtlcss": "^3.5.4",
         "@vitest/coverage-v8": "^3.2.4",
         "@gulp-tron/tsconfig": "workspace:*",
-        "@gulp-tron/core": "workspace:*",
+        "gulp-tron": "workspace:*",
         "chokidar-cli": "^3.0.0",
         "rimraf": "^6.0.1",
-        "tsdown": "^0.13.0",
-        "typescript": "^5.8.3",
+        "tsdown": "^0.14.2",
+        "typescript": "^5.9.2",
         "vitest": "^3.2.4",
-        "xo": "^1.2.1"
+        "xo": "^1.2.2"
     }
 }

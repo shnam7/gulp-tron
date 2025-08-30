@@ -7,7 +7,7 @@
         "build": "gulp @build"
     },
     "devDependencies": {
-        "@gulp-tron/core": "workspace:*",
+        "gulp-tron": "workspace:*",
         "gulp": "^5.0.1"
     }
 }

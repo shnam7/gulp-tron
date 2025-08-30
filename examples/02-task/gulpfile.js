@@ -1,6 +1,6 @@
 // Import path from 'node:path';
 // import {fileURLToPath} from 'node:url';
-import tron from '@gulp-tron/core'
+import tron from 'gulp-tron'
 import gulp from 'gulp'
 
 // Const __dirname = path.dirname(fileURLToPath(import.meta.url));

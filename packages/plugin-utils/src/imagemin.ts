@@ -1,4 +1,4 @@
-import type {BuildStream, PluginFunction} from '@gulp-tron/core'
+import type {BuildStream, PluginFunction} from 'gulp-tron'
 import type {Plugin} from 'imagemin'
 import imageminG from 'gulp-imagemin'
 

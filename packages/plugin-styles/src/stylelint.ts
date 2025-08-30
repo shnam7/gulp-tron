@@ -3,7 +3,7 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from '@gulp-tron/core'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import is from '@wicle/is'
 import pcssG from 'gulp-postcss'
 import pcssReporter from 'postcss-reporter'

@@ -3,7 +3,7 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from '@gulp-tron/core'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import autoPrefixerG from 'gulp-autoprefixer'
 
 export type AutoPrefixerOptions = autoPrefixerG.Options

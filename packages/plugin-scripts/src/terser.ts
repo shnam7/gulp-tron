@@ -3,7 +3,7 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from '@gulp-tron/core'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import terserG from 'gulp-terser'
 
 export type TerserOptions = Parameters<typeof terserG>[0]

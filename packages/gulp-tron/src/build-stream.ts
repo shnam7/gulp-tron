@@ -634,6 +634,12 @@ export class BuildStream {
         return this
     }
 
+    /**
+     * Detach the current stream from this BuildStream instance.
+     * After detaching, the stream will be reset to a null stream.
+     *
+     * @returns The detached GulpStream.
+     */
     detachStream(): GulpStream {
         const detachedStream = this.#stream
         this.#stream = BuildStream.nullStream().end() // reset the stream to null

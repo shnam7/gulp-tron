@@ -3,7 +3,7 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from '@gulp-tron/core'
+import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import concatG from 'gulp-concat'
 
 export type ConcatOptions = Parameters<typeof concatG>[0]

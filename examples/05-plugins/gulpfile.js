@@ -1,7 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import {fileURLToPath} from 'node:url'
-import tron from '@gulp-tron/core'
+import tron from 'gulp-tron'
 import myScss from './gulp-tron-plugins/my-scss.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))

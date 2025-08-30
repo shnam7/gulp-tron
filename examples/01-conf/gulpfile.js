@@ -1,6 +1,6 @@
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
-import tron from '@gulp-tron/core'
+import tron from 'gulp-tron'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const __filename = path.basename(__dirname)
