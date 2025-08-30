@@ -27,7 +27,7 @@ export const stylelintP =
         options ??= {rules: {}} // depress 'No configuration provided' error
 
         let pcssOptions: pcssG.Options = {parser: options.parser as unknown}
-        if (!is.Object(options.parser))
+        if (!is.isObject(options.parser))
             switch (options.parser) {
                 case 'scss': {
                     pcssOptions = {parser: scssParser}

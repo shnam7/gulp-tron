@@ -20,7 +20,6 @@ describe('core index exports', () => {
         expect(core).toHaveProperty('arrayify')
         expect(core).toHaveProperty('copy')
         expect(core).toHaveProperty('exec')
-        expect(core).toHaveProperty('isGlob')
         expect(core).toHaveProperty('is')
     })
     it('should export gulp', () => {

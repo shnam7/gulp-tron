@@ -3,7 +3,6 @@ import process from 'node:process'
 export * from './arrayify.js'
 export * from './copy.js'
 export * from './exec.js'
-export * from './isglob.js'
 export {default as is} from '@wicle/is'
 
 export async function flushStdout() {

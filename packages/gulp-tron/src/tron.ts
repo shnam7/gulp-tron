@@ -1,6 +1,6 @@
 import browserSync from 'browser-sync'
 import multimatch from 'multimatch'
-import is from '@wicle/is'
+import {isArray, isString, isObject, isFunction} from '@wicle/is'
 import arrayify from './utils/arrayify.js'
 import {gulp} from './globals.js'
 import {BuildStream} from './build-stream.js'
@@ -322,7 +322,7 @@ export class Tron {
         if (!buildSet) return undefined
 
         // buildSet is gulp task name (BuildName)
-        if (is.String(buildSet)) {
+        if (isString(buildSet)) {
             const taskName = buildSet as string
             const gulpTask = gulp.task(taskName)
             if (!gulpTask) {
@@ -332,7 +332,7 @@ export class Tron {
             return gulpTask
         }
 
-        if (is.Function(buildSet)) {
+        if (isFunction(buildSet)) {
             // All function arguments are assumed to be BuildFunction,
             // and converted to TaskConfig object for processing
             const functionName = (buildSet as BuildFunction).name || 'buildFunc'
@@ -341,7 +341,7 @@ export class Tron {
         }
 
         // buildSet is TaskConfig object
-        if (is.Object(buildSet)) {
+        if (isObject(buildSet)) {
             return Object.hasOwn(buildSet as TaskConfig, 'set')
                 ? this._resolveBuildSetGroup(buildSet as BuildSetSeries | BuildSetParallel)
                 : this._resolveTaskConfig(buildSet as TaskConfig)
@@ -361,10 +361,10 @@ export class Tron {
         buildSet: BuildSetSeries | BuildSetParallel,
     ): GulpTaskFunction | undefined {
         // BuildSet is series of BuildSet items
-        if (is.Array(buildSet)) {
+        if (isArray(buildSet)) {
             // Strip redundant outer arrays using modern array methods
             let resolvedBuildSet = buildSet as BuildSet[]
-            while (resolvedBuildSet.length === 1 && is.Array(resolvedBuildSet[0])) {
+            while (resolvedBuildSet.length === 1 && isArray(resolvedBuildSet[0])) {
                 resolvedBuildSet = resolvedBuildSet[0] as BuildSetSeries
             }
 
@@ -377,7 +377,7 @@ export class Tron {
         }
 
         // BuildSet is parallel set of BuildSet items
-        if (is.Object(buildSet) && Object.hasOwn(buildSet, 'set')) {
+        if (isObject(buildSet) && Object.hasOwn(buildSet, 'set')) {
             let {set} = buildSet as BuildSetParallel
             // Strip redundant outer arrays using modern array methods
             while (set.length === 1 && Array.isArray(set[0])) {

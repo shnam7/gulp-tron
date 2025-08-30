@@ -2,10 +2,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {globbySync} from 'globby'
 import globParent from 'glob-parent'
+import {type Glob, isGlob} from '@wicle/is'
 import type {LogOptions} from '../types.js'
 import arrayify from './arrayify.js'
-// import {type Glob, isGlob} from './isglob.js'
-import {type Glob, isGlob} from './isglob.js'
 
 /** Type for copy parameter with source and destination */
 export type CopyParam = {
@@ -241,7 +240,7 @@ export function copy(
     arg3: CopyOptions = {},
 ): CopyResult {
     if (isGlob(arg1)) return copyGlob(arg1, arg2 as string, arg3)
-    const ret = copyParam(arg1, {...arg3, showStats: false})
+    const ret = copyParam(arg1 as CopyParam | CopyParam[], {...arg3, showStats: false})
 
     logStats(ret, {showStats: true, ...(arg2 as CopyOptions)})
 

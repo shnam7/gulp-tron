@@ -286,8 +286,8 @@ importers:
   packages/gulp-tron:
     dependencies:
       '@wicle/is':
-        specifier: ^1.0.4
-        version: 1.0.4
+        specifier: ^2.0.1
+        version: 2.0.1
       '@wicle/mutex':
         specifier: ^0.9.0
         version: 0.9.0
@@ -468,8 +468,8 @@ importers:
   packages/plugin-styles:
     dependencies:
       '@wicle/is':
-        specifier: ^1.0.4
-        version: 1.0.4
+        specifier: ^2.0.1
+        version: 2.0.1
       clean-css:
         specifier: ^5.3.3
         version: 5.3.3
@@ -574,8 +574,8 @@ importers:
   packages/plugin-utils:
     dependencies:
       '@wicle/is':
-        specifier: ^1.0.4
-        version: 1.0.4
+        specifier: ^2.0.1
+        version: 2.0.1
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
@@ -2545,8 +2545,8 @@ packages:
   '@webassemblyjs/wast-printer@1.12.1':
     resolution: {integrity: sha512-+X4WAlOisVWQMikjbcvY2e0rwPsKQ9F688lksZhBcPycBBuii3O7m8FACbDMWDojpAqvjIncrG8J0XHKyQfVeA==}
 
-  '@wicle/is@1.0.4':
-    resolution: {integrity: sha512-pqEyNcj9bY4WYy4gzO60pqIwiR/Kfs6aQb6PrK80pue5uP1drJ81mo6BL4S2trKDt7Qvq285jzbvUNWHf8JD+g==}
+  '@wicle/is@2.0.1':
+    resolution: {integrity: sha512-pSxQCI/wYTSZKgT2ZWLeRrdLp533w9zT4DnLF562GS0QCHopm7tNLieI3HF3/EbsjjKmPaIyh/xmcpwhrEa75Q==}
     engines: {node: '>=15'}
 
   '@wicle/mutex@0.9.0':
@@ -10050,7 +10050,7 @@ snapshots:
       '@xtuc/long': 4.2.2
     optional: true
 
-  '@wicle/is@1.0.4': {}
+  '@wicle/is@2.0.1': {}
 
   '@wicle/mutex@0.9.0': {}
 

@@ -11,10 +11,10 @@ import type Vinyl from 'vinyl'
 import {pEvent} from 'p-event'
 import {StreamQueue} from 'streamqueue'
 import es from 'event-stream'
-import is from '@wicle/is'
+import {type Glob, isString, isFunction, isGlob} from '@wicle/is'
 import arrayify from './utils/arrayify.js'
 import {copy, type CopyParam, type CopyOptions} from './utils/copy.js'
-import {exec, type ExecOptions, flushAllStdio, type Glob, isGlob} from './utils/index.js'
+import {exec, type ExecOptions, flushAllStdio} from './utils/index.js'
 import {gulp} from './globals.js'
 import {
     type BuildFunction,
@@ -195,16 +195,16 @@ export class BuildStream {
         let opts: SrcOptions
 
         if (isGlob(globsOrOptions)) {
-            globs = globsOrOptions
+            globs = globsOrOptions as Glob
             opts = {...options}
         } else {
             globs = this.opts.src ?? ''
-            opts = {...globsOrOptions, ...options}
+            opts = {...(globsOrOptions as SrcOptions), ...options}
         }
 
         // respect opts first, and then check BuildOptions
         if (!opts.sourcemaps && this.opts.sourcemaps) opts.sourcemaps = this.opts.sourcemaps
-        if (!is.Function(opts.sourcemaps)) opts.sourcemaps = Boolean(opts.sourcemaps)
+        if (!isFunction(opts.sourcemaps)) opts.sourcemaps = Boolean(opts.sourcemaps)
 
         // disable encoding for compatibiliy with gulp 4 in handling binary data such as images
         opts.encoding ??= false // defaults to false
@@ -252,7 +252,7 @@ export class BuildStream {
     filter(...args: Parameters<typeof filterG>): this {
         let [patterns, opts] = args
 
-        if (!is.Function(patterns)) {
+        if (!isFunction(patterns)) {
             const normalizedPatterns = arrayify(patterns as string).filter(
                 (item): item is string => typeof item === 'string',
             )
@@ -624,7 +624,7 @@ export class BuildStream {
         if (args.length === 0) return this
 
         const [firstArg, ...restArgs] = args
-        const prefixedArgs = is.String(firstArg)
+        const prefixedArgs = isString(firstArg)
             ? [`${this.name}::${firstArg}`, ...restArgs]
             : [`${this.name}::`, firstArg, ...restArgs]
 

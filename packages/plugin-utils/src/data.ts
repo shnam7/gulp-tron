@@ -32,7 +32,7 @@ export function loadData(patterns: Globs, options?: LogOptions): DataObject {
         }
     }
 
-    const patternStr = is.Array(patterns) ? (patterns as string[]).join(',') : patterns
+    const patternStr = is.isArray(patterns) ? (patterns as string[]).join(',') : patterns
     if (options?.logLevel === 'verbose') logger(`loadData:${patternStr.toString()}:`, data)
     return data
 }
@@ -46,7 +46,7 @@ export function dataP(globOrFunc: Globs | DataFunction): PluginFunction
 // export function dataP(obj: DataObject): PluginFunction
 export function dataP(data: Globs | DataFunction): PluginFunction {
     return (bs: BuildStream) => {
-        if (is.String(data) ?? is.Array(data)) {
+        if (is.isString(data) ?? is.isArray(data)) {
             const logOptions = {logLevel: bs.opts.logLevel, logger: bs.logger}
             return bs.pipe(dataG(loadData(data as Globs, logOptions)))
         }
