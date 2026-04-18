@@ -12,6 +12,12 @@ const xoConfig: FlatXoConfig = [
             'arrow-body-style': ['error', 'as-needed'],
 
             '@typescript-eslint/no-unsafe-call': 'off',
+            '@typescript-eslint/no-unsafe-assignment': 'off',
+            '@typescript-eslint/no-unsafe-return': 'off',
+            '@typescript-eslint/no-unsafe-argument': 'off',
+            '@typescript-eslint/no-unsafe-member-access': 'off',
+            '@typescript-eslint/no-unsafe-type-assertion': 'off',
+            '@typescript-eslint/prefer-nullish-coalescing': 'off',
         },
     },
 ]

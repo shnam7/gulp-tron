@@ -28,7 +28,10 @@ export function loadData(patterns: Globs, options?: LogOptions): DataObject {
                         ...(JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, unknown>),
                     },
                 }
-            else throw new Error(`Unknown data file extension: ${ext}`)
+            else {
+                const logger = options?.logger ?? console.warn
+                logger(`loadData: skipping unsupported file type: ${file}`)
+            }
         }
     }
 
@@ -46,7 +49,7 @@ export function dataP(globOrFunc: Globs | DataFunction): PluginFunction
 // export function dataP(obj: DataObject): PluginFunction
 export function dataP(data: Globs | DataFunction): PluginFunction {
     return (bs: BuildStream) => {
-        if (is.isString(data) ?? is.isArray(data)) {
+        if (is.isString(data) || is.isArray(data)) {
             const logOptions = {logLevel: bs.opts.logLevel, logger: bs.logger}
             return bs.pipe(dataG(loadData(data as Globs, logOptions)))
         }

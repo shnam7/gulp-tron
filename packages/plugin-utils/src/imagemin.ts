@@ -18,8 +18,12 @@ export function imageminP(
     options?: ImageminOptions,
 ): PluginFunction {
     return (bs: BuildStream) => {
-        if (Array.isArray(pluginsOrOptions)) return bs.pipe(imageminG(pluginsOrOptions, options))
-        return bs.pipe(imageminG(pluginsOrOptions))
+        if (Array.isArray(pluginsOrOptions)) {
+            bs.pipe(imageminG(pluginsOrOptions, options))
+        } else {
+            // pluginsOrOptions is ImageminOptions | undefined
+            bs.pipe(imageminG(pluginsOrOptions as ImageminOptions | undefined))
+        }
     }
 }
 

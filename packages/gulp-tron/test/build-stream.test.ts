@@ -233,7 +233,9 @@ describe('BuildStream', () => {
 
             bs.src(src1)
                 .add(src2)
-                .peek(file => files.push(file.path))
+                .peek(file => {
+                    files.push(file.path)
+                })
             await pEvent(bs.stream, 'finish')
 
             expect(files.length).toBe(2)
@@ -249,7 +251,9 @@ describe('BuildStream', () => {
 
             bs.src(src)
                 .remove('*.js')
-                .peek(file => files.push(file.path))
+                .peek(file => {
+                    files.push(file.path)
+                })
             await pEvent(bs.stream, 'finish')
             expect(files.length).toBe(2)
             expect(files).toContain(path.join(srcRoot, 'styles/test.css'))
@@ -263,7 +267,9 @@ describe('BuildStream', () => {
             const files: string[] = []
             bs.src(src)
                 .filter('*.css')
-                .peek(file => files.push(file.path))
+                .peek(file => {
+                    files.push(file.path)
+                })
             await pEvent(bs.stream, 'finish')
             expect(files.length).toBe(1)
             expect(files).toContain(path.join(srcRoot, 'styles/test.css'))
@@ -276,7 +282,9 @@ describe('BuildStream', () => {
             const files: string[] = []
             bs.src(src)
                 .rename({suffix: '.min'})
-                .peek(file => files.push(file.path))
+                .peek(file => {
+                    files.push(file.path)
+                })
             await pEvent(bs.stream, 'finish')
             expect(files.length).toBe(1)
             expect(files[0]).toBe(path.join(srcRoot, 'scripts/test.min.js'))
@@ -289,7 +297,9 @@ describe('BuildStream', () => {
             const files: string[] = []
             bs.src(src)
                 .order(['styles/**', 'scripts/**'])
-                .peek(file => files.push(file.path))
+                .peek(file => {
+                    files.push(file.path)
+                })
             await pEvent(bs.stream, 'finish')
             expect(files.length).toBe(3)
             expect(files[0]).toBe(path.join(srcRoot, 'styles/test.css'))
@@ -304,7 +314,9 @@ describe('BuildStream', () => {
             const files: string[] = []
             bs.src(src)
                 .changed(dest)
-                .peek(file => files.push(file.path))
+                .peek(file => {
+                    files.push(file.path)
+                })
             await pEvent(bs.stream, 'finish')
             expect(files.length).toBe(3)
         })
@@ -315,7 +327,9 @@ describe('BuildStream', () => {
             await bs
                 .src(src)
                 .changed(dest)
-                .peek(file => files.push(file.path))
+                .peek(file => {
+                    files.push(file.path)
+                })
                 .finish()
             expect(files.length).toBe(0)
         })
@@ -333,7 +347,9 @@ describe('BuildStream', () => {
             await bs
                 .src(src)
                 .changed(dest)
-                .peek(file => files.push(file.path))
+                .peek(file => {
+                    files.push(file.path)
+                })
                 .finish()
 
             expect(files.length).toBe(1)
@@ -357,7 +373,9 @@ describe('BuildStream', () => {
             const files: string[] = []
             await bs
                 .src(path.join(dest, '**/*.*'))
-                .peek(file => files.push(file.path))
+                .peek(file => {
+                    files.push(file.path)
+                })
                 .finish()
 
             expect(files.length).toBe(2)
@@ -422,9 +440,13 @@ describe('BuildStream', () => {
             const filesAfterClear: string[] = []
             await bs
                 .src(path.join(srcRoot, '**/*.*'))
-                .peek(file => files.push(file.path))
+                .peek(file => {
+                    files.push(file.path)
+                })
                 .clear()
-                .peek(file => filesAfterClear.push(file.path))
+                .peek(file => {
+                    filesAfterClear.push(file.path)
+                })
                 .finish()
 
             expect(files.length).toBe(3)
@@ -440,8 +462,16 @@ describe('BuildStream', () => {
             const cssStream = bs.src(path.join(srcRoot, '**/*.*')).clone().filter('*.css')
             const jsStream = bs.filter('*.js')
 
-            await jsStream.peek(file => jsFiles.push(file.path)).finish()
-            await cssStream.peek(file => cssFiles.push(file.path)).finish()
+            await jsStream
+                .peek(file => {
+                    jsFiles.push(file.path)
+                })
+                .finish()
+            await cssStream
+                .peek(file => {
+                    cssFiles.push(file.path)
+                })
+                .finish()
 
             expect(jsFiles.length).toBe(1)
             expect(jsFiles).toContain(scriptFile)
@@ -496,7 +526,9 @@ describe('BuildStream', () => {
     describe('pipe method', () => {
         it('should pipe another stream to current build stream', async () => {
             const messages: string[] = []
-            const plugin = BuildStream.through(undefined, cb => messages.push('plugin called'))
+            const plugin = BuildStream.through(undefined, cb => {
+                messages.push('plugin called')
+            })
             await bs.src(path.join(srcRoot, '**/*.*')).pipe(plugin).finish()
             expect(messages.length).toBe(1)
             expect(messages[0]).toBe('plugin called')

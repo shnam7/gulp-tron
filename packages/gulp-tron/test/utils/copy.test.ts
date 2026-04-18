@@ -76,7 +76,7 @@ describe('Copy Utility', () => {
         it('should returns error for missing source file', () => {
             const result = copyFile(path.join(srcDir, 'notfound.txt'), destDir)
             expect(result.errors).toBe(1)
-            expect(result.message).toMatch(/does not exist/)
+            expect(result.message).toMatch(/does not exist/v)
         })
     })
 

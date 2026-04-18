@@ -10,25 +10,15 @@ import {type OptionsOutput} from 'clean-css'
 export type CleanCssOptions = OptionsOutput
 
 /**
- * CleanCss Plugin - wrapper for culp-clean-css
+ * CleanCSS Plugin - wrapper for gulp-clean-css (minifies CSS by default)
  *
- * @param options - CleanCss options
+ * @param options - CleanCSS options
  * @returns PluginFunction
  */
 export const cleanCssP =
     (options: CleanCssOptions = {}): PluginFunction =>
     (bs: BuildStream) => {
-        const opts = {...options}
-        opts.format ??= 'beautify'
-        bs.pipe(cleanCssG(opts))
-
-        // if (!opts.level) opts.level = { 2: { mergeSemantically: true } }
-
-        // bs.on('data', function (file: Vinyl) {
-        //     const bufferFile = new CleanCSS(options).minify(file.contents)
-        //     return (file.contents = Buffer.from(bufferFile.styles))
-        //     return file.contents
-        // })
+        bs.pipe(cleanCssG({...options}))
     }
 
 export default cleanCssP

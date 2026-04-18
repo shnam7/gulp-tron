@@ -19,6 +19,6 @@
         "gulp-htmlmin": "^5.0.1",
         "gulp-prettier": "^6.0.0",
         "gulp-typescript": "6.0.0-alpha.1",
-        "typescript": "^5.9.2"
+        "typescript": "^6.0.3"
     }
 }

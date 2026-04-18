@@ -24,6 +24,7 @@ import {
     type PluginFunction,
     type SrcOptions,
     type BuildOptions,
+    anonymousTaskName,
 } from './types.js'
 
 // --- Type aliases
@@ -33,9 +34,7 @@ type TransformFunction = (file: Vinyl, enc: BufferEncoding, callback: TransformC
 type FlushFunction = (cb: TransformCallback) => void
 type TransformOptions = Stream.TransformOptions
 
-// --- Constants with tuple types and better semantic naming
 const transformConfig = {highWaterMark: 16, objectMode: true}
-const defaultAnonymousTaskName = '<anonymous>'
 
 // --- Utility functions
 function createTransform(
@@ -141,7 +140,7 @@ export class BuildStream {
         stream?: GulpStream,
         promiseQ?: Promise<unknown>,
     ) {
-        this.#name = name ?? defaultAnonymousTaskName
+        this.#name = name ?? anonymousTaskName
         this.#opts = {...opts}
         if (stream) this.#stream = stream
         if (promiseQ) this.#promiseQ = promiseQ
@@ -462,7 +461,7 @@ export class BuildStream {
      * @returns
      */
     on(...args: Parameters<typeof Stream.prototype.on>): this {
-        this.#stream.on(...args)
+        ;(this.#stream as NodeJS.ReadWriteStream).on(...args)
         return this
     }
 
@@ -561,7 +560,7 @@ export class BuildStream {
      * @returns this
      */
     intercept(
-        interceptFunc?: (file: Vinyl, enc: BufferEncoding, cb: TransformCallback) => unknown,
+        interceptFunc?: (file: Vinyl, enc: BufferEncoding, cb: TransformCallback) => void,
         onFinish?: (cb: TransformCallback) => void,
     ): this {
         this.pipe(BuildStream.through(interceptFunc, onFinish))

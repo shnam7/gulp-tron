@@ -75,10 +75,21 @@ export type BuildSetParallel = {readonly set: BuildSet[]}
 
 export type PluginFunction = (bs: BuildStream) => void
 
+// --- Well-known task name constants -----------------------------------------
+
+/** Default name used for the auto-generated clean task */
+export const defaultCleanTaskName = '@clean'
+
+/** Default name used for the auto-generated watcher task */
+export const defaultWatchTaskName = '@watch'
+
+/** Name assigned to BuildStream instances created without an explicit name */
+export const anonymousTaskName = '<anonymous>'
+
 // --- Utility functions ------------------------------------------------------
 
 export const isValidTaskName = (name: string): boolean =>
-    name.length > 0 && name.trim() === name && !/["/\\|?*]/.test(name)
+    name.length > 0 && name.trim() === name && !/["\/\\\|?*]/v.test(name)
 
 export const isTaskConfig = (value: unknown): value is TaskConfig =>
     typeof value === 'object' &&

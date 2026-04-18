@@ -29,13 +29,12 @@ type GulpBabelOptions = BabelOptions & {sourceMap?: any}
 export const babelP =
     (options: BabelOptions = {}): PluginFunction =>
     (bs: BuildStream) => {
-        // change sourceMaps to sourceMap to fit into gulp-babel interface w/ no warning
-        const opts: GulpBabelOptions = {...options}
-        if (!opts.sourceMaps && bs.opts.sourcemaps) opts.sourceMaps = bs.opts.sourcemaps
-        if (opts.sourceMaps) {
-            opts.sourceMap = opts.sourceMaps as unknown
-            delete opts.sourceMaps
-        }
+        // gulp-babel uses sourceMap (deprecated) instead of sourceMaps — convert to suppress warnings
+        const {sourceMaps, ...rest} = options
+        const resolvedSourceMaps = sourceMaps ?? (bs.opts.sourcemaps || undefined)
+        const opts: GulpBabelOptions = resolvedSourceMaps
+            ? {...rest, sourceMap: resolvedSourceMaps}
+            : rest
 
         bs.pipe(babelG(opts))
     }

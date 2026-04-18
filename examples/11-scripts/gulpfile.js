@@ -4,6 +4,8 @@ import {fileURLToPath} from 'node:url'
 import tron from 'gulp-tron'
 import {eslintP, terserP, concatP, coffeeP, coffeelintP, babelP} from '@gulp-tron/plugin-scripts'
 import ts from 'gulp-typescript'
+import eslintJs from '@eslint/js'
+import eslintPluginReact from 'eslint-plugin-react'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -17,29 +19,40 @@ const port = 3500
 const sourcemaps = '.'
 
 const eslintOptions = {
-    overrideConfig: {
-        extends: ['eslint:recommended', 'plugin:react/recommended'],
-        parserOptions: {
-            ecmaVersion: 'latest',
-            sourceType: 'module',
-        },
-        rules: {
-            strict: 1,
-            'no-unused-vars': 0,
-            'react/react-in-jsx-scope': 'off',
-        },
-        env: {
-            es6: true, // resolve 'Promise' is not defined error
-            browser: true,
-            node: true, // disable 'console not defined error'
-        },
-        settings: {
-            react: {
-                version: '999', // 'detect'
+    configType: 'flat',
+    overrideConfigFile: true,
+    overrideConfig: [
+        // eslintJs.configs.recommended,
+        {
+            languageOptions: {
+                globals: {},
             },
+            rules: {strict: 'error'},
         },
-    },
-    fix: true,
+    ],
+    plugins: {eslintPluginReact},
+    //     // extends: ['eslint:recommended', 'plugin:react/recommended'],
+    //     // parserOptions: {
+    //     //     ecmaVersion: 'latest',
+    //     //     sourceType: 'module',
+    //     // },
+    //     rules: {
+    //         strict: 1,
+    //         'no-unused-vars': 0,
+    //         'react/react-in-jsx-scope': 'off',
+    //     },
+    //     // env: {
+    //     //     es6: true, // resolve 'Promise' is not defined error
+    //     //     browser: true,
+    //     //     node: true, // disable 'console not defined error'
+    //     // },
+    //     settings: {
+    //         react: {
+    //             version: '999', // 'detect'
+    //         },
+    //     },
+
+    // fix: true,
 }
 
 const terserOptions = {
@@ -59,10 +72,8 @@ const statics = {
 const vanilla = {
     name: 'vanilla',
     async build(bs) {
-        bs.src()
-            .chain(concatP(bs.opts.outFile))
-            .chain(eslintP(eslintOptions)) //
-            .dest()
+        bs.src().chain(concatP(bs.opts.outFile)).chain(eslintP(eslintOptions)) //
+        // .dest()
     },
 
     src: [path.join(srcRoot, 'scripts/vanilla/**/*.js')],

@@ -1,5 +1,5 @@
 /**
- *  gulp-tron plugin-javascript
+ *  gulp-tron plugin-scripts:concat
  *
  */
 
@@ -9,14 +9,16 @@ import concatG from 'gulp-concat'
 export type ConcatOptions = Parameters<typeof concatG>[0]
 
 /**
- * Terser Plugin - wrapper for gulp-terser
+ * Concat Plugin - wrapper for gulp-concat
  *
- * @param options - Terser options
+ * @param options - output filename or gulp-concat options object (must include a filename/path)
  * @returns PluginFunction
  */
 export const concatP =
     (options: ConcatOptions): PluginFunction =>
     (bs: BuildStream) => {
+        const filename = typeof options === 'string' ? options : (options as {path?: string})?.path
+        if (!filename) throw new Error('concatP: output filename is required')
         bs.pipe(concatG(options))
     }
 

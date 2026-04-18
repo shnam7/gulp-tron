@@ -1,5 +1,5 @@
 /**
- *  gulp-tron plugin-javascript
+ *  gulp-tron plugin-scripts:eslint
  *
  */
 
@@ -11,7 +11,7 @@ export type EslintOptions = {
 } & eslintG.GulpESLintNewOptions
 
 /**
- * ESLint Plugin - wrapper for gulp-terser
+ * ESLint Plugin - wrapper for gulp-eslint-new
  *
  * @param options - ESLint options
  * @returns PluginFunction
@@ -19,11 +19,10 @@ export type EslintOptions = {
 export const eslintP =
     (options: EslintOptions): PluginFunction =>
     (bs: BuildStream) => {
-        bs.pipe(eslintG(options))
-
-        if (options.fix) bs.pipe(eslintG.fix())
-
-        bs.pipe(eslintG.format()).pipe(eslintG.failAfterError())
+        const {formatter, ...eslintOptions} = options
+        bs.pipe(eslintG(eslintOptions))
+            .pipe(eslintG.format(formatter))
+            .pipe(eslintG.failAfterError())
     }
 
 export default eslintP

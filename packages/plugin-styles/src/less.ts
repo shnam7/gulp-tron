@@ -1,5 +1,5 @@
 /**
- *  gulp-tron plugin-styles:cleanCss
+ *  gulp-tron plugin-styles:less
  *
  */
 
@@ -11,7 +11,7 @@ export type LessOptions = Parameters<typeof lessG>[0]
 /**
  * Less Plugin - wrapper for gulp-less
  *
- * @param options - less options
+ * @param options - Less options
  * @returns PluginFunction
  */
 export const lessP =

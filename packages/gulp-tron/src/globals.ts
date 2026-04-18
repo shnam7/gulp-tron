@@ -2,8 +2,8 @@ import gulp from 'gulp'
 
 let _gulpInstance = gulp
 
-export function useGulp(gulpInstacen: typeof gulp) {
-    _gulpInstance = gulpInstacen
+export function useGulp(gulpInstance: typeof gulp) {
+    _gulpInstance = gulpInstance
 }
 
 export {default as gulp} from 'gulp'

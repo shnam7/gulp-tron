@@ -1,33 +1,35 @@
 /**
- *  gulp-tron plugin-styles:cleanCss
+ *  gulp-tron plugin-styles:pcss
  *
  */
 
 import {type BuildStream, type PluginFunction} from 'gulp-tron'
+import type {AcceptedPlugin} from 'postcss'
 import pcssG from 'gulp-postcss'
 
 export type PostCssOptions = pcssG.Options
-export type PostcssCallbackFunction = (file: any) => {plugins?: any[]; options?: PostCssOptions}
+export type PostcssCallbackFunction = (file: unknown) => {
+    plugins?: AcceptedPlugin[]
+    options?: PostCssOptions
+}
 
 /**
- * Postcss Plugin - wrapper for gulp-postcss
+ * PostCSS Plugin - wrapper for gulp-postcss
  *
- * @param plugins plugins array.
- * @param callback callback function of type PostcssCallbackFunction.
- * @param options postcss Options.
+ * @param plugins PostCSS plugins array
+ * @param options PostCSS options
  * @returns PluginFunction
  */
-export function pcssP(plugins?: any[], options?: PostCssOptions): PluginFunction
-export function pcssP(
-    callback?: (file: any) => {plugins?: any[]; options?: PostCssOptions},
-): PluginFunction
+export function pcssP(plugins?: AcceptedPlugin[], options?: PostCssOptions): PluginFunction
+export function pcssP(callback?: PostcssCallbackFunction): PluginFunction
 
 export function pcssP(
-    pluginsOrCallback?: any[] | PostcssCallbackFunction,
+    pluginsOrCallback?: AcceptedPlugin[] | PostcssCallbackFunction,
     options?: PostCssOptions,
 ): PluginFunction {
     return (bs: BuildStream) => {
-        if (typeof pluginsOrCallback === 'function') bs.pipe(pcssG(pluginsOrCallback))
+        if (typeof pluginsOrCallback === 'function')
+            bs.pipe(pcssG(pluginsOrCallback as Parameters<typeof pcssG>[0]))
         else bs.pipe(pcssG(pluginsOrCallback, options))
     }
 }

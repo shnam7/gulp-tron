@@ -18,6 +18,8 @@ import {
     isTaskConfig,
     type GulpTaskName,
     type TaskBlock,
+    defaultCleanTaskName,
+    defaultWatchTaskName,
 } from './types.js'
 
 /**
@@ -143,7 +145,7 @@ export class Tron {
         // Set function name for better stack traces
         Object.defineProperty(cleanerFunction, 'name', {value: '__cleanerFunction__'})
 
-        this.task({name: '@clean', ...options, build: cleanerFunction})
+        this.task({name: defaultCleanTaskName, ...options, build: cleanerFunction})
         return this
     }
 
@@ -160,7 +162,7 @@ export class Tron {
             .map(name => this.findTask(name))
             .filter(task => task !== undefined)
 
-        const taskName = options.name ?? '@watch'
+        const taskName = options.name ?? defaultWatchTaskName
         let isWatching = false
 
         // Use arrow function with better typing
@@ -174,7 +176,9 @@ export class Tron {
                 logLevel?: string,
             ): void => {
                 if (options.browserSync) {
-                    watcher.on('change', browserSync.reload)
+                    watcher.on('change', () => {
+                        browserSync.reload()
+                    })
                 }
 
                 watcher.on('change', (path: string) => {
@@ -408,8 +412,10 @@ export class Tron {
         if (!name) throw new Error(`Tron:resolveTaskConfig: invalid task name: ${name}`)
 
         // Check for reserved task names with improved error messages
-        const isReservedClean = name === '@clean' && conf.build?.name !== '__cleanerFunction__'
-        const isReservedWatch = name === '@watch' && conf.build?.name !== '__watcherFunction__'
+        const isReservedClean =
+            name === defaultCleanTaskName && conf.build?.name !== '__cleanerFunction__'
+        const isReservedWatch =
+            name === defaultWatchTaskName && conf.build?.name !== '__watcherFunction__'
 
         if (isReservedClean || isReservedWatch) {
             throw new Error(

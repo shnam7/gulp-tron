@@ -1,5 +1,5 @@
 /**
- *  gulp-tron plugin-styles:cleanCss
+ *  gulp-tron plugin-styles:stylelint
  *
  */
 
@@ -44,9 +44,16 @@ export const stylelintP =
                     break
                 }
 
-                default:
-                // not error: Will use default parser.
-                // throw new Error(`stylelintP:Not supported parcer type: ${options.parser}`)
+                default: {
+                    // Unrecognized string parser — fall back to default and warn
+                    if (options?.parser !== undefined) {
+                        console.warn(
+                            `stylelintP: unrecognized parser "${String(options.parser)}", using default parser`,
+                        )
+                    }
+
+                    break
+                }
             }
 
         bs.pipe(pcssG([stylelint(options), pcssReporter(reporterOptions)], pcssOptions)).on(

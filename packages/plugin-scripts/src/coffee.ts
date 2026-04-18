@@ -1,5 +1,5 @@
 /**
- *  gulp-tron plugin-javascript
+ *  gulp-tron plugin-scripts:coffee
  *
  */
 
@@ -7,9 +7,9 @@ import {type BuildStream, type PluginFunction} from 'gulp-tron'
 import coffeeG, {type CoffeeOptions} from 'gulp-coffee'
 
 /**
- * Terser Plugin - wrapper for gulp-terser
+ * CoffeeScript Plugin - wrapper for gulp-coffee
  *
- * @param options - Terser options
+ * @param options - CoffeeScript options
  * @returns PluginFunction
  */
 export const coffeeP =

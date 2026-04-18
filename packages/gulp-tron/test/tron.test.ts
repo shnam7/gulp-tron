@@ -350,7 +350,7 @@ describe('Tron', () => {
 
         it('should return all tasks for * pattern', () => {
             const result = tron.selectTasks('*')
-            expect(result.sort()).toEqual(['alpha', 'beta', 'gamma', 'delta'].sort())
+            expect(result.toSorted()).toEqual(['alpha', 'beta', 'gamma', 'delta'].toSorted())
         })
         it('should return matching tasks for prefix pattern', () => {
             expect(tron.taskCount).toBe(4)
@@ -359,26 +359,26 @@ describe('Tron', () => {
         })
         it('should return matching tasks for array of patterns', () => {
             const result = tron.selectTasks(['a*', 'g*'])
-            expect(result.sort()).toEqual(['alpha', 'gamma'].sort())
+            expect(result.toSorted()).toEqual(['alpha', 'gamma'].toSorted())
         })
         it('should return empty array for no match', () => {
             expect(tron.selectTasks('zzz')).toEqual([])
         })
         it('should support negation pattern', () => {
             const result = tron.selectTasks(['!beta'])
-            expect(result.sort()).toEqual(['alpha', 'gamma', 'delta'].sort())
+            expect(result.toSorted()).toEqual(['alpha', 'gamma', 'delta'].toSorted())
         })
         it('should support multiple negation patterns', () => {
             let result = tron.selectTasks(['a*', 'g*', 'd*', '!g*'])
-            expect(result.sort()).toEqual(['alpha', 'delta'].sort())
+            expect(result.toSorted()).toEqual(['alpha', 'delta'].toSorted())
 
             // case starting with negation
             result = tron.selectTasks(['!g*', 'a*', 'd*'])
-            expect(result.sort()).toEqual(['alpha', 'delta'].sort())
+            expect(result.toSorted()).toEqual(['alpha', 'delta'].toSorted())
         })
         it('should support negation only patterns (all except)', () => {
             const result = tron.selectTasks(['!alpha', '!delta'])
-            expect(result.sort()).toEqual(['beta', 'gamma'].sort())
+            expect(result.toSorted()).toEqual(['beta', 'gamma'].toSorted())
         })
 
         it('should return empty array for undefined or empty input', () => {

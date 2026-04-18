@@ -29,8 +29,8 @@
     },
     "devDependencies": {
         "npm-run-all": "^4.1.5",
-        "turbo": "^2.5.6",
-        "xo": "^1.2.2"
+        "turbo": "^2.9.6",
+        "xo": "^2.0.2"
     },
-    "packageManager": "pnpm@10.15.0"
+    "packageManager": "pnpm@10.33.0"
 }

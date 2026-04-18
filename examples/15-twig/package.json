@@ -20,6 +20,6 @@
         "gulp-typescript": "6.0.0-alpha.1",
         "gulp-twig": "^1.2.0",
         "twig-markdown": "^1.1.0",
-        "typescript": "^5.9.2"
+        "typescript": "^6.0.3"
     }
 }
