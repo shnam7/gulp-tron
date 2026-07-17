@@ -1,11 +1,11 @@
-import * as dartSass from 'sass'
-import gulpSass from 'gulp-sass'
+import gulpSass from "gulp-sass";
+import * as dartSass from "sass";
 
-const sass = gulpSass(dartSass)
+const sass = gulpSass(dartSass);
 
-const myScss = options => bs => {
-    console.log('myScss called with options:', options)
-    bs.pipe(sass(options || {}))
-}
+const myScss = (options) => (bs) => {
+  console.log("myScss called with options:", options);
+  bs.pipe(sass(options || {}));
+};
 
-export default myScss
+export default myScss;

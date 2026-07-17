@@ -1,5 +1,5 @@
 export const getSub1Node = () => {
-    const node = document.createElement('p')
-    node.textContent = `This is a node from sub #1`
-    return node
-}
+  const node = document.createElement("p");
+  node.textContent = `This is a node from sub #1`;
+  return node;
+};

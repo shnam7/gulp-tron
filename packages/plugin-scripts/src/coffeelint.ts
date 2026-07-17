@@ -3,10 +3,10 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from 'gulp-tron'
-import coffeelintG from 'gulp-coffeelint'
+import coffeelintG from "gulp-coffeelint";
+import type { BuildStream, PluginFunction } from "gulp-tron";
 
-export type CoffeeLintOptions<T extends Record<string, unknown> = Record<string, unknown>> = T
+export type CoffeeLintOptions<T extends Record<string, unknown> = Record<string, unknown>> = T;
 
 /**
  * CoffeesLint plugin - wrapper for gulp-coffeelint
@@ -18,14 +18,14 @@ export type CoffeeLintOptions<T extends Record<string, unknown> = Record<string,
  * @returns PluginFunction
  */
 export const coffeelintP =
-    (
-        optFile?: string,
-        opt?: CoffeeLintOptions,
-        literate?: boolean,
-        rules?: Array<() => void>,
-    ): PluginFunction =>
-    (bs: BuildStream) => {
-        bs.pipe(coffeelintG(optFile, opt, literate, rules))
-    }
+  (
+    optFile?: string,
+    opt?: CoffeeLintOptions,
+    literate?: boolean,
+    rules?: Array<() => void>,
+  ): PluginFunction =>
+  (bs: BuildStream) => {
+    bs.pipe(coffeelintG(optFile, opt, literate, rules));
+  };
 
-export default coffeelintP
+export default coffeelintP;

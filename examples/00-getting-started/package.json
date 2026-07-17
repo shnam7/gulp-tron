@@ -1,17 +1,17 @@
 {
-    "name": "00-getting-started",
-    "version": "0.0.0",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "gulp @build",
-        "clean": "gulp @clean"
-    },
-    "devDependencies": {
-        "gulp": "^5.0.1",
-        "gulp-babel": "^8.0.0",
-        "gulp-sass": "^6.0.1",
-        "gulp-tron": "workspace:*",
-        "sass": "^1.99.0"
-    }
+  "name": "00-getting-started",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "gulp @build",
+    "clean": "gulp @clean"
+  },
+  "devDependencies": {
+    "gulp": "^5.0.1",
+    "gulp-babel": "^8.1.0",
+    "gulp-sass": "^6.0.1",
+    "gulp-tron": "workspace:*",
+    "sass": "^1.101.0"
+  }
 }

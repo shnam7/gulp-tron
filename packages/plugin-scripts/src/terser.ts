@@ -3,10 +3,10 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from 'gulp-tron'
-import terserG from 'gulp-terser'
+import terserG from "gulp-terser";
+import type { BuildStream, PluginFunction } from "gulp-tron";
 
-export type TerserOptions = Parameters<typeof terserG>[0]
+export type TerserOptions = Parameters<typeof terserG>[0];
 
 /**
  * Terser Plugin - wrapper for gulp-terser
@@ -15,9 +15,9 @@ export type TerserOptions = Parameters<typeof terserG>[0]
  * @returns PluginFunction
  */
 export const terserP =
-    (options: TerserOptions): PluginFunction =>
-    (bs: BuildStream) => {
-        bs.pipe(terserG(options))
-    }
+  (options?: TerserOptions): PluginFunction =>
+  (bs: BuildStream) => {
+    bs.pipe(terserG(options));
+  };
 
-export default terserP
+export default terserP;

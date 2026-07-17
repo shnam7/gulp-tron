@@ -1,5 +1,5 @@
-@use 'mylib';
+@use "mylib";
 
 body {
-    color: mylib.my-color();
+  color: mylib.my-color();
 }

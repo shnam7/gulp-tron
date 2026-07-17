@@ -1,36 +1,41 @@
 {
-    "name": "gulp-tron-project",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "dev": "turbo dev --filter=gulp-tron --filter=@gulp-tron/plugin-*",
-        "build": "turbo run build",
-        "lint": "turbo run lint",
-        "clean": "run-s clean:examples clean:plugins clean:core",
-        "clean:examples": "turbo run clean --filter=./examples/*",
-        "clean:plugins": "turbo clean --filter=@gulp-tron/plugin-*",
-        "clean:core": "turbo clean --filter=gulp-tron",
-        "test": "turbo run test",
-        "_build": "turbo build --filter=./examples/*",
-        "build:core": "turbo build --filter=gulp-tron",
-        "build:plugins": "turbo build --filter=@gulp-tron/plugin-*",
-        "lint:core": "turbo lint --filter=gulp-tron",
-        "lint:plugins": "turbo lint --filter=@gulp-tron/plugin-*",
-        "test:core": "turbo test --filter=gulp-tron",
-        "test:plugins": "turbo test --filter=@gulp-tron/plugin-*",
-        "reset": "npm-run-all -s clean reset:turbo reset:node",
-        "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +",
-        "reset:node": "find . -type d -name node_modules -exec rm -rf {} +",
-        "prepare-to-commit": "run-s build:core lint test build clean"
-    },
-    "license": "MIT",
-    "engines": {
-        "node": ">=16.14"
-    },
-    "devDependencies": {
-        "npm-run-all": "^4.1.5",
-        "turbo": "^2.9.6",
-        "xo": "^2.0.2"
-    },
-    "packageManager": "pnpm@10.33.0"
+  "name": "gulp-tron-project",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev --filter=gulp-tron --filter=@gulp-tron/plugin-*",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "clean": "run-s clean:examples clean:plugins clean:core",
+    "clean:examples": "turbo run clean --filter=./examples/*",
+    "clean:plugins": "turbo clean --filter=@gulp-tron/plugin-*",
+    "clean:core": "turbo clean --filter=gulp-tron",
+    "test": "turbo run test",
+    "_build": "turbo build --filter=./examples/*",
+    "build:core": "turbo build --filter=gulp-tron",
+    "build:plugins": "turbo build --filter=@gulp-tron/plugin-*",
+    "lint:core": "turbo lint --filter=gulp-tron",
+    "lint:plugins": "turbo lint --filter=@gulp-tron/plugin-*",
+    "test:core": "turbo test --filter=gulp-tron",
+    "test:plugins": "turbo test --filter=@gulp-tron/plugin-*",
+    "reset": "npm-run-all -s clean reset:turbo reset:node",
+    "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +",
+    "reset:node": "find . -type d -name node_modules -exec rm -rf {} +",
+    "prepare-to-commit": "run-s build:core lint test build clean"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.14"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
+    "npm-run-all": "^4.1.5",
+    "turbo": "^2.10.5"
+  },
+  "packageManager": "bun@1.3.14",
+  "workspaces": [
+    "apps/*",
+    "examples/*",
+    "packages/*"
+  ]
 }

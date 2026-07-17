@@ -1,104 +1,104 @@
 {
-    "name": "gulp-tron",
-    "version": "1.0.0-alpha.3",
-    "description": "Easy to use, flexible gulp build manager",
-    "type": "module",
-    "main": "./dist/index.mjs",
-    "module": "./dist/index.mjs",
-    "types": "./dist/index.d.mts",
-    "exports": {
-        ".": {
-            "import": {
-                "types": "./dist/index.d.mts",
-                "default": "./dist/index.mjs"
-            },
-            "require": {
-                "types": "./dist/index.d.cts",
-                "default": "./dist/index.cjs"
-            }
-        },
-        "./*": "./*"
+  "name": "gulp-tron",
+  "version": "1.0.0-alpha.3",
+  "description": "Easy to use, flexible gulp build manager",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
-    "files": [
-        "dist/*"
-    ],
-    "scripts": {
-        "dev": "run-s build watch",
-        "dev:test": "vitest watch --coverage --coverage.include=src",
-        "build": "run-p build:**",
-        "build:ts": "tsdown",
-        "build:ts:types": "tsc --noEmit ",
-        "lint": "xo",
-        "test": "vitest run --coverage --coverage.include=src",
-        "watch": "chokidar 'src/**' -c 'run-p \"build:ts --no-clean\" build:ts:types'",
-        "clean": "rimraf ./dist ./coverage",
-        "prepare-to-commit": "run-s clean lint test build clean",
-        "npm-dry-run": "npm publish --dry-run"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/shnam7/gulp-tron"
-    },
-    "homepage": "https://github.com/shnam7/gulp-tron#readme",
-    "bugs": {
-        "url": "https://github.com/shnam7/gulp-tron/issues"
-    },
-    "author": "Robin Nam (https://github.com/shnam7)",
-    "license": "MIT",
-    "publishConfig": {
-        "access": "public"
-    },
-    "keywords": [
-        "gulp",
-        "task",
-        "build",
-        "manager",
-        "builder"
-    ],
-    "dependencies": {
-        "@wicle/is": "^2.0.1",
-        "@wicle/mutex": "^0.9.0",
-        "browser-sync": "^3.0.4",
-        "del": "^8.0.1",
-        "event-stream": "^4.0.1",
-        "globby": "^16.2.0",
-        "gulp-changed": "^5.0.4",
-        "gulp-debug2": "^1.0.0",
-        "gulp-filter": "^10.0.0",
-        "gulp-order3": "^1.0.4",
-        "gulp-rename": "^2.1.0",
-        "multimatch": "^8.0.0",
-        "p-event": "^7.1.0",
-        "streamqueue": "^2.0.0"
-    },
-    "peerDependencies": {
-        "gulp": "^5.0.0"
-    },
-    "devDependencies": {
-        "@gulp-tron/tsconfig": "workspace:*",
-        "@types/browser-sync": "^2.29.1",
-        "@types/event-stream": "^4.0.6",
-        "@types/glob-parent": "^5.1.3",
-        "@types/gulp": "^4.0.18",
-        "@types/gulp-changed": "^0.0.39",
-        "@types/gulp-filter": "^3.0.41",
-        "@types/gulp-rename": "^2.0.7",
-        "@types/node": "^25.6.0",
-        "@types/vinyl": "^2.0.12",
-        "@types/vinyl-fs": "^3.0.7",
-        "@vitest/coverage-v8": "^4.1.4",
-        "chokidar-cli": "^3.0.0",
-        "glob-parent": "^6.0.2",
-        "npm-run-all": "^4.1.5",
-        "prettier": "^3.8.3",
-        "rimraf": "^6.1.3",
-        "tsdown": "^0.21.9",
-        "typescript": "^6.0.3",
-        "vinyl": "^3.0.1",
-        "vitest": "^4.1.4",
-        "xo": "^2.0.2"
-    },
-    "engines": {
-        "node": ">=16.9"
-    }
+    "./*": "./*"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "scripts": {
+    "dev": "run-s build watch",
+    "dev:test": "vitest watch --coverage --coverage.include=src",
+    "build": "run-p build:**",
+    "build:ts": "tsdown",
+    "lint": "bun --parallel lint:*",
+    "lint:ts": "biome check",
+    "lint:ts:types": "tsc --noEmit ",
+    "test": "vitest run --coverage --coverage.include=src",
+    "watch": "chokidar 'src/**' -c 'run-p \"build:ts --no-clean\" lint:ts:types'",
+    "clean": "rimraf ./dist ./coverage",
+    "prepare-to-commit": "run-s clean lint test build clean",
+    "npm-dry-run": "npm publish --dry-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shnam7/gulp-tron"
+  },
+  "homepage": "https://github.com/shnam7/gulp-tron#readme",
+  "bugs": {
+    "url": "https://github.com/shnam7/gulp-tron/issues"
+  },
+  "author": "Robin Nam (https://github.com/shnam7)",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "gulp",
+    "task",
+    "build",
+    "manager",
+    "builder"
+  ],
+  "dependencies": {
+    "@wicle/is": "^2.0.1",
+    "@wicle/mutex": "^0.9.0",
+    "browser-sync": "^3.0.4",
+    "del": "^8.0.1",
+    "event-stream": "^4.0.1",
+    "globby": "^16.2.1",
+    "gulp-changed": "^5.0.4",
+    "gulp-debug2": "^1.0.0",
+    "gulp-filter": "^10.0.0",
+    "gulp-order3": "^1.0.4",
+    "gulp-rename": "^2.1.0",
+    "multimatch": "^8.0.0",
+    "p-event": "^7.1.0",
+    "streamqueue": "^2.0.0"
+  },
+  "peerDependencies": {
+    "gulp": "^5.0.0"
+  },
+  "devDependencies": {
+    "@gulp-tron/tsconfig": "workspace:*",
+    "@types/browser-sync": "^2.29.1",
+    "@types/event-stream": "^4.0.6",
+    "@types/glob-parent": "^5.1.3",
+    "@types/gulp": "^4.0.18",
+    "@types/gulp-changed": "^0.0.39",
+    "@types/gulp-filter": "^3.0.41",
+    "@types/gulp-rename": "^2.0.7",
+    "@types/node": "^26.1.1",
+    "@types/vinyl": "^2.0.12",
+    "@types/vinyl-fs": "^3.0.8",
+    "@vitest/coverage-v8": "^4.1.10",
+    "chokidar-cli": "^3.0.0",
+    "glob-parent": "^6.0.2",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.9.5",
+    "rimraf": "^6.1.3",
+    "tsdown": "^0.22.7",
+    "typescript": "^7.0.2",
+    "vinyl": "^3.0.1",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=16.9"
+  }
 }

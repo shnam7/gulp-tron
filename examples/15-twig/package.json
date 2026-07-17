@@ -1,25 +1,27 @@
 {
-    "name": "15-twig",
-    "version": "0.0.0",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "gulp @build",
-        "clean": "gulp @clean",
-        "watch": "gulp @watch"
-    },
-    "devDependencies": {
-        "@gulp-tron/tsconfig": "workspace:*",
-        "@gulp-tron/plugin-styles": "workspace:*",
-        "@gulp-tron/plugin-scripts": "workspace:*",
-        "@gulp-tron/plugin-utils": "workspace:*",
-        "gulp": "^5.0.1",
-        "gulp-htmlmin": "^5.0.1",
-        "gulp-prettier": "^6.0.0",
-        "gulp-tron": "workspace:*",
-        "gulp-typescript": "6.0.0-alpha.1",
-        "gulp-twig": "^1.2.0",
-        "twig-markdown": "^1.1.0",
-        "typescript": "^6.0.3"
-    }
+  "name": "15-twig",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "gulp @build",
+    "clean": "gulp @clean",
+    "watch": "gulp @watch"
+  },
+  "devDependencies": {
+    "@gulp-tron/plugin-scripts": "workspace:*",
+    "@gulp-tron/plugin-styles": "workspace:*",
+    "@gulp-tron/plugin-utils": "workspace:*",
+    "@gulp-tron/tsconfig": "workspace:*",
+    "@swc/core": "^1.15.43",
+    "gulp": "^5.0.1",
+    "gulp-htmlmin": "^5.0.1",
+    "gulp-prettier": "^6.0.0",
+    "gulp-swc": "^2.2.0",
+    "gulp-tron": "workspace:*",
+    "gulp-twig": "^1.2.0",
+    "gulp-typescript": "6.0.0-alpha.1",
+    "twig-markdown": "^1.1.0",
+    "typescript": "^7.0.2"
+  }
 }

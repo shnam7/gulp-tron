@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "nodenext", // this is default
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "declaration": false,
+    "noImplicitAny": true,
+    "lib": ["dom", "es6", "esnext", "dom.iterable", "scripthost"],
+    "noEmitOnError": true,
+    "jsx": "react-jsx"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../../dist/js/typescript",
+    "rootDir": "./"
+    // "module": "ESNext",
+    // "moduleResolution": "Node",
+    // "target": "ES2022",
+    // "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    // "jsx": "react-jsx",
+    // "jsxImportSource": "@emotion/react",
+    // "strict": true,
+    // "noEmitOnError": true,
+    // "noImplicitAny": true,
+    // "noImplicitThis": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
+    // "noFallthroughCasesInSwitch": true,
+    // "forceConsistentCasingInFileNames": true
+  },
+
+  "include": ["./**/*.ts", "./**/*.tsx"]
+}

@@ -2,15 +2,14 @@
  * Gulp-Tron
  */
 
-import {Tron} from './tron.js'
+import { Tron } from "./tron.js";
 
-const tron = new Tron()
+const tron = new Tron();
 
-export * from './types.js'
-export * from './tron.js'
-export * from './build-stream.js'
-export * from './utils/index.js'
-
-export {gulp} from './globals.js'
-export {tron}
-export default tron
+export * from "./build-stream.js";
+export { gulp } from "./globals.js";
+export * from "./tron.js";
+export * from "./types.js";
+export * from "./utils/index.js";
+export { tron };
+export default tron;

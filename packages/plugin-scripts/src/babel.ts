@@ -3,13 +3,13 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from 'gulp-tron'
-import babelG from 'gulp-babel'
+import babelG from "gulp-babel";
+import type { BuildStream, PluginFunction } from "gulp-tron";
 
-export type BabelOptions = Parameters<typeof babelG>[0]
+export type BabelOptions = Parameters<typeof babelG>[0];
 
 // --- internals
-type GulpBabelOptions = BabelOptions & {sourceMap?: any}
+type GulpBabelOptions = BabelOptions & { sourceMap?: unknown }; // gulp-babel uses sourceMap (deprecated) instead of sourceMaps
 
 /**
  * Babel Plugin - wrapper for gulp-babel
@@ -27,16 +27,16 @@ type GulpBabelOptions = BabelOptions & {sourceMap?: any}
  * @returns PluginFunction
  */
 export const babelP =
-    (options: BabelOptions = {}): PluginFunction =>
-    (bs: BuildStream) => {
-        // gulp-babel uses sourceMap (deprecated) instead of sourceMaps — convert to suppress warnings
-        const {sourceMaps, ...rest} = options
-        const resolvedSourceMaps = sourceMaps ?? (bs.opts.sourcemaps || undefined)
-        const opts: GulpBabelOptions = resolvedSourceMaps
-            ? {...rest, sourceMap: resolvedSourceMaps}
-            : rest
+  (options: BabelOptions = {}): PluginFunction =>
+  (bs: BuildStream) => {
+    // gulp-babel uses sourceMap (deprecated) instead of sourceMaps — convert to suppress warnings
+    const { sourceMaps, ...rest } = options;
+    const resolvedSourceMaps = sourceMaps ?? (bs.opts.sourcemaps || undefined);
+    const opts: GulpBabelOptions = resolvedSourceMaps
+      ? { ...rest, sourceMap: resolvedSourceMaps }
+      : rest;
 
-        bs.pipe(babelG(opts))
-    }
+    bs.pipe(babelG(opts));
+  };
 
-export default babelP
+export default babelP;

@@ -3,8 +3,8 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from 'gulp-tron'
-import coffeeG, {type CoffeeOptions} from 'gulp-coffee'
+import coffeeG, { type CoffeeOptions } from "gulp-coffee";
+import type { BuildStream, PluginFunction } from "gulp-tron";
 
 /**
  * CoffeeScript Plugin - wrapper for gulp-coffee
@@ -13,10 +13,10 @@ import coffeeG, {type CoffeeOptions} from 'gulp-coffee'
  * @returns PluginFunction
  */
 export const coffeeP =
-    (options: CoffeeOptions = {}): PluginFunction =>
-    (bs: BuildStream): void => {
-        bs.pipe(coffeeG(options))
-    }
+  (options: CoffeeOptions = {}): PluginFunction =>
+  (bs: BuildStream): void => {
+    bs.pipe(coffeeG(options));
+  };
 
-export default coffeeP
-export {type CoffeeOptions} from 'gulp-coffee'
+export default coffeeP;
+export type { CoffeeOptions } from "gulp-coffee";

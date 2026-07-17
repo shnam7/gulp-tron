@@ -1,3 +1,6 @@
 {
-    "name": "@gulp-tron/tsconfig"
+  "name": "@gulp-tron/tsconfig",
+  "scripts": {
+    "lint": "biome check"
+  }
 }

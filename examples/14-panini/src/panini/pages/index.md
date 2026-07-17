@@ -13,21 +13,21 @@ Gulp-Tron makes gulp build development easier.
 
 #### Markdown is also supported
 
--   A
-    -   1
-    -   2
-    -   3
--   B
-    1. 1
-    2. 2
--   C
+- A
+  - 1
+  - 2
+  - 3
+- B
+  1. 1
+  2. 2
+- C
 
 ```bash
 ls -al
 ```
 
 ```javascript
-console.log('Hello!')
+console.log("Hello!");
 ```
 
 {{/markdown}}

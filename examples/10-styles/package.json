@@ -1,22 +1,22 @@
 {
-    "name": "10-styles",
-    "version": "0.0.0",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "gulp @build",
-        "clean": "gulp @clean"
-    },
-    "devDependencies": {
-        "@gulp-tron/plugin-styles": "workspace:*",
-        "gulp": "^5.0.1",
-        "gulp-tron": "workspace:*",
-        "lost": "^9.0.2",
-        "postcss-color-gray": "^5.0.0",
-        "postcss-comment": "^2.0.0",
-        "postcss-preset-env": "^11.2.1",
-        "postcss-utilities": "^0.8.4",
-        "stylelint-config-standard-less": "^4.1.0",
-        "stylelint-config-standard-scss": "^17.0.0"
-    }
+  "name": "10-styles",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "gulp @build",
+    "clean": "gulp @clean"
+  },
+  "devDependencies": {
+    "@gulp-tron/plugin-styles": "workspace:*",
+    "gulp": "^5.0.1",
+    "gulp-tron": "workspace:*",
+    "lost": "^9.0.2",
+    "postcss-color-gray": "^5.0.0",
+    "postcss-comment": "^2.0.0",
+    "postcss-preset-env": "^11.3.2",
+    "postcss-utilities": "^0.8.4",
+    "stylelint-config-standard-less": "^4.1.0",
+    "stylelint-config-standard-scss": "^17.0.0"
+  }
 }

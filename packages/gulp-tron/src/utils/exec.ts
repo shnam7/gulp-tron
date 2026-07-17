@@ -1,20 +1,20 @@
-import process from 'node:process'
-import child_process, {type SpawnOptions} from 'node:child_process'
-import type {LogOptions} from '../types.js'
+import child_process, { type SpawnOptions } from "node:child_process";
+import process from "node:process";
+import type { LogOptions } from "../types.js";
 
 /** Type for execution options combining spawn options with logging */
-export type ExecOptions = SpawnOptions & LogOptions
+export type ExecOptions = SpawnOptions & LogOptions;
 export type ExecResult = {
-    exitCode?: number
-    message?: string
-}
+  exitCode?: number;
+  message?: string;
+};
 
 /** Type for command parsing result */
 type ParsedCommand = {
-    readonly cmd: string
-    readonly args: string[]
-    readonly isValid: boolean
-}
+  readonly cmd: string;
+  readonly args: string[];
+  readonly isValid: boolean;
+};
 
 /**
  * Parse command string into command and arguments
@@ -22,11 +22,11 @@ type ParsedCommand = {
  * @returns Parsed command with validation
  */
 function parseCommand(command: string): ParsedCommand {
-    const trimmedCommand = command.trim()
-    if (!trimmedCommand) return {cmd: command, args: [], isValid: false}
+  const trimmedCommand = command.trim();
+  if (trimmedCommand.length === 0) return { cmd: command, args: [], isValid: false };
 
-    const [cmd, ...args] = trimmedCommand.split(/\s+/v)
-    return {cmd: cmd ?? '', args, isValid: Boolean(cmd?.trim())}
+  const [cmd, ...args] = trimmedCommand.split(/\s+/v);
+  return { cmd: cmd ?? "", args, isValid: Boolean(cmd?.trim()) };
 }
 
 /**
@@ -37,18 +37,18 @@ function parseCommand(command: string): ParsedCommand {
  * @returns Child process instance
  */
 function createChildProcess(
-    cmd: string,
-    args: string[],
-    options: ExecOptions = {},
+  cmd: string,
+  args: string[],
+  options: ExecOptions = {},
 ): child_process.ChildProcess {
-    const opts: ExecOptions = {shell: true, stdio: 'pipe', ...options}
-    const childProcess = child_process.spawn(cmd, args, opts)
+  const opts: ExecOptions = { shell: true, stdio: "pipe", ...options };
+  const childProcess = child_process.spawn(cmd, args, opts);
 
-    // Pipe output to main process
-    childProcess.stdout?.pipe(process.stdout)
-    childProcess.stderr?.pipe(process.stderr)
+  // Pipe output to main process
+  childProcess.stdout?.pipe(process.stdout);
+  childProcess.stderr?.pipe(process.stderr);
 
-    return childProcess
+  return childProcess;
 }
 
 /**
@@ -58,26 +58,25 @@ function createChildProcess(
  * @returns Promise that resolves on success or rejects on error
  */
 async function processToPromise(
-    childProcess: child_process.ChildProcess,
-    command: string,
+  childProcess: child_process.ChildProcess,
+  command: string,
 ): Promise<ExecResult> {
-    return new Promise<ExecResult>((resolve, reject) => {
-        childProcess.on('exit', (exitCode: number | undefined) => {
-            const message =
-                exitCode === 0 ? '' : `Command "${command}" exited with code: ${exitCode}`
-            resolve({exitCode, message})
+  return new Promise<ExecResult>((resolve, _reject) => {
+    childProcess.on("exit", (exitCode: number | undefined) => {
+      const message = exitCode === 0 ? "" : `Command "${command}" exited with code: ${exitCode}`;
+      resolve({ exitCode, message });
 
-            // if (exitCode && exitCode !== 0)
-            //     reject(new Error(`Command "${command}" exited with code: ${exitCode}`))
-            // else resolve({})
-        })
+      // if (exitCode && exitCode !== 0)
+      //     reject(new Error(`Command "${command}" exited with code: ${exitCode}`))
+      // else resolve({})
+    });
 
-        childProcess.on('error', (error: Error) => {
-            // reject(new Error(`Failed to execute "${command}": ${error.message}`))
-            const message = `Failed to execute "${command}": ${error.message}`
-            resolve({message})
-        })
-    })
+    childProcess.on("error", (error: Error) => {
+      // reject(new Error(`Failed to execute "${command}": ${error.message}`))
+      const message = `Failed to execute "${command}": ${error.message}`;
+      resolve({ message });
+    });
+  });
 }
 
 /**
@@ -87,17 +86,17 @@ async function processToPromise(
  * @returns Process execution result with child process and promise
  */
 export async function exec(command: string, options: ExecOptions = {}): Promise<ExecResult> {
-    const logger = options.logger ?? console.log
+  const logger = options.logger ?? console.log;
 
-    const parsed = parseCommand(command)
-    if (!parsed.isValid) return {message: `Invalid command: '${command}'`}
+  const parsed = parseCommand(command);
+  if (!parsed.isValid) return { message: `Invalid command: '${command}'` };
 
-    const childProcess = createChildProcess(parsed.cmd, parsed.args, options)
+  const childProcess = createChildProcess(parsed.cmd, parsed.args, options);
 
-    const ret = await processToPromise(childProcess, command)
-    if (options.logLevel !== 'silent') logger(ret.message)
+  const ret = await processToPromise(childProcess, command);
+  if (options.logLevel !== "silent") logger(ret.message);
 
-    return ret
+  return ret;
 }
 
-export default exec
+export default exec;

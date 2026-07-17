@@ -1,14 +1,14 @@
 {
-    "name": "03-copy",
-    "version": "0.0.0",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "gulp @build",
-        "clean": "gulp @clean"
-    },
-    "devDependencies": {
-        "gulp": "^5.0.1",
-        "gulp-tron": "workspace:*"
-    }
+  "name": "03-copy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "gulp @build",
+    "clean": "gulp @clean"
+  },
+  "devDependencies": {
+    "gulp": "^5.0.1",
+    "gulp-tron": "workspace:*"
+  }
 }

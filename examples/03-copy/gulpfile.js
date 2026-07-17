@@ -1,4 +1,5 @@
-import tron from 'gulp-tron'
+import tron from "gulp-tron";
+
 // Import path from 'path'
 // import { fileURLToPath } from 'url'
 // const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -9,47 +10,47 @@ import tron from 'gulp-tron'
 // const outDir = basePath + '__outdir'
 
 const createTestFiles = {
-    name: 'createTestFiles',
-    build: bs =>
-        bs.exec('mkdir -p test-src; touch test-src/test.js test-src/test.css test-src/test.html'),
-}
-tron.task(createTestFiles)
+  name: "createTestFiles",
+  build: (bs) =>
+    bs.exec("mkdir -p test-src; touch test-src/test.js test-src/test.css test-src/test.html"),
+};
+tron.task(createTestFiles);
 
 const testSingleCopy = {
-    name: 'testSingleCopy',
-    build: bs =>
-        bs.src().debug('before copy:').copy('test-src/**/*.html', 'test-dest').debug('after copy:'),
+  name: "testSingleCopy",
+  build: (bs) =>
+    bs.src().debug("before copy:").copy("test-src/**/*.html", "test-dest").debug("after copy:"),
 
-    src: 'test-src/**/*.js',
-    logLevel: 'verbose',
-}
-tron.task(testSingleCopy)
+  src: "test-src/**/*.js",
+  logLevel: "verbose",
+};
+tron.task(testSingleCopy);
 
 const testMultiCopy = {
-    name: 'testMultiCopy',
-    build: bs =>
-        bs.copy([
-            {src: ['test-src/**/*.js'], dest: 'test-dest/js'},
-            {src: ['test-src/**/*.css'], dest: 'test-dest/css'},
-        ]),
-}
-tron.task(testMultiCopy)
+  name: "testMultiCopy",
+  build: (bs) =>
+    bs.copy([
+      { src: ["test-src/**/*.js"], dest: "test-dest/js" },
+      { src: ["test-src/**/*.css"], dest: "test-dest/css" },
+    ]),
+};
+tron.task(testMultiCopy);
 
 const testClone = {
-    name: 'testClone',
-    build(bs) {
-        bs.src().clone().clear().debug('cloned:')
-        bs.debug('org')
-    },
-    src: 'test-src/**/*.*',
-}
+  name: "testClone",
+  build(bs) {
+    bs.src().clone().clear().debug("cloned:");
+    bs.debug("org");
+  },
+  src: "test-src/**/*.*",
+};
 
-tron.task(testMultiCopy)
+tron.task(testMultiCopy);
 
 const build = {
-    name: '@build',
-    triggers: tron.series(createTestFiles, testSingleCopy, testMultiCopy, testClone),
-    clean: ['test-src', 'test-dest'],
-}
+  name: "@build",
+  triggers: tron.series(createTestFiles, testSingleCopy, testMultiCopy, testClone),
+  clean: ["test-src", "test-dest"],
+};
 
-tron.task(build).addCleaner()
+tron.task(build).addCleaner();

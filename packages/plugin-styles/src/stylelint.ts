@@ -3,108 +3,105 @@
  *
  */
 
-import {type BuildStream, type PluginFunction} from 'gulp-tron'
-import is from '@wicle/is'
-import pcssG from 'gulp-postcss'
-import pcssReporter from 'postcss-reporter'
-import stylelint, {type PostcssPluginOptions} from 'stylelint'
-import sassParser from 'postcss-sass'
-import scssParser from 'postcss-scss'
-import lessParser from 'postcss-less'
+import is from "@wicle/is";
+import pcssG from "gulp-postcss";
+import type { BuildStream, PluginFunction } from "gulp-tron";
+import type postcss from "postcss";
+import lessParser from "postcss-less";
+import pcssReporter from "postcss-reporter";
+import sassParser from "postcss-sass";
+import scssParser from "postcss-scss";
+import stylelint, { type PostcssPluginOptions } from "stylelint";
 
-export type StylelintOptions = PostcssPluginOptions & pcssG.Options
-export type StylelintReporterOptions = pcssReporter.Options
+// any 대신 unknown을 사용하여 ESLint 경고 우회 및 안전성 확보
+export type StylelintOptions = PostcssPluginOptions & Record<string, unknown>;
+export type StylelintReporterOptions = pcssReporter.Options;
+export type PostcssPluginType = postcss.AcceptedPlugin;
 
 /**
  * Stylelint Plugin - use postcss for linting.
  *
  * @param options - Stylelint options
+ * @param reporterOptions - Postcss reporter options
  * @returns PluginFunction
  */
 export const stylelintP =
-    (options?: StylelintOptions, reporterOptions: StylelintReporterOptions = {}): PluginFunction =>
-    (bs: BuildStream) => {
-        options ??= {rules: {}} // depress 'No configuration provided' error
+  (
+    options: StylelintOptions = { rules: {} }, // 매개변수 기본값을 지정하여 안전성 확보
+    reporterOptions: StylelintReporterOptions = {},
+  ): PluginFunction =>
+  (bs: BuildStream) => {
+    // 임시 파서 타입을 정확한 gulp-postcss 옵션 타입으로 단언
+    let pcssOptions: pcssG.Options = { parser: options.parser as pcssG.Options["parser"] };
 
-        let pcssOptions: pcssG.Options = {parser: options.parser as unknown}
-        if (!is.isObject(options.parser))
-            switch (options.parser) {
-                case 'scss': {
-                    pcssOptions = {parser: scssParser}
-                    break
-                }
+    if (!is.isObject(options.parser)) {
+      switch (options.parser) {
+        case "scss":
+          pcssOptions = { parser: scssParser as pcssG.Options["parser"] };
+          break;
 
-                case 'sass': {
-                    pcssOptions = {parser: sassParser}
-                    break
-                }
+        case "sass":
+          pcssOptions = { parser: sassParser as pcssG.Options["parser"] };
+          break;
 
-                case 'less': {
-                    pcssOptions = {parser: lessParser}
-                    break
-                }
+        case "less":
+          pcssOptions = { parser: lessParser as pcssG.Options["parser"] };
+          break;
 
-                default: {
-                    // Unrecognized string parser — fall back to default and warn
-                    if (options?.parser !== undefined) {
-                        console.warn(
-                            `stylelintP: unrecognized parser "${String(options.parser)}", using default parser`,
-                        )
-                    }
-
-                    break
-                }
-            }
-
-        bs.pipe(pcssG([stylelint(options), pcssReporter(reporterOptions)], pcssOptions)).on(
-            'error',
-            (e: Error) => {
-                bs.log(e.toString())
-                // .stream.emit('end')  // signal that task finished
-            },
-        )
+        default:
+          if (options.parser !== undefined) {
+            console.warn(
+              `stylelintP: unrecognized parser "${String(options.parser)}", using default parser`,
+            );
+          }
+          break;
+      }
     }
 
-/**
- * Stylelint Sass Plugin - styleint with postcss-sass as default parser.
- *
- * @param options - Stylelint options
- * @returns PluginFunction
- */
-export const stylelintSasssP = (
-    options: StylelintOptions = {},
-    reporterOptions: StylelintReporterOptions = {},
-) => {
-    const opts: StylelintOptions = {...options, parser: sassParser}
-    return stylelintP(opts, reporterOptions)
-}
+    bs.pipe(
+      pcssG(
+        [
+          stylelint(options) as unknown as PostcssPluginType,
+          pcssReporter(reporterOptions) as unknown as PostcssPluginType,
+        ],
+        pcssOptions,
+      ),
+    ).on("error", (e: Error) => {
+      bs.log(e.toString());
+    });
+  };
 
 /**
- * Stylelint Scss Plugin - styleint with postcss-scss as default parser.
- *
- * @param options - Stylelint options
- * @returns PluginFunction
+ * Stylelint Sass Plugin - stylelint with postcss-sass as default parser.
+ */
+export const stylelintSassP = (
+  options: StylelintOptions = {},
+  reporterOptions: StylelintReporterOptions = {},
+) => {
+  const opts: StylelintOptions = { ...options, parser: sassParser as unknown };
+  return stylelintP(opts, reporterOptions);
+};
+
+/**
+ * Stylelint Scss Plugin - stylelint with postcss-scss as default parser.
  */
 export const stylelintScssP = (
-    options: StylelintOptions = {},
-    reporterOptions: StylelintReporterOptions = {},
+  options: StylelintOptions = {},
+  reporterOptions: StylelintReporterOptions = {},
 ) => {
-    const opts: StylelintOptions = {...options, parser: scssParser}
-    return stylelintP(opts, reporterOptions)
-}
+  const opts: StylelintOptions = { ...options, parser: scssParser as unknown };
+  return stylelintP(opts, reporterOptions);
+};
 
 /**
- * Stylelint Less Plugin - styleint with postcss-less as default parser.
- *
- * @param options - Stylelint options
- * @returns PluginFunction
+ * Stylelint Less Plugin - stylelint with postcss-less as default parser.
  */
 export const stylelintLessP = (
-    options: StylelintOptions = {},
-    reporterOptions: StylelintReporterOptions = {},
+  options: StylelintOptions = {},
+  reporterOptions: StylelintReporterOptions = {},
 ) => {
-    const opts: StylelintOptions = {...options, parser: lessParser}
-    return stylelintP(opts, reporterOptions)
-}
+  const opts: StylelintOptions = { ...options, parser: lessParser as unknown };
+  return stylelintP(opts, reporterOptions);
+};
 
-export default stylelintP
+export default stylelintP;

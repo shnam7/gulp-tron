@@ -4,12 +4,12 @@ Easy to use, configuration based gulp build manager. Users can create gulp tasks
 
 ## Features
 
--   Quick and easy gulp task creation using configuration.
--   Convenient BuildStream API to help define build process.
--   Easy to add clean and watch tasks with minimal efforts
--   Browser-sync support in the build configuration.
--   Easy Plugin support to develop and share build actions.
--   Tested with gulp 5 and streamx.
+- Quick and easy gulp task creation using configuration.
+- Convenient BuildStream API to help define build process.
+- Easy to add clean and watch tasks with minimal efforts
+- Browser-sync support in the build configuration.
+- Easy Plugin support to develop and share build actions.
+- Tested with gulp 5 and streamx.
 
 ## Installation
 
@@ -92,13 +92,13 @@ Tasks for ~/dev/public/gulp-tron/examples/00-getting-started/gulpfile.js
 
 With this TaskConfig,
 
--   `scss` and `scripts` tasks are created.
--   `@build` task has two parallel tasks: `scss:main` and `script:main`
--   `@clean` and `@watch` tasks are also created.
--   `@clean` task captures all the conf.clean properties as clean target automatically.
--   `@watch` task captures all the conf.src properties as watch target automatically.
--   `bs` is an instance of `BuildStream` automatically created by the gulp task.
--   `scss:main` and `script:main` are display names referring to `scss` and `scripts` tasks.
+- `scss` and `scripts` tasks are created.
+- `@build` task has two parallel tasks: `scss:main` and `script:main`
+- `@clean` and `@watch` tasks are also created.
+- `@clean` task captures all the conf.clean properties as clean target automatically.
+- `@watch` task captures all the conf.src properties as watch target automatically.
+- `bs` is an instance of `BuildStream` automatically created by the gulp task.
+- `scss:main` and `script:main` are display names referring to `scss` and `scripts` tasks.
 
 ## Tron
 
@@ -159,11 +159,11 @@ BuildSet to be executed **before** main build function, `conf.build`.
 
 It can be of the following:
 
--   task name - `conf.name` of other TaskConfig object.
--   BuildFunction - annonymous task instantly created.
--   TaskConfig object
--   BuildSetSeries - return value of tron.series(), or an array of `BuildSet`.
--   BuildSetParallel - return value of tron.parallel()
+- task name - `conf.name` of other TaskConfig object.
+- BuildFunction - annonymous task instantly created.
+- TaskConfig object
+- BuildSetSeries - return value of tron.series(), or an array of `BuildSet`.
+- BuildSetParallel - return value of tron.parallel()
 
 **BuildSet Examples**
 
@@ -308,8 +308,8 @@ If you experience a situation that gulp tasks are not created without error, the
 
 ## More Information
 
--   [Tron](./docs/01-Tron.md)
--   [BuildStream](./docs/02-BuildStream.md)
+- [Tron](./docs/01-Tron.md)
+- [BuildStream](./docs/02-BuildStream.md)
 
 Check **[examples](./examples/)** for more examples.
 

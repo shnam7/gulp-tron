@@ -1,13 +1,13 @@
 {
-    "name": "01-conf",
-    "version": "0.0.0",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "gulp @build"
-    },
-    "devDependencies": {
-        "gulp-tron": "workspace:*",
-        "gulp": "^5.0.1"
-    }
+  "name": "01-conf",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "gulp @build"
+  },
+  "devDependencies": {
+    "gulp-tron": "workspace:*",
+    "gulp": "^5.0.1"
+  }
 }
