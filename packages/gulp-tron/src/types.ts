@@ -42,9 +42,9 @@ export type TaskBlock = Omit<TaskConfig, "dependsOn" | "triggers">;
 export type BuildOptions = Omit<CleanerOptions, "name"> &
   Omit<WatcherOptions, "name"> &
   LogOptions & {
-    readonly src?: Parameters<SrcMethod>[0]; // Source files for build operation
+    readonly src?: string | string[]; // Source files for build operation
     readonly order?: string | string[]; // Input file ordering patterns
-    readonly dest?: Parameters<DestMethod>[0]; // Output destination directory
+    readonly dest?: string | ((file: File) => string); // Output destination directory
     readonly sourcemaps?: boolean; // Sourcemaps option for gulp.src() and gulp.dest()
   };
 
