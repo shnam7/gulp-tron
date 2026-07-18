@@ -1,6 +1,6 @@
 {
   "name": "gulp-tron",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Easy to use, flexible gulp build manager",
   "type": "module",
   "main": "./dist/index.mjs",
