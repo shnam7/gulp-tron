@@ -1,116 +1,154 @@
-# Getting Started with Tron (gulp-tron)
+# Getting Started
 
-Tron is a modern build system built on top of Gulp, designed for scalable, maintainable, and highly customizable build pipelines. This guide will help you get started quickly, referencing real-world examples from the `examples/` directory.
+`Gulp-Tron` is a lightweight build manager on top of `gulp`. It simplifies task creation with configuration objects and provides a fluent `BuildStream` API for building files.
 
 ## Installation
 
-Install Tron and its peer dependencies:
+```bash
+npm install --save-dev gulp gulp-tron
+```
+
+Or with pnpm/yarn:
 
 ```bash
-npm install gulp-tron gulp
+pnpm add -D gulp gulp-tron
+# or
+yarn add -D gulp gulp-tron
 ```
 
-## Project Structure Example
-
-See the `examples/` directory for ready-to-use sample projects:
-
--   `examples/00-getting-started/`
--   `examples/01-conf/`
--   `examples/02-task/`
--   `examples/03-copy/`
--   `examples/04-clean/`
--   `examples/05-plugins/`
--   ...and more
-
-Each example contains a `gulpfile.js`, sample source files, and a `README.md` explaining the scenario.
-
-## Basic Usage
-
-Create a `gulpfile.js`:
-
-```js
-const {Tron} = require('gulp-tron')
-const tron = new Tron()
-
-tron.task('build', bs => bs.src('src/**/*.js').pipe(/* ... */).dest('dist/js'))
-tron.addCleaner({clean: ['dist']})
-tron.addWatcher()
-```
-
-Run your build:
+Or with bun:
 
 ```bash
-gulp build
+bun add -d gulp gulp-tron
 ```
 
-## Example: Getting Started
+`gulp` is a peer dependency of `gulp-tron`, so it must be installed together.
 
-See [`examples/00-getting-started/gulpfile.js`](../examples/00-getting-started/gulpfile.js):
+## Key Concepts
+
+- `Tron`: Task manager used to register and run build tasks.
+- `TaskConfig`: Configuration object that defines task name, source, destination, build logic, and dependencies.
+- `BuildStream`: Wrapper around gulp streams with fluent API such as `bs.src()`, `bs.dest()`, and `bs.pipe()`.
+
+## Basic Example
+
+Create a `gulpfile.js` like this:
 
 ```js
-const {Tron} = require('gulp-tron')
-const tron = new Tron()
+import tron from "gulp-tron";
 
-tron.task('default', bs => bs.src('src/**/*.js').pipe(bs.dest('public/js')))
+tron.task("build", (bs) => {
+  return bs.src("src/**/*.js").pipe(/* plugin */).dest("dist/js");
+});
 ```
 
-## Example: Task Configuration
-
-See [`examples/01-conf/gulpfile.js`](../examples/01-conf/gulpfile.js):
+You can also define the same task using a `TaskConfig` object:
 
 ```js
-const {Tron} = require('gulp-tron')
-const tron = new Tron()
-
 tron.task({
-    name: 'scripts',
-    src: 'src/**/*.js',
-    dest: 'public/js',
-    build(bs) {
-        bs.pipe(/* plugin */)
-    },
-})
+  name: "build",
+  src: "src/**/*.js",
+  dest: "dist/js",
+  build(bs) {
+    return bs.pipe(/* plugin */);
+  },
+});
 ```
 
-## Example: Copy & Clean
+## Example from `examples/00-getting-started`
 
-See [`examples/03-copy/gulpfile.js`](../examples/03-copy/gulpfile.js):
+Below is a simplified version of `examples/00-getting-started/gulpfile.js`.
 
 ```js
-tron.task('copy-assets', bs => bs.copy('src/assets/**/*', 'public/assets'))
-tron.addCleaner({clean: ['public/assets']})
+import tron from "gulp-tron";
+import gulpSass from "gulp-sass";
+import * as dartSass from "sass";
+import babelG from "gulp-babel";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import process from "node:process";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const basePath = path.relative(process.cwd(), __dirname);
+const srcRoot = path.join(basePath, "src");
+const destRoot = path.join(basePath, "dist");
+const sassG = gulpSass(dartSass);
+
+const statics = {
+  name: "statics",
+  src: path.join(srcRoot, "public/**"),
+  dest: path.join(destRoot),
+  build: (bs) => bs.log("<static:build>").src().dest(),
+};
+
+const scss = {
+  name: "scss",
+  src: path.join(srcRoot, "scss/**/*.scss"),
+  dest: path.join(destRoot, "css"),
+  build: (bs) => bs.log("<scss:build>").src().pipe(sassG().on("error", sassG.logError)).dest(),
+};
+
+const scripts = {
+  name: "scripts",
+  src: path.join(srcRoot, "js/**/*.js"),
+  dest: path.join(destRoot, "js"),
+  build: (bs) => bs.log("<scripts:build>").src().pipe(babelG()).dest(),
+};
+
+const build = {
+  name: "@build",
+  triggers: tron.parallel(statics, scss, scripts),
+  clean: path.join(destRoot),
+};
+
+tron
+  .task(build)
+  .addCleaner()
+  .addWatcher({
+    watch: path.join(destRoot, "**/*.html"),
+    browserSync: { server: destRoot },
+  });
 ```
 
-## Example: Plugins
+### What this example shows
 
-See [`examples/05-plugins/gulpfile.js`](../examples/05-plugins/gulpfile.js):
+- `statics`, `scss`, and `scripts` are individual task configurations.
+- Each task defines `src`, `dest`, and `build` to compose a build pipeline.
+- The `@build` task runs the three tasks in parallel using `triggers`.
+- `addCleaner()` creates an `@clean` task that removes files from the configured `clean` targets.
+- `addWatcher()` creates an `@watch` task that monitors source files and supports `browserSync`.
 
-```js
-tron.task('styles', bs =>
-    bs.src('scss/**/*.scss').pipe(require('gulp-sass')()).pipe(bs.dest('public/css')),
-)
+## Common commands
+
+```bash
+npx gulp --tasks   # show available gulp tasks
+npx gulp @build    # run full build
+npx gulp @clean    # run clean task
+npx gulp @watch    # run watch task
 ```
 
-## More Examples
+## Understanding `BuildStream`
 
-Explore the `examples/` directory for advanced scenarios:
+`BuildStream` wraps gulp streams and simplifies the build flow.
 
--   Task dependencies and triggers
--   Pattern-based task selection
--   Custom plugins and stream logic
--   Integration with browserSync
+1. Use `bs.src(globs)` to select input files.
+2. Use `.pipe(...)` to process files with plugins.
+3. Use `bs.dest(dest)` to write output files.
 
-## Documentation
+It also provides helpers like `bs.copy()`, `bs.filter()`, and `bs.clean()`.
 
--   [Tron Class Documentation](./01-Tron.md)
--   [BuildStream Class Documentation](./01-BuildStream.md)
+## Next steps
 
-## Next Steps
+- Learn how to use Gulp-Tron with `task()`, `series()`, and `parallel()`.
+- Explore `TaskConfig` options like `dependsOn`, `triggers`, `clean`, and `watch`.
+- Use `addCleaner()` and `addWatcher()` to automate cleaning and watching.
+- Check the `examples/` folder for real-world cases.
 
--   Try modifying the example gulpfiles to fit your project
--   Explore advanced features like `selectTasks`, `series`, and `parallel`
--   Read the full API docs for deeper customization
+## Related documentation
+
+- [Tron Class Documentation](./01-Tron.md)
+- [BuildStream Class Documentation](./01-BuildStream.md)
 
 ---
 
-For questions or feedback, see the project repository or open an issue.
+For additional examples and details, explore the `examples/` directory.

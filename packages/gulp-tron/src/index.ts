@@ -1,5 +1,5 @@
 /**
- * Gulp-Tron
+ * gulp-tron
  */
 
 import { Tron } from "./tron.js";

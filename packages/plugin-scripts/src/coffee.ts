@@ -1,5 +1,5 @@
 /**
- *  gulp-tron plugin-scripts:coffee
+ *  Gulp-Tron plugin-scripts:coffee
  *
  */
 

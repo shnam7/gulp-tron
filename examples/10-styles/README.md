@@ -1,4 +1,4 @@
-# gulp-tron sample: styles
+# Gulp-Tron Sample: styles
 
 ## Overview
 

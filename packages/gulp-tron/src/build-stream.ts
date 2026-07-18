@@ -75,19 +75,20 @@ function appendG(...args: Parameters<typeof gulp.src>) {
  *  Gulp Stream Wrapper providing API for build processing.
  *****************************************************************************/
 export class BuildStream {
-  static nullStream(): Transform {
+  protected static nullStream(): Transform {
     return new PassThrough({ objectMode: true });
   }
 
   /**
-   * Creates a through stream with the given transform and flush functions.
+   * Internal utility method to create a through stream with the given transform
+   * and flush functions.
    *
    * @param transform data transformation function for each file in the stream
    * @param flush function to be called when the stream is ending
    * @param options options for the Transform stream
    * @returns A Transform stream that applies the given transform and flush functions
    */
-  static through(
+  private static through(
     transform?: TransformFunction,
     flush?: FlushFunction,
     options?: TransformOptions,
@@ -117,7 +118,7 @@ export class BuildStream {
   }
 
   /**
-   * Main build function to be executed by gulp task
+   * Internal method to execute the main build function with proper promise handling.
    *
    * @param bs BuildStream created by gulp task.
    * @param buildFunc BuildFunction from TaskConfig (`conf.build`).
@@ -537,17 +538,24 @@ export class BuildStream {
     return this;
   }
 
-  debug(title?: string, options?: DebugOptions): this;
-
-  debug(options?: DebugOptions): this;
-
   /**
-   * Print debug message using `gulp-debug2`
+   * Print debug message using `gulp-debug2` with modern patterns
    *
-   * @param titleOrOptions Title string or DebugOptions object.
-   * @param otherOptions Additional DebugOptions when titleOrOptions is a string.
+   * @param title prefix that is to be added to the message.
+   * @param options DebugOptions object.Refer to gulp-debug2 docs for the details.
    * @returns this
    */
+  debug(title?: string, options?: DebugOptions): this;
+
+  /**
+   * Print debug message using `gulp-debug2` with modern patterns
+   *
+   * @param options DebugOptions object.Refer to gulp-debug2 docs for the details.
+   * @returns this
+   */
+  debug(options?: DebugOptions): this;
+
+  /** implementation details */
   debug(titleOrOptions: string | DebugOptions = {}, otherOptions: DebugOptions = {}): this {
     if (typeof titleOrOptions === "string") {
       titleOrOptions = { title: titleOrOptions, ...otherOptions };

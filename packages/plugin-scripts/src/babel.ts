@@ -1,5 +1,5 @@
 /**
- *  gulp-tron plugin-scripts:babelP
+ *  Gulp-Tron plugin-scripts:babelP
  *
  */
 

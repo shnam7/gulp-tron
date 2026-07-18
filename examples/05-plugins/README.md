@@ -1,4 +1,4 @@
-# gulp-tron sample: plugins
+# Gulp-Tron Sample: plugins
 
 ## Overview
 

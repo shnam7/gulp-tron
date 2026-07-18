@@ -1,5 +1,5 @@
 /**
- *  gulp-tron plugin-styles:stylelint
+ *  Gulp-Tron plugin-styles:stylelint
  *
  */
 

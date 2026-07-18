@@ -1,5 +1,5 @@
 /**
- *  gulp-tron plugin-styles:sass
+ *  Gulp-Tron plugin-styles:sass
  *
  */
 

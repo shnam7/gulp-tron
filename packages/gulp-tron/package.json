@@ -1,6 +1,6 @@
 {
   "name": "gulp-tron",
-  "version": "1.0.0-alpha.3",
+  "version": "0.9.0",
   "description": "Easy to use, flexible gulp build manager",
   "type": "module",
   "main": "./dist/index.mjs",
@@ -8,16 +8,11 @@
   "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    },
-    "./*": "./*"
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    }
   },
   "files": [
     "dist/*"
@@ -53,8 +48,20 @@
     "gulp",
     "task",
     "build",
+    "builder",
     "manager",
-    "builder"
+    "babel",
+    "typescript",
+    "es6",
+    "sass",
+    "scss",
+    "less",
+    "coffee",
+    "coffeescript",
+    "postcss",
+    "twig",
+    "panini",
+    "markdown"
   ],
   "dependencies": {
     "@wicle/is": "^2.0.1",

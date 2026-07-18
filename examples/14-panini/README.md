@@ -1,4 +1,4 @@
-# gulp-tron sample: panini
+# Gulp-Tron Sample: panini
 
 ## Overview
 

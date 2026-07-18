@@ -1,4 +1,4 @@
-# gulp-tron sample: twig
+# Gulp-Tron Sample: Twig
 
 ## Overview
 

@@ -1,4 +1,4 @@
-# gulp-tron sample: copy
+# Gulp-Tron Sample: Copy
 
 ## Overview
 

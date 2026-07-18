@@ -1,5 +1,5 @@
 /**
- *  gulp-tron plugin-scripts:eslint
+ *  Gulp-Tron plugin-scripts:eslint
  *
  */
 

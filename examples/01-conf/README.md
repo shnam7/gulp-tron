@@ -1,4 +1,4 @@
-# gulp-tron sample: conf
+# Gulp-Tron Sample: conf
 
 ## Overview
 

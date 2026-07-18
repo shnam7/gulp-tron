@@ -1,6 +1,6 @@
 <!---
-title: gulp-tron sample - Panini
-description: gulp-tron sample to build 'panini' project
+title: Gulp-Tron Sample - Panini
+description: Gulp-Tron sample to build 'panini' project
 --->
 
 {{#markdown}}
