@@ -1,16 +1,26 @@
 {
   "name": "gulp-tron",
-  "version": "0.9.2",
+  "version": "0.9.4",
   "description": "Easy to use, flexible gulp build manager",
   "type": "module",
-  "main": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
+      "types": {
+        "import": "./dist/index.d.mts",
+        "require": "./dist/index.d.cts",
+        "default": "./dist/index.d.mts"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
       "default": "./dist/index.mjs"
     }
   },
@@ -29,7 +39,8 @@
     "watch": "chokidar 'src/**' -c 'run-p \"build:ts --no-clean\" lint:ts:types'",
     "clean": "rimraf ./dist ./coverage",
     "prepare-to-commit": "run-s clean lint test build clean",
-    "npm-dry-run": "npm publish --dry-run"
+    "npm-dry-run": "npm publish --dry-run",
+    "publish": "bun run build && npm publish"
   },
   "repository": {
     "type": "git",
@@ -69,7 +80,7 @@
     "browser-sync": "^3.0.4",
     "del": "^8.0.1",
     "event-stream": "^4.0.1",
-    "globby": "^16.2.1",
+    "globby": "^16.2.2",
     "gulp-changed": "^5.0.4",
     "gulp-debug2": "^1.0.0",
     "gulp-filter": "^10.0.0",
@@ -100,7 +111,7 @@
     "npm-run-all": "^4.1.5",
     "prettier": "^3.9.5",
     "rimraf": "^6.1.3",
-    "tsdown": "^0.22.7",
+    "tsdown": "^0.22.11",
     "typescript": "^7.0.2",
     "vinyl": "^3.0.1",
     "vitest": "^4.1.10"

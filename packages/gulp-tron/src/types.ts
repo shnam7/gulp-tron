@@ -2,6 +2,7 @@ import type { Transform } from "node:stream";
 import type { Options as BrowserSyncOptions } from "browser-sync";
 import type { Options as DelBaseOptions } from "del";
 import type { DestMethod, SrcMethod, TaskFunction, TaskFunctionCallback } from "gulp";
+import type File from "vinyl";
 import type { BuildStream } from "./build-stream.js";
 
 // --- Common Types ------------------------------------------------------------

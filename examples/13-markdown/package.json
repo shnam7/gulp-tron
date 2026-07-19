@@ -12,7 +12,7 @@
     "gulp-tron": "workspace:*",
     "gulp-htmlclean": "^2.7.22",
     "gulp-markdown": "^8.0.0",
-    "gulp-prettier": "^6.0.0",
+    "gulp-prettier": "^7.0.0",
     "gulp": "^5.0.1"
   }
 }

@@ -304,11 +304,11 @@ export class BuildStream {
    * @param options Options for the changed plugin.
    * @returns this
    */
-  changed(dest?: Parameters<DestMethod>[0], options: Parameters<typeof changedG>[1] = {}): this {
+  changed(dest?: BuildOptions["dest"], options: Parameters<typeof changedG>[1] = {}): this {
     dest ??= this.opts.dest;
     if (dest === undefined || dest === null) return this;
 
-    const opts = { ...options };
+    const opts = { ...options } satisfies Parameters<typeof changedG>[1];
     type CompareFunction = (srcFile: Vinyl, destPath: string) => Promise<Vinyl | undefined>;
 
     const compare: CompareFunction = async (srcFile: Vinyl, destPath: string) => {
