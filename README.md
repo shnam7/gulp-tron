@@ -38,13 +38,32 @@ bun add -D gulp gulp-tron
 
 ```ts
 import tron from "gulp-tron";
+import tsdownG from "gulp-tsdown";
 
+// simple task
 tron.task({
   name: "build",
   src: "src/**/*.js",
   dest: "dist",
   build: (bs) => bs.src().dest(),
 });
+
+// build typescript using tsdown
+const scripts = {
+  name: "scripts",
+  build(bs) {
+    bs.src()
+      .debug("src")
+      .pipe(tsdownG({ dts: true, tsconfig: "./src/scripts/typescript/tsconfig.json" }))
+      .debug("dest")
+      .dest();
+  },
+
+  src: [path.join(srcRoot, "scripts/typescript/main.ts")],
+  dest: path.join(destRoot, "js/typescript"),
+  addWatch: [path.join(srcRoot, "tsconfig.json")],
+};
+tron.task(scripts);
 ```
 
 ## Development

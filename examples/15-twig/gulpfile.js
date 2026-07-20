@@ -4,13 +4,16 @@ import { fileURLToPath } from "node:url";
 // import { terserP } from "@gulp-tron/plugin-scripts";
 import { cleanCssP, sassP } from "@gulp-tron/plugin-styles";
 import { dataP } from "@gulp-tron/plugin-utils";
+import gulp from "gulp";
 import htmlCleanG from "gulp-htmlmin";
 import prettierG from "gulp-prettier";
-// import swc from "gulp-swc";
 import tron from "gulp-tron";
+import tsdownG from "gulp-tsdown";
 import twigG from "gulp-twig";
-// import ts from "gulp-typescript";
 import twigMarkdown from "twig-markdown";
+
+// import swc from "gulp-swc";
+// import ts from "gulp-typescript";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -46,9 +49,24 @@ const scripts = {
   name: "scripts",
 
   build(bs) {
-    bs.exec("tsc --project tsconfig.json").exec(
-      "tsc --project tsconfig.json --declaration --emitDeclarationOnly",
-    );
+    bs.src()
+      .debug("src:")
+      //--- Using gulp-tsdown
+      .pipe(
+        tsdownG({
+          format: ["cjs", "esm"],
+          dts: true,
+          sourcemap: true,
+          fixedExtension: true,
+        }),
+      )
+      .debug("tsdown");
+      const dts = bs.clone().filter(["*.d.mts", "*.d.cts"]).debug("dts:");
+      const map = bs.clone().filter("*.map").debug("map:");
+      const ts = bs.clone().filter(["!*.d.ts", "*.mts", "*.cjs"]).debug("ts:");
+      bs.dest();
+
+    // Using swc
     // bs.src()
     //   .debug("src:")
     //   .pipe(swc({ jsc: { target: "es2020", parser: { syntax: "typescript" } } }))
@@ -60,6 +78,7 @@ const scripts = {
     //   .debug("changed:")
     //   .dest();
 
+    // Using gulp-type-script (not working from typescript v7)
     // const files = new Map();
     // const reExt = /\.(d\.)?[j,t]s$/;
     // bs.src()
@@ -71,7 +90,6 @@ const scripts = {
     //     if (!file.stat && f) file.stat = f.stat;
     //   })
     //   .debug("src:");
-
     // bs.clone()
     //   .remove("*.d.ts")
     //   .debug("js stream:")
@@ -80,7 +98,6 @@ const scripts = {
     //   .changed()
     //   .dest()
     //   .debug("js:");
-
     // bs.filter("*.d.ts").dest().debug("dts:");
   },
 

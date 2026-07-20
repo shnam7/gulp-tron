@@ -2,7 +2,7 @@ import ReactDOM from "react-dom/client";
 import Container from "./Container.js";
 import Item from "./Item.js";
 
-const app = (
+export const app = (
   <>
     <Container>
       <h1>React with Typescript</h1>
@@ -12,5 +12,5 @@ const app = (
   </>
 );
 
-const rootNode = document.querySelector("#react-app");
+export const rootNode = document.querySelector("#react-app");
 if (rootNode) ReactDOM.createRoot(rootNode).render(app);

@@ -10,7 +10,9 @@
     "clean": "gulp @clean"
   },
   "dependencies": {
-    "@gulp-tron/plugin-scripts": "workspace:*"
+    "@gulp-tron/plugin-scripts": "workspace:*",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
@@ -23,6 +25,7 @@
     "gulp": "^5.0.1",
     "gulp-babel": "^8.1.0",
     "gulp-tron": "workspace:*",
+    "gulp-tsdown": "^0.9.0",
     "gulp-typescript": "6.0.0-alpha.1",
     "rimraf": "^6.1.3",
     "typescript": "^7.0.2"

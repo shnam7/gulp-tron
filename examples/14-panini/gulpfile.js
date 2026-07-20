@@ -5,8 +5,9 @@ import { fileURLToPath } from "node:url";
 import { cleanCssP, sassP } from "@gulp-tron/plugin-styles";
 import htmlCleanG from "gulp-htmlmin";
 import prettierG from "gulp-prettier";
-import swc from "gulp-swc";
+// import swc from "gulp-swc";
 import tron, { delay, parallel } from "gulp-tron";
+import tsdownG from "gulp-tsdown";
 import paniniG from "panini";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -73,11 +74,16 @@ const scripts = {
   name: "scripts",
 
   build(bs) {
-    bs
-      // .src({ read: false })
-      .debug("src:")
-      .exec("tsc --project tsconfig.json")
-      .exec("tsc --project tsconfig.json --declaration --emitDeclarationOnly");
+    bs.src()
+      .debug("src")
+      .pipe(tsdownG({ dts: true, tsconfig: "./tsconfig.json" }))
+      .debug("dest")
+      .dest();
+    // bs
+    //   // .src({ read: false })
+    //   .debug("src:")
+    //   .exec("tsc --project tsconfig.json")
+    //   .exec("tsc --project tsconfig.json --declaration --emitDeclarationOnly");
     // bs.src().promise(async () => {
     //   console.log("Waiting script build...");
     //   await delay(1000);
@@ -98,7 +104,8 @@ const scripts = {
     //   .dest();
   },
 
-  src: path.join(srcRoot, "scripts/**/*.ts"),
+  // src: path.join(srcRoot, "scripts/**/*.ts"),
+  src: path.join(srcRoot, "scripts/app.ts"),
   dest: path.join(destRoot, "js"),
 };
 

@@ -3,7 +3,7 @@ import { getSub2Node } from "./sub-2.js";
 
 await Promise.resolve();
 
-class TsContainer {
+export class TsContainer {
   // ES2022: Static class properties
   static staticProperty = "typescriptIsCool";
 
@@ -32,5 +32,5 @@ class TsContainer {
   }
 }
 
-const container = new TsContainer();
+export const container = new TsContainer();
 container.render(document.querySelector<HTMLElement>("#typescript") as HTMLElement);

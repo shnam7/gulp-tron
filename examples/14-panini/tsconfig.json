@@ -4,6 +4,5 @@
     "sourceMap": true,
     "rootDir": "./src/scripts",
     "outDir": "./dist"
-  },
-  "include": ["./src/**/*.ts"]
+  }
 }

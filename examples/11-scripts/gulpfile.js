@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { babelP, coffeelintP, coffeeP, concatP, eslintP, terserP } from "@gulp-tron/plugin-scripts";
 import eslintPluginReact from "eslint-plugin-react";
 import tron from "gulp-tron";
+import tsdownG from "gulp-tsdown";
 
 // import ts from "gulp-typescript";
 
@@ -128,14 +129,20 @@ const babel = {
 const typescript = {
   name: "typescript",
   build(bs) {
-    bs.exec("tsc --project ./src/scripts/typescript/tsconfig.json").exec(
-      "tsc --project ./src/scripts/typescript/tsconfig.json --declaration --emitDeclarationOnly",
-    );
+    bs.src()
+      .debug("src")
+      .pipe(tsdownG({ dts: true, tsconfig: "./src/scripts/typescript/tsconfig.json" }))
+      .debug("dest")
+      .dest();
+    // bs.exec("tsc --project ./src/scripts/typescript/tsconfig.json").exec(
+    //   "tsc --project ./src/scripts/typescript/tsconfig.json --declaration --emitDeclarationOnly",
+    // );
     // const tsProject = ts.createProject("src/tsconfig.json");
     // bs.src().pipe(tsProject()).debug("tsOut").debug("result").dest();
   },
 
-  src: [path.join(srcRoot, "scripts/typescript/**/*.ts")],
+  // src: [path.join(srcRoot, "scripts/typescript/**/*.ts")],
+  src: [path.join(srcRoot, "scripts/typescript/main.ts")],
   dest: path.join(destRoot, "js/typescript"),
   addWatch: [path.join(srcRoot, "tsconfig.json")],
   sourcemaps,
@@ -145,13 +152,19 @@ const typescript = {
 const react = {
   name: "react",
   build(bs) {
+    bs.src()
+      .debug("src")
+      .pipe(tsdownG({ dts: true, tsconfig: "./src/scripts/react/tsconfig.json" }))
+      .debug("dest")
+      .dest();
     // const tsProject = ts.createProject("src/tsconfig.json");
     // bs.src().pipe(tsProject()).changed().dest();
-    bs.exec("tsc --project ./src/scripts/react/tsconfig.json").exec(
-      "tsc --project ./src/scripts/react/tsconfig.json --declaration --emitDeclarationOnly",
-    );
+    // bs.exec("tsc --project ./src/scripts/react/tsconfig.json").exec(
+    //   "tsc --project ./src/scripts/react/tsconfig.json --declaration --emitDeclarationOnly",
+    // );
   },
-  src: [path.join(srcRoot, "scripts/react/**/*.{ts,tsx}")],
+  // src: [path.join(srcRoot, "scripts/react/**/*.{ts,tsx}")],
+  src: [path.join(srcRoot, "scripts/react/**/app.tsx")],
   dest: path.join(destRoot, "js/react"),
   addWatch: [path.join(srcRoot, "tsconfig.json")],
 };
