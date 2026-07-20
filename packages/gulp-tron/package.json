@@ -39,8 +39,8 @@
     "watch": "chokidar 'src/**' -c 'run-p \"build:ts --no-clean\" lint:ts:types'",
     "clean": "rimraf ./dist ./coverage",
     "prepare-to-commit": "run-s clean lint test build clean",
-    "npm-dry-run": "npm publish --dry-run",
-    "npm-publish": "bun run build && npm publish"
+    "prepublishOnly": "bun run build",
+    "npm-dry-run": "npm publish --dry-run"
   },
   "repository": {
     "type": "git",
