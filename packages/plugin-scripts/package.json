@@ -60,7 +60,7 @@
     "chokidar-cli": "^3.0.0",
     "gulp-tron": "workspace:*",
     "rimraf": "^6.1.3",
-    "tsdown": "^0.22.11",
+    "tsdown": "^0.22.14",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }

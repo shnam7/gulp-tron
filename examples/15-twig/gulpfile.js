@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 // import { terserP } from "@gulp-tron/plugin-scripts";
 import { cleanCssP, sassP } from "@gulp-tron/plugin-styles";
 import { dataP } from "@gulp-tron/plugin-utils";
-import gulp from "gulp";
 import htmlCleanG from "gulp-htmlmin";
 import prettierG from "gulp-prettier";
 import tron from "gulp-tron";
@@ -61,10 +60,21 @@ const scripts = {
         }),
       )
       .debug("tsdown");
-      const dts = bs.clone().filter(["*.d.mts", "*.d.cts"]).debug("dts:");
-      const map = bs.clone().filter("*.map").debug("map:");
-      const ts = bs.clone().filter(["!*.d.ts", "*.mts", "*.cjs"]).debug("ts:");
-      bs.dest();
+
+    // create dts-file-only stream if necessary
+    const dts = bs.clone().filter(["*.d.mts", "*.d.cts"]);
+    dts.debug("dts:");
+
+    // create map-file-only stream if necessary
+    const map = bs.clone().filter("*.map");
+    map.debug("map:");
+
+    // create mts and cjs file only stream if necessary
+    const js = bs.clone().filter(["!*.d.ts", "*.mts", "*.cjs"]);
+    js.debug("ts:");
+
+    // bs still has all the files.
+    bs.dest();
 
     // Using swc
     // bs.src()
