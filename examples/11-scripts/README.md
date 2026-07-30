@@ -1,4 +1,4 @@
-# Gulp-Tron Example: Scripts
+# gulp-tron Example: Scripts
 
 ## Overview
 

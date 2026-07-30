@@ -1,5 +1,5 @@
 /**
- *  Gulp-Tron plugin-javascript
+ *  gulp-tron plugin-javascript
  *
  */
 

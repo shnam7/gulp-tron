@@ -1,4 +1,4 @@
-# Gulp-Tron Sample: clean
+# gulp-tron Sample: clean
 
 ## Overview
 

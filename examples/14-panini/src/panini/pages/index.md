@@ -1,13 +1,13 @@
 <!---
-title: Gulp-Tron Sample - Panini
-description: Gulp-Tron sample to build 'panini' project
+title: gulp-tron Sample - Panini
+description: gulp-tron sample to build 'panini' project
 --->
 
 {{#markdown}}
 
-# Gulp-Tron Sample - Panini
+# gulp-tron Sample - Panini
 
-Gulp-Tron makes gulp build development easier.
+gulp-tron makes gulp build development easier.
 
 ### This is Paninig sample
 

@@ -1,5 +1,5 @@
 /**
- *  Gulp-Tron plugin-styles:autoprefixer
+ *  gulp-tron plugin-styles:autoprefixer
  *
  */
 

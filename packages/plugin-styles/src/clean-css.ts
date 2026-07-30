@@ -1,5 +1,5 @@
 /**
- *  Gulp-Tron plugin-styles:cleanCss
+ *  gulp-tron plugin-styles:cleanCss
  *
  */
 

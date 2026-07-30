@@ -1,8 +1,8 @@
-# Gulp-Tron sample: conf
+# gulp-tron sample: conf
 
 ## Overview
 
-This sample shows getting-started example for using Gulp-Tron
+This sample shows getting-started example for using gulp-tron
 
 ## Usage
 

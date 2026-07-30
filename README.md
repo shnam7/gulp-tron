@@ -1,6 +1,6 @@
-# Gulp-Tron
+# gulp-tron
 
-Gulp-Tron is a configuration-driven Gulp task manager built around a fluent `BuildStream` API and a `Tron` task registry. It helps you define build pipelines with task configs, dependency graphs, cleaner/watcher helpers, and plugin-friendly stream composition.
+gulp-tron is a configuration-driven Gulp task manager built around a fluent `BuildStream` API and a `Tron` task registry. It helps you define build pipelines with task configs, dependency graphs, cleaner/watcher helpers, and plugin-friendly stream composition.
 
 ## Features
 

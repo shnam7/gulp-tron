@@ -1,4 +1,4 @@
-# Gulp-Tron
+# gulp-tron
 
 Easy-to-use, configuration-based gulp build manager. Users can create gulp tasks with simple configurations while defining build functions as part of the configuration.
 
@@ -246,7 +246,7 @@ Refer to [BuildStream](./docs/02-BuildStream.md) for more details about the avai
 
 ## Plugin
 
-Gulp-Tron plugins are functions that receive a `BuildStream` instance and can be chained using `bs.chain()`.
+gulp-tron plugins are functions that receive a `BuildStream` instance and can be chained using `bs.chain()`.
 
 ```ts
 export type PluginFunction = (bs: BuildStream) => void;
@@ -273,7 +273,7 @@ const build1 = {
 
 Gulp 5 uses streamx with encoding enabled by default. This is usually fine for
 text file processing, but it causes file size bloating with binary files such
-as images. For better compatibility with previous versions, `Gulp-Tron` disables
+as images. For better compatibility with previous versions, `gulp-tron` disables
 the encoding by default.
 
 To enable it, set the `encoding` property when calling `bs.src()`.

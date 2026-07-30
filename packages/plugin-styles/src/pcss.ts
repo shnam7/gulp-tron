@@ -1,5 +1,5 @@
 /**
- *  Gulp-Tron plugin-styles:pcss
+ *  gulp-tron plugin-styles:pcss
  *
  */
 

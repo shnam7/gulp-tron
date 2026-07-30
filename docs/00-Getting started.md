@@ -1,6 +1,6 @@
 # Getting Started
 
-`Gulp-Tron` is a lightweight build manager on top of `gulp`. It simplifies task creation with configuration objects and provides a fluent `BuildStream` API for building files.
+`gulp-tron` is a lightweight build manager on top of `gulp`. It simplifies task creation with configuration objects and provides a fluent `BuildStream` API for building files.
 
 ## Installation
 
@@ -139,7 +139,7 @@ It also provides helpers like `bs.copy()`, `bs.filter()`, and `bs.clean()`.
 
 ## Next steps
 
-- Learn how to use Gulp-Tron with `task()`, `series()`, and `parallel()`.
+- Learn how to use gulp-tron with `task()`, `series()`, and `parallel()`.
 - Explore `TaskConfig` options like `dependsOn`, `triggers`, `clean`, and `watch`.
 - Use `addCleaner()` and `addWatcher()` to automate cleaning and watching.
 - Check the `examples/` folder for real-world cases.

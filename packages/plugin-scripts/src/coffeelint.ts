@@ -1,5 +1,5 @@
 /**
- *  Gulp-Tron plugin-scripts:coffeelint
+ *  gulp-tron plugin-scripts:coffeelint
  *
  */
 

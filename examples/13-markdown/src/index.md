@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=, initial-scale=1.0">
-    <title>Gulp-Tron - Markdown Build Example</title>
+    <title>gulp-tron - Markdown Build Example</title>
     <link rel="stylesheet" href="./main.css">
 
 </head>
