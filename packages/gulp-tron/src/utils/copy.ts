@@ -1,10 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
-import { type Glob, isGlob } from "@wicle/is";
+import { arrayify, type Glob, isGlob } from "@wicle/is";
 import globParent from "glob-parent";
 import { globbySync } from "globby";
 import type { LogOptions } from "../types.js";
-import arrayify from "./arrayify.js";
 
 export type CopyParam = {
   readonly src: string | string[];

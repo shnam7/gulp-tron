@@ -36,6 +36,6 @@
     }
   },
   "files": {
-    "includes": ["**", "!!.changeset"]
+    "includes": ["**", "!!.changeset", "!!**/*.svg"]
   }
 }

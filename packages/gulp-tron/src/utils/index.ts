@@ -1,7 +1,6 @@
 import process from "node:process";
 
-export { default as is } from "@wicle/is";
-export * from "./arrayify.js";
+export { arrayify, default as is } from "@wicle/is";
 export * from "./copy.js";
 export * from "./exec.js";
 

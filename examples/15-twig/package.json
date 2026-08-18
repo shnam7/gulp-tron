@@ -19,6 +19,7 @@
     "gulp-prettier": "^7.0.0",
     "gulp-swc": "^2.2.0",
     "gulp-tron": "workspace:*",
+    "gulp-tsdown": "^0.9.0",
     "gulp-twig": "^1.2.0",
     "gulp-typescript": "6.0.0-alpha.1",
     "twig-markdown": "^1.1.0",

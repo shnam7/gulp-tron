@@ -1,4 +1,4 @@
-import { isArray, isFunction, isObject, isString } from "@wicle/is";
+import { arrayify, isArray, isFunction, isObject, isString } from "@wicle/is";
 import browserSync from "browser-sync";
 import multimatch from "multimatch";
 import { BuildStream } from "./build-stream.js";
@@ -20,7 +20,6 @@ import {
   type TaskConfig,
   type WatcherOptions,
 } from "./types.js";
-import arrayify from "./utils/arrayify.js";
 
 /**
  * Convert series of buildSet items into buildSet Series object.

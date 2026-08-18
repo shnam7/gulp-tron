@@ -1,6 +1,6 @@
 import child_process from "node:child_process";
 import { PassThrough, type Stream, Transform, type TransformCallback } from "node:stream";
-import { type Glob, isAsyncFunction, isFunction, isGlob, isString } from "@wicle/is";
+import { arrayify, type Glob, isAsyncFunction, isFunction, isGlob, isString } from "@wicle/is";
 import { Mutex } from "@wicle/mutex";
 import browserSync from "browser-sync";
 import { deleteSync } from "del";
@@ -24,7 +24,6 @@ import {
   type PluginFunction,
   type SrcOptions,
 } from "./types.js";
-import arrayify from "./utils/arrayify.js";
 import { type CopyOptions, type CopyParam, copy } from "./utils/copy.js";
 import { flushAllStdio } from "./utils/index.js";
 
