@@ -363,6 +363,243 @@ describe("Tron", () => {
       await expect(execTask("@watch")).resolves.not.toThrow();
       expect(mockBrowserSync).toHaveBeenCalledWith(expect.objectContaining({ server: "public" }));
     });
+
+    function makeFakeWatcher() {
+      const listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
+      return {
+        on(event: string, cb: (...args: unknown[]) => void) {
+          listeners[event] ??= [];
+          listeners[event].push(cb);
+          return this;
+        },
+        emit(event: string, ...args: unknown[]) {
+          for (const cb of listeners[event] ?? []) cb(...args);
+        },
+      };
+    }
+
+    it("should log a message when a watched file changes", async () => {
+      const fakeWatcher = makeFakeWatcher();
+      mockWatch.mockReturnValue(fakeWatcher as unknown as ReturnType<typeof gulp.watch>);
+      const logSpy = vi.spyOn(BuildStream.prototype, "log");
+
+      tron.task({ name: "change-task", src: "src/**/*.js" });
+      tron.addWatcher();
+      await execTask("@watch");
+      logSpy.mockClear();
+
+      fakeWatcher.emit("change", "src/a.js");
+
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("change detected:'src/a.js"));
+      logSpy.mockRestore();
+    });
+
+    it("should not log a change message when the task's logLevel is silent", async () => {
+      const fakeWatcher = makeFakeWatcher();
+      mockWatch.mockReturnValue(fakeWatcher as unknown as ReturnType<typeof gulp.watch>);
+      const logSpy = vi.spyOn(BuildStream.prototype, "log");
+
+      tron.task({ name: "silent-change-task", src: "src/**/*.js", logLevel: "silent" });
+      tron.addWatcher();
+      await execTask("@watch");
+      logSpy.mockClear();
+
+      fakeWatcher.emit("change", "src/a.js");
+
+      expect(logSpy).not.toHaveBeenCalledWith(expect.stringContaining("change detected"));
+      logSpy.mockRestore();
+    });
+
+    it("should reload browserSync when a watched file changes and browserSync is enabled", async () => {
+      const fakeWatcher = makeFakeWatcher();
+      mockWatch.mockReturnValue(fakeWatcher as unknown as ReturnType<typeof gulp.watch>);
+      const reloadSpy = vi.spyOn(browserSync, "reload").mockImplementation(() => {});
+
+      tron.task({ name: "bs-change-task", src: "src/**/*.js" });
+      tron.addWatcher({ browserSync: { server: "public" } });
+      await execTask("@watch");
+
+      fakeWatcher.emit("change", "src/a.js");
+
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
+      reloadSpy.mockRestore();
+    });
+
+    it("should not set up watchers again if the watcher body already ran", async () => {
+      tron.task({ name: "double-run-task", src: "src/**/*.js" });
+      tron.addWatcher();
+
+      await execTask("@watch");
+      expect(mockWatch).toHaveBeenCalledTimes(1);
+
+      // Invoking the same registered @watch task a second time should hit
+      // the `isWatching` guard and return immediately, without watching again.
+      await execTask("@watch");
+      expect(mockWatch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should skip a target task that has nothing to watch", async () => {
+      tron.task({ name: "nothing-to-watch-task" });
+      tron.addWatcher();
+
+      await expect(execTask("@watch")).resolves.not.toThrow();
+      expect(mockWatch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("_resolveBuildSet edge cases", () => {
+    // Some resolved buildSet shapes end up as a single, plain callback-style
+    // gulp task (not wrapped in gulp.series/BuildStream.main's promise), so
+    // execTask()'s no-op callback never signals real completion. This waits
+    // for whichever convention the resolved task actually uses.
+    async function runAndWait(taskName: GulpTaskName) {
+      const wrapperTask = gulp.task(taskName);
+      if (!wrapperTask) throw new Error(`Task "${taskName}" is not defined`);
+
+      await new Promise<void>((resolve, reject) => {
+        const maybePromise = wrapperTask((err?: Error | null) => {
+          if (err) reject(err);
+          else resolve();
+        });
+        if (maybePromise && typeof (maybePromise as { then?: unknown }).then === "function") {
+          (maybePromise as Promise<unknown>).then(() => resolve(), reject);
+        }
+      });
+    }
+
+    it("should throw when a dependsOn/triggers task name is not registered", () => {
+      expect(() =>
+        tron.task({ name: "mainTask-missing-dep", dependsOn: "does-not-exist" }),
+      ).toThrow(/is not found/);
+    });
+
+    it("should wrap a named raw BuildFunction passed as triggers into an anonymous task", async () => {
+      const calls: string[] = [];
+      function myRawBuildFn(bs: BuildStream) {
+        calls.push(bs.name);
+      }
+      tron.task({
+        name: "mainTask-raw-fn",
+        build: () => {},
+        triggers: myRawBuildFn as BuildFunction,
+      });
+
+      await expect(runAndWait("mainTask-raw-fn")).resolves.not.toThrow();
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatch(/^tron-anonymous#\d+-myRawBuildFn$/);
+    });
+
+    it("should name a nameless raw BuildFunction 'buildFunc' in its anonymous task name", async () => {
+      const calls: string[] = [];
+      // An array element gets no name inference (unlike an object property),
+      // so this function's .name is "".
+      const anonymousFns = [
+        (bs: BuildStream) => {
+          calls.push(bs.name);
+        },
+      ];
+      tron.task({
+        name: "mainTask-anon-fn",
+        build: () => {},
+        dependsOn: anonymousFns as unknown as BuildFunction,
+      });
+
+      await expect(runAndWait("mainTask-anon-fn")).resolves.not.toThrow();
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatch(/^tron-anonymous#\d+-buildFunc$/);
+    });
+
+    it("should strip redundant nested arrays in a series buildSet", async () => {
+      const calls: string[] = [];
+      const build: BuildFunction = (bs) => {
+        calls.push(bs.name);
+      };
+      tron.task("nested-s1", build);
+      tron.task({ name: "nested-series-main", build, dependsOn: [["nested-s1"]] });
+
+      await expect(runAndWait("nested-series-main")).resolves.not.toThrow();
+      expect(calls).toEqual(expect.arrayContaining(["nested-s1", "nested-series-main"]));
+    });
+
+    it("should strip redundant nested arrays in a parallel buildSet", async () => {
+      const calls: string[] = [];
+      const build: BuildFunction = (bs) => {
+        calls.push(bs.name);
+      };
+      tron.task("nested-p1", build);
+      tron.task("nested-p2", build);
+      tron.task({
+        name: "nested-parallel-main",
+        build,
+        triggers: { set: [["nested-p1", "nested-p2"]] },
+      });
+
+      await expect(runAndWait("nested-parallel-main")).resolves.not.toThrow();
+      expect(calls).toEqual(
+        expect.arrayContaining(["nested-p1", "nested-p2", "nested-parallel-main"]),
+      );
+    });
+
+    it("should throw for a completely unknown buildSet type", () => {
+      expect(() =>
+        tron.task({ name: "bad-buildset-task", dependsOn: 42 as unknown as BuildFunction }),
+      ).toThrow(/Unknown type of buildSet/);
+    });
+
+    it("should accept a raw TaskConfig object (without 'set') as dependsOn", async () => {
+      const calls: string[] = [];
+      const build: BuildFunction = (bs) => {
+        calls.push(bs.name);
+      };
+      tron.task({
+        name: "mainTask-inline-taskconfig",
+        build,
+        dependsOn: { name: "inline-dep-task", build } as TaskConfig,
+      });
+
+      await expect(runAndWait("mainTask-inline-taskconfig")).resolves.not.toThrow();
+      expect(calls).toEqual(
+        expect.arrayContaining(["inline-dep-task", "mainTask-inline-taskconfig"]),
+      );
+    });
+
+    it("should not throw when a parallel set resolves to no tasks at all", () => {
+      expect(() =>
+        tron.task({ name: "mainTask-empty-parallel", triggers: { set: [] } }),
+      ).not.toThrow();
+    });
+
+    it("should use a single task directly (no gulp.parallel wrapper) for a single-item parallel set", async () => {
+      const calls: string[] = [];
+      const build: BuildFunction = (bs) => {
+        calls.push(bs.name);
+      };
+      tron.task("single-p-task", build);
+      tron.task({
+        name: "mainTask-single-parallel",
+        build,
+        triggers: { set: ["single-p-task"] },
+      });
+
+      await expect(runAndWait("mainTask-single-parallel")).resolves.not.toThrow();
+      expect(calls).toEqual(expect.arrayContaining(["single-p-task", "mainTask-single-parallel"]));
+    });
+
+    it("should throw when a nested TaskConfig has an empty name", () => {
+      expect(() =>
+        tron.task({
+          name: "mainTask-empty-nested-name",
+          dependsOn: { name: "", build: () => {} } as TaskConfig,
+        }),
+      ).toThrow(/invalid task name/);
+    });
+  });
+
+  describe("findTask method", () => {
+    it("should return undefined when called with no name", () => {
+      expect(tron.findTask()).toBeUndefined();
+      expect(tron.findTask(undefined)).toBeUndefined();
+    });
   });
 
   describe("selectTasks method", () => {

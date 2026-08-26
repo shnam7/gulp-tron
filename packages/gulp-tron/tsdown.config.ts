@@ -5,7 +5,7 @@ export default defineConfig({
   format: ["esm", "cjs"],
   dts: true,
   cjsDefault: false,
-  deps: { skipNodeModulesBundle: true },
+  deps: { neverBundle: true },
   platform: "node",
   target: "node18",
 });

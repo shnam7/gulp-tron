@@ -1,7 +1,6 @@
 import process from "node:process";
 
 export { arrayify, default as is } from "@wicle/is";
-export * from "./copy.js";
 export * from "./exec.js";
 
 export async function flushStdout() {
@@ -29,12 +28,6 @@ export async function flushAllStdio() {
 }
 
 export async function timer(msec: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, msec);
-  });
-}
-
-export async function delay(msec: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, msec);
   });

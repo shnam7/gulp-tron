@@ -15,10 +15,12 @@ describe("core index exports", () => {
     expect(core.BuildStream).toBeDefined();
     expect(core.BuildStream.prototype).toBeDefined();
     expect(core.BuildStream.prototype.constructor).toBe(core.BuildStream);
+    // copy() is only available as a BuildStream method now (see build-stream.ts);
+    // there is no standalone top-level `copy` export anymore.
+    expect(core.BuildStream.prototype.copy).toBeInstanceOf(Function);
   });
   it("should export utils", () => {
     expect(core).toHaveProperty("arrayify");
-    expect(core).toHaveProperty("copy");
     expect(core).toHaveProperty("exec");
     expect(core).toHaveProperty("is");
   });

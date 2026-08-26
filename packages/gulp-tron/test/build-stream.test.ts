@@ -7,7 +7,7 @@ import gulp from "gulp";
 import { pEvent } from "p-event";
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { BuildStream } from "../src/build-stream.js";
-// import { exec } from "../src/utils/exec.js";
+import type { BuildFunction } from "../src/types.js";
 import { timer } from "../src/utils/index.js";
 
 vi.mock("browser-sync", () => ({
@@ -17,9 +17,13 @@ vi.mock("browser-sync", () => ({
   },
 }));
 
-vi.mock("../src/utils/exec.js", () => ({
-  exec: vi.fn().mockResolvedValue(undefined),
-}));
+// Wrap the real copy-changed implementation so individual tests can
+// override copyChangedAsync's behavior (e.g. mockRejectedValueOnce) while
+// every other test keeps using the genuine implementation by default.
+vi.mock("copy-changed", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("copy-changed")>();
+  return { ...actual, copyChangedAsync: vi.fn(actual.copyChangedAsync) };
+});
 
 // Mock all external dependencies
 // vi.mock('gulp', () => ({
@@ -49,10 +53,6 @@ vi.mock("../src/utils/exec.js", () => ({
 //     default: vi.fn(() => new PassThrough({objectMode: true})),
 // }))
 
-// vi.mock('../src/utils/exec.js', () => ({
-//     exec: vi.fn().mockResolvedValue(undefined),
-// }))
-
 // vi.mock('gulp-filter', () => ({
 //     default: vi.fn(() => new PassThrough({objectMode: true})),
 // }))
@@ -69,10 +69,6 @@ vi.mock("../src/utils/exec.js", () => ({
 //     default: vi.fn(() => new PassThrough({objectMode: true})),
 //     compareLastModifiedTime: vi.fn(),
 //     compareContents: vi.fn(),
-// }))
-
-// vi.mock('../src/utils/copy.js', () => ({
-//     copy: vi.fn(async () => {}),
 // }))
 
 const tmpDir = path.join(os.tmpdir(), "build-stream-test");
@@ -124,7 +120,8 @@ describe("BuildStream", () => {
       expect(bs.opts).toEqual({});
       expect(bs.performance.startTime).toBeGreaterThan(0);
       expect(bs.performance.elapsedTime).toBeLessThan(bs.performance.startTime);
-      expect(bs.logger).toBeInstanceOf(Function);
+      expect(bs.logger.info).toBeInstanceOf(Function);
+      expect(bs.logger.error).toBeInstanceOf(Function);
     });
     it("should execute build function", async () => {
       const buildFunc = vi.fn();
@@ -132,6 +129,86 @@ describe("BuildStream", () => {
       const result = await BuildStream.main(bs1, buildFunc);
       expect(buildFunc).toHaveBeenCalledWith(bs1);
       expect(result).toBe(bs1.stream);
+    });
+    it("should wait for the stream to finish when src() was called inside the build function", async () => {
+      const bs1 = new BuildStream("test-main-src");
+      const buildFunc: BuildFunction = (bs) => {
+        bs.src(path.join(srcRoot, "**/*.*"));
+      };
+      const resultStream = await BuildStream.main(bs1, buildFunc);
+      expect(resultStream).toBe(bs1.stream);
+    });
+  });
+
+  describe("log method", () => {
+    it("should do nothing when called with no arguments", () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("no-args", { logger: mockLogger });
+
+      const result = named.log();
+
+      expect(result).toBe(named);
+      expect(mockLogger.info).not.toHaveBeenCalled();
+    });
+
+    it("should call the supplied opts.logger as-is, without forcing a prefix on it", () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("prefixed-stream", { logger: mockLogger });
+
+      named.log("hello");
+
+      // opts.logger is the caller's own logger, so it's used exactly as
+      // given — this.log()/this.logger no longer build a prefixed string
+      // themselves; the `[name]` prefix is only applied by the *default*
+      // pino-backed logger (see the "default logger" test below).
+      expect(mockLogger.info).toHaveBeenCalledWith("hello");
+    });
+
+    it("should expose the supplied opts.logger directly as this.logger, with no wrapper", () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("prefixed-stream", { logger: mockLogger });
+
+      expect(named.logger).toBe(mockLogger);
+
+      named.logger.error("boom");
+      expect(mockLogger.error).toHaveBeenCalledWith("boom");
+    });
+
+    it("should tag the default logger's rendered output with [name] when no custom logger is given", () => {
+      const chunks: string[] = [];
+      const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
+        chunks.push(String(chunk));
+        return true;
+      });
+
+      const named = new BuildStream("prefixed-stream");
+      named.log("hello");
+
+      writeSpy.mockRestore();
+      const output = chunks.join("");
+      expect(output).toContain("[prefixed-stream]");
+      expect(output).toContain("hello");
     });
   });
 
@@ -145,7 +222,8 @@ describe("BuildStream", () => {
       expect(bs.performance.startTime).toBeGreaterThan(0);
       expect(bs.performance.elapsedTime).toBeLessThan(bs.performance.startTime);
       expect(bs.promiseQ).toBeInstanceOf(Promise);
-      expect(bs.logger).toBeInstanceOf(Function);
+      expect(bs.logger.info).toBeInstanceOf(Function);
+      expect(bs.logger.error).toBeInstanceOf(Function);
     });
     it("should initialize with name argument only", () => {
       const bs = new BuildStream("test-name");
@@ -214,6 +292,14 @@ describe("BuildStream", () => {
         sourcemaps: false,
       });
     });
+    it("should keep sourcemaps as-is when it is already a function", () => {
+      const sourcemapsFn = () => {};
+      bs.src(path.join(srcRoot, "**/*.js"), { sourcemaps: sourcemapsFn });
+      expect(mockSrc).toHaveBeenCalledWith(
+        path.join(srcRoot, "**/*.js"),
+        expect.objectContaining({ sourcemaps: sourcemapsFn }),
+      );
+    });
   });
 
   describe("add method", () => {
@@ -259,6 +345,20 @@ describe("BuildStream", () => {
       expect(files).toContain(path.join(srcRoot, "styles/test.css"));
       expect(files).toContain(path.join(srcRoot, "package.json"));
     });
+    it("should handle a pattern that is already negated", async () => {
+      const src = path.join(srcRoot, "**/*.*");
+      const files: string[] = [];
+
+      // "!*.js" already starts with "!" - remove() should not double-negate it
+      bs.src(src)
+        .remove("!*.js")
+        .peek((file) => {
+          files.push(file.path);
+        });
+      await pEvent(bs.stream, "finish");
+      expect(files.length).toBe(1);
+      expect(files).toContain(path.join(srcRoot, "scripts/test.js"));
+    });
   });
 
   describe("filter method", () => {
@@ -273,6 +373,21 @@ describe("BuildStream", () => {
       await pEvent(bs.stream, "finish");
       expect(files.length).toBe(1);
       expect(files).toContain(path.join(srcRoot, "styles/test.css"));
+    });
+    it("should pass a filter function through unchanged", async () => {
+      const src = path.join(srcRoot, "**/*.*");
+      const files: string[] = [];
+      bs.src(src)
+        .filter((file) => file.path.endsWith(".css"))
+        .peek((file) => {
+          files.push(file.path);
+        });
+      await pEvent(bs.stream, "finish");
+      expect(files).toEqual([path.join(srcRoot, "styles/test.css")]);
+    });
+    it("should return this unchanged when patterns resolve to an empty list", () => {
+      const result = bs.filter([123 as unknown as string]);
+      expect(result).toBe(bs);
     });
   });
 
@@ -355,6 +470,112 @@ describe("BuildStream", () => {
       expect(files.length).toBe(1);
       expect(files[0]).toBe(scriptFile);
     });
+    it("should return this unchanged when no dest is given or configured", () => {
+      const noOptsBs = new BuildStream("no-dest");
+      const result = noOptsBs.changed();
+      expect(result).toBe(noOptsBs);
+    });
+  });
+
+  describe("copy method", () => {
+    it("should copy files from a glob to a destination directory", async () => {
+      const copyDest = path.join(tmpDir, "copy-dest-glob");
+
+      await bs.copy(path.join(srcRoot, "**/*.*"), copyDest).sync();
+
+      expect(fs.existsSync(path.join(copyDest, "scripts/test.js"))).toBeTruthy();
+      expect(fs.existsSync(path.join(copyDest, "styles/test.css"))).toBeTruthy();
+      expect(fs.existsSync(path.join(copyDest, "package.json"))).toBeTruthy();
+    });
+
+    it("should copy multiple source/destination pairs and merge shared options into each param", async () => {
+      const dest1 = path.join(tmpDir, "copy-dest-1");
+      const dest2 = path.join(tmpDir, "copy-dest-2");
+
+      await bs
+        .copy([
+          { src: path.join(srcRoot, "scripts/**/*.js"), dest: dest1 },
+          { src: path.join(srcRoot, "styles/**/*.css"), dest: dest2 },
+        ])
+        .sync();
+
+      expect(fs.existsSync(path.join(dest1, "test.js"))).toBeTruthy();
+      expect(fs.existsSync(path.join(dest2, "test.css"))).toBeTruthy();
+    });
+
+    it("should print a summary by default, and stay silent with logLevel: 'silent'", async () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+
+      // copy() now has the exact same interface as copy-changed itself,
+      // so its default logging behavior is copy-changed's own: a summary
+      // is printed via onFinish unless logLevel is 'silent'.
+      await bs
+        .copy(path.join(srcRoot, "**/*.*"), path.join(tmpDir, "copy-dest-stats"), {
+          logger: mockLogger,
+        })
+        .sync();
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("file(s) copied"));
+
+      mockLogger.info.mockClear();
+
+      await bs
+        .copy(path.join(srcRoot, "**/*.*"), path.join(tmpDir, "copy-dest-quiet"), {
+          logger: mockLogger,
+          logLevel: "silent",
+        })
+        .sync();
+      expect(mockLogger.info).not.toHaveBeenCalled();
+    });
+
+    it("should log the error and reject the promise queue when the copy fails", async () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      // pkgFile already exists as a plain file, so copying a glob (dynamic
+      // pattern) onto it is rejected by copy-changed instead of silently
+      // discarded, and BuildStream should propagate that failure.
+      bs.copy(path.join(srcRoot, "**/*.js"), pkgFile, { logger: mockLogger });
+
+      await expect(bs.sync()).rejects.toThrow();
+      // opts.logger was passed explicitly, so it's used as-is (no
+      // this.log() prefixing — that only applies to BuildStream's own
+      // fallback logger).
+      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining("copy failed"));
+    });
+
+    it("should stringify a non-Error rejection value", async () => {
+      const { copyChangedAsync } = await import("copy-changed");
+      vi.mocked(copyChangedAsync).mockRejectedValueOnce("plain string failure");
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+
+      bs.copy(path.join(srcRoot, "**/*.*"), path.join(tmpDir, "copy-dest-nonerror"), {
+        logger: mockLogger,
+      });
+
+      await expect(bs.sync()).rejects.toBe("plain string failure");
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining("copy failed - plain string failure"),
+      );
+    });
   });
 
   describe("del method", () => {
@@ -382,9 +603,41 @@ describe("BuildStream", () => {
       expect(files).toContain(path.join(dest, "styles/test.css"));
       expect(files).toContain(path.join(dest, "package.json"));
     });
+    it("should not log the deleting message when logLevel is silent", async () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("del-silent", { logger: mockLogger });
+
+      named.del(path.join(dest, "**/*.does-not-exist"), { force: true, logLevel: "silent" });
+
+      expect(mockLogger.info).not.toHaveBeenCalled();
+    });
   });
 
   describe("clean method", () => {
+    it("should not log the cleaning message when logLevel is silent", () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("clean-silent", { logger: mockLogger, clean: dest });
+      const mockDel = vi.spyOn(named, "del").mockReturnValue(named);
+
+      named.clean([], { logLevel: "silent" });
+
+      expect(mockLogger.info).not.toHaveBeenCalled();
+      mockDel.mockRestore();
+    });
     it("should call del method with collected list of clean targets", async () => {
       // create a new BuildStream instance with clean option
       bs = new BuildStream("clean-test", { clean: dest });
@@ -401,15 +654,112 @@ describe("BuildStream", () => {
     });
   });
 
-  // describe("exec method", () => {
-  //   it("should execute a command and return BuildStream", async () => {
-  //     const command = 'echo "test"';
-  //     const result = bs.exec(command);
-  //     expect(result).toBe(bs);
-  //     expect(exec).toHaveBeenCalledTimes(1);
-  //     expect(exec).toHaveBeenCalledWith(command, expect.any(Object));
-  //   });
-  // });
+  describe("exec method", () => {
+    it("should execute a command successfully and resolve the promise queue", async () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("exec-test", { logger: mockLogger });
+
+      const result = named.exec("echo hello-from-exec");
+      expect(result).toBe(named);
+      await expect(named.sync()).resolves.toBeUndefined();
+
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("hello-from-exec"));
+    });
+
+    it("should not log anything extra when the command produces no stdout", async () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("exec-test", { logger: mockLogger });
+
+      named.exec("true");
+      await expect(named.sync()).resolves.toBeUndefined();
+
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("exec: 'true'"));
+      expect(mockLogger.info).toHaveBeenCalledTimes(1);
+    });
+
+    it("should log stdout (but no stderr call) when a failing command only produces stdout", async () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("exec-test", { logger: mockLogger });
+
+      named.exec("node -e \"console.log('failing-stdout'); process.exit(1)\"");
+
+      await expect(named.sync()).rejects.toThrow();
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("failing-stdout"));
+    });
+
+    it("should log the '--> done.' message when logLevel is verbose", async () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("exec-test", { logger: mockLogger, logLevel: "verbose" });
+
+      named.exec("echo hi");
+      await named.sync();
+
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("--> done."));
+    });
+
+    it("should stay silent before running when logLevel is silent", async () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("exec-test", { logger: mockLogger, logLevel: "silent" });
+
+      named.exec("echo hi");
+      await named.sync();
+
+      expect(mockLogger.info).not.toHaveBeenCalledWith(expect.stringContaining("exec: 'echo hi'"));
+    });
+
+    it("should reject and log stdout/stderr when the command fails", async () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("exec-test", { logger: mockLogger });
+
+      named.exec("node -e \"console.error('boom'); process.exit(1)\"");
+
+      await expect(named.sync()).rejects.toThrow();
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("failed to execute"));
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("boom"));
+    });
+  });
 
   describe("dest method", () => {
     it("should call gulp.dest with bs.opts.dest", async () => {
@@ -425,12 +775,33 @@ describe("BuildStream", () => {
 
       mockDest.mockRestore();
     });
+    it("should fall back to '.' when neither a folder argument nor opts.dest is given", async () => {
+      const mockDest = vi
+        .spyOn(gulp, "dest")
+        .mockImplementation(() => new PassThrough({ objectMode: true }));
+
+      await bs.src(path.join(srcRoot, "**/*.*")).dest().finish();
+
+      expect(mockDest).toHaveBeenCalledWith(".", {});
+
+      mockDest.mockRestore();
+    });
   });
 
   describe("reload method", () => {
     it("should call browser-sync stream method", () => {
       bs.reload();
       expect(browserSync.stream).toHaveBeenCalledTimes(1);
+    });
+    it("should do nothing when browser-sync is not active", () => {
+      const originalActive = browserSync.active;
+      (browserSync as unknown as { active: boolean }).active = false;
+
+      const result = bs.reload();
+
+      expect(result).toBe(bs);
+      expect(browserSync.stream).not.toHaveBeenCalled();
+      (browserSync as unknown as { active: boolean }).active = originalActive;
     });
   });
 
@@ -451,6 +822,62 @@ describe("BuildStream", () => {
 
       expect(files.length).toBe(3);
       expect(filesAfterClear.length).toBe(0);
+    });
+  });
+
+  describe("through method", () => {
+    it("should pipe a transform stream that modifies files", async () => {
+      const names: string[] = [];
+      await bs
+        .src(path.join(srcRoot, "**/*.*"))
+        .through((file, _enc, cb) => {
+          names.push(path.basename(file.path));
+          cb(null, file);
+        })
+        .finish();
+
+      expect(names).toEqual(expect.arrayContaining(["test.js", "test.css", "package.json"]));
+    });
+  });
+
+  describe("intercept method", () => {
+    it("should call the transform's callback explicitly with data", async () => {
+      const names: string[] = [];
+      await bs
+        .src(path.join(srcRoot, "**/*.*"))
+        .intercept((file, _enc, cb) => {
+          names.push(path.basename(file.path));
+          cb(undefined, file);
+        })
+        .finish();
+
+      expect(names).toEqual(expect.arrayContaining(["test.js", "test.css", "package.json"]));
+    });
+
+    it("should call the flush callback explicitly on stream end", async () => {
+      let finished = false;
+      await bs
+        .src(path.join(srcRoot, "**/*.*"))
+        .intercept(undefined, (cb) => {
+          finished = true;
+          cb();
+        })
+        .finish();
+
+      expect(finished).toBe(true);
+    });
+  });
+
+  describe("detachStream method", () => {
+    it("should detach the current stream and reset to a null stream", async () => {
+      await bs.src(path.join(srcRoot, "**/*.*")).finish();
+      const originalStream = bs.stream;
+
+      const detached = bs.detachStream();
+
+      expect(detached).toBe(originalStream);
+      expect(bs.stream).not.toBe(originalStream);
+      expect(bs.stream).toBeInstanceOf(PassThrough);
     });
   });
 
@@ -537,13 +964,36 @@ describe("BuildStream", () => {
 
   describe("debug method", () => {
     it("should log debug messages", async () => {
-      const consoleSpy = vi.spyOn(console, "log");
-      await bs.src(scriptFile).debug("debug message").finish();
-      // await bs.src(path.join(srcRoot, '**/*.js')).debug('debug message').finish()
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("test-stream::debug message"),
-      );
-      consoleSpy.mockRestore();
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("test-stream", { logger: mockLogger });
+
+      await named.src(scriptFile).debug("debug message").finish();
+
+      // opts.logger (mockLogger) is used as-is here too, via this.log() —
+      // no `[name]` prefix is forced on a caller-supplied logger.
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("debug message"));
+    });
+    it("should accept a DebugOptions object instead of a title string", async () => {
+      const mockLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        fatal: vi.fn(),
+      };
+      const named = new BuildStream("test-stream", { logger: mockLogger });
+
+      await named.src(scriptFile).debug({ title: "custom:" }).finish();
+
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("custom:"));
     });
   });
 });

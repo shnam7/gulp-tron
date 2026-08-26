@@ -1,2 +1,2 @@
-export type { DataFunction, DataObject } from "gulp-data";
+export type { DataFunction } from "./data.js";
 export * from "./data.js";

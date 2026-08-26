@@ -5,9 +5,7 @@ export default defineConfig({
   format: ["esm", "cjs"],
   dts: true,
   deps: {
-    neverBundle: ["gulp-tron"],
-    skipNodeModulesBundle: true,
-    onlyBundle: false,
+    neverBundle: true,
   },
   platform: "node",
   target: "node18",

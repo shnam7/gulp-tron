@@ -36,5 +36,11 @@ describe("Exec Utility", () => {
         message: 'Command "false" exited with code: 1',
       });
     });
+
+    it("should handle a spawn error (e.g. invalid cwd)", async () => {
+      const result = await exec("echo test", { cwd: "/definitely/does/not/exist/xyz" });
+      expect(result.exitCode).toBeUndefined();
+      expect(result.message).toContain('Failed to execute "echo test"');
+    });
   });
 });

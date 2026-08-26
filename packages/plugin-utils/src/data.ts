@@ -1,60 +1,107 @@
-import fs from "node:fs";
+import fs from "node:fs/promises";
 import path from "node:path";
-import fg from "fast-glob";
-import dataG, { type DataFunction, type DataObject } from "gulp-data";
+import type { TransformCallback } from "node:stream";
 import { arrayify, type BuildStream, is, type LogOptions, type PluginFunction } from "gulp-tron";
 import * as yaml from "js-yaml";
+import { glob } from "tinyglobby";
+import type File from "vinyl";
+
+export type DataObject = Record<string, unknown>;
+
+export type DataFunctionCallback = (
+  err: Error | null | undefined,
+  data?: Record<string, unknown>,
+) => void;
+export type DataFunction = (
+  file: File,
+  callback: DataFunctionCallback,
+) => Record<string, unknown> | undefined | Promise<Record<string, unknown> | undefined>;
 
 export type Globs = string | string[];
-// export type DataObject<T extends Record<string, unknown> = Record<string, unknown>> = T & LogOptions
-// export type DataFunction = (file: any, callback: TransformCallback) => any
-// export type DataOptions = DataFunction | DataObject | Globs // function returing data or data itself(any type)
 
-export function loadData(patterns: Globs, options?: LogOptions): DataObject {
+/**
+ * Scans and parses YAML/JSON files asynchronously, returning a merged data object.
+ */
+export async function loadDataAsync(
+  patterns: Globs,
+  options: LogOptions = {},
+): Promise<DataObject> {
   let data: DataObject = {};
-  const logger = options?.logger ?? console.log;
-  for (const pattern of arrayify(patterns)) {
-    for (const file of fg.globSync(pattern)) {
-      const ext = path.extname(file).toLowerCase();
+  const logger = options.logger ?? console;
 
+  const matchedFiles = await glob(arrayify(patterns));
+
+  for (const file of matchedFiles) {
+    const ext = path.extname(file).toLowerCase();
+
+    try {
       if (ext === ".yml" || ext === ".yaml") {
-        let yamlData = yaml.load(fs.readFileSync(file, "utf8"));
+        const content = await fs.readFile(file, "utf8");
+        let yamlData = yaml.load(content);
         yamlData = { [path.parse(file).name]: yamlData };
         data = { ...data, ...(yamlData as DataObject) };
-      } else if (ext === ".json")
+      } else if (ext === ".json") {
+        const content = await fs.readFile(file, "utf8");
         data = {
           ...data,
           [path.parse(file).name]: {
-            ...(JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>),
+            ...JSON.parse(content),
           },
         };
-      else {
-        const logger = options?.logger ?? console.warn;
-        logger(`loadData: skipping unsupported file type: ${file}`);
+      } else {
+        logger.warn(`loadData: skipping unsupported file type: ${file}`);
       }
+    } catch (fileErr) {
+      logger.error(`loadData: failed to read file [${file}]:`, fileErr);
     }
   }
 
   const patternStr = is.isArray(patterns) ? (patterns as string[]).join(",") : patterns;
-  if (options?.logLevel === "verbose") logger(`loadData:${patternStr.toString()}:`, data);
+  if (options?.logLevel === "verbose") logger.info(`loadData:${patternStr.toString()}:`, data);
   return data;
 }
 
 /**
- * Data plugin - wrapper for gulp-data (attach data to file.data)
- * @param data function returning data or any data
+ * Data plugin - Attaches data to file.data using BuildStream.intercept()
+ * @param data Glob patterns or a custom function returning data
  * @returns PluginFunction
  */
 export function dataP(globOrFunc: Globs | DataFunction): PluginFunction;
-// export function dataP(obj: DataObject): PluginFunction
 export function dataP(data: Globs | DataFunction): PluginFunction {
   return (bs: BuildStream) => {
+    let loadingPromise: Promise<DataObject> | null = null;
+
     if (is.isString(data) || is.isArray(data)) {
       const logOptions = { logLevel: bs.opts.logLevel, logger: bs.logger };
-      return bs.pipe(dataG(loadData(data as Globs, logOptions)));
+      loadingPromise = loadDataAsync(data, logOptions);
     }
 
-    return bs.pipe(dataG(data as DataFunction));
+    return bs.intercept(async (file: File, _enc: string, cb: TransformCallback) => {
+      file.data = file.data || {};
+
+      try {
+        // 1. Static Glob Pattern Branch (Cached execution)
+        if (loadingPromise) {
+          const loadedData = await loadingPromise;
+          file.data = { ...file.data, ...loadedData };
+          return cb(null, file);
+        }
+
+        // 2. Dynamic DataFunction Branch
+        if (typeof data === "function") {
+          const result = await data(file, (err, resData) => {
+            if (err) return cb(err);
+            if (resData) file.data = { ...file.data, ...resData };
+            cb(null, file);
+          });
+
+          if (result) file.data = { ...file.data, ...result };
+          return cb(null, file);
+        }
+      } catch (err) {
+        return cb(err instanceof Error ? err : new Error(String(err)));
+      }
+    });
   };
 }
 

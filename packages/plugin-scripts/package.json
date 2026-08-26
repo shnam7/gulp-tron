@@ -56,12 +56,12 @@
     "@types/gulp-concat": "^0.0.37",
     "@types/gulp-rename": "^2.0.7",
     "@types/gulp-terser": "^1.2.6",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "chokidar-cli": "^3.0.0",
     "gulp-tron": "workspace:*",
     "rimraf": "^6.1.3",
     "tsdown": "^0.22.14",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }

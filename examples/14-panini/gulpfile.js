@@ -6,7 +6,7 @@ import { cleanCssP, sassP } from "@gulp-tron/plugin-styles";
 import htmlCleanG from "gulp-htmlmin";
 import prettierG from "gulp-prettier";
 // import swc from "gulp-swc";
-import tron, { delay, parallel } from "gulp-tron";
+import tron, { parallel } from "gulp-tron";
 import tsdownG from "gulp-tsdown";
 import paniniG from "panini";
 

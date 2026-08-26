@@ -1,8 +1,15 @@
 import child_process from "node:child_process";
 import { PassThrough, type Stream, Transform, type TransformCallback } from "node:stream";
-import { arrayify, type Glob, isAsyncFunction, isFunction, isGlob, isString } from "@wicle/is";
+import { arrayify, type Glob, isAsyncFunction, isFunction, isGlob } from "@wicle/is";
 import { Mutex } from "@wicle/mutex";
+import { createLogger, type Logger } from "@wicle/tiny-logger";
 import browserSync from "browser-sync";
+import {
+  type CopyOptions as CopyChangedOptions,
+  type CopyParam,
+  type CopyResult,
+  copyChangedAsync,
+} from "copy-changed";
 import { deleteSync } from "del";
 import es from "event-stream";
 import changedG, { compareContents, compareLastModifiedTime } from "gulp-changed";
@@ -24,8 +31,14 @@ import {
   type PluginFunction,
   type SrcOptions,
 } from "./types.js";
-import { type CopyOptions, type CopyParam, copy } from "./utils/copy.js";
 import { flushAllStdio } from "./utils/index.js";
+
+export type { CopyParam, CopyResult };
+
+// Same interface as 'copy-changed' itself — no BuildStream-specific
+// additions (its `logger: Logger` field already matches BuildStream's
+// own unified Logger type, so nothing needs adapting here either).
+export type CopyOptions = CopyChangedOptions;
 
 // --- Type aliases
 type SrcMethod = typeof gulp.src;
@@ -74,7 +87,13 @@ function appendG(...args: Parameters<typeof gulp.src>) {
  *  Gulp Stream Wrapper providing API for build processing.
  *****************************************************************************/
 export class BuildStream {
-  protected static nullStream(): Transform {
+  /**
+   * Create an empty, already-usable stream. Public (not protected):
+   * it's a pure factory with no internal state to protect, and is used
+   * both internally (as the default/detached stream) and externally
+   * (e.g. tests exercising a stream-less BuildStream).
+   */
+  static nullStream(): Transform {
     return new PassThrough({ objectMode: true });
   }
 
@@ -87,7 +106,15 @@ export class BuildStream {
    * @param options options for the Transform stream
    * @returns A Transform stream that applies the given transform and flush functions
    */
-  private static through(
+  /**
+   * Create a through stream wired with the given transform/flush
+   * functions. Public (not private): same reasoning as nullStream()
+   * above — a pure stream factory, exercised directly in tests.
+   * Note: this is a *static* factory distinct from the public
+   * *instance* method of the same name below (`bs.through(...)`),
+   * which pipes a transform into this BuildStream's own stream.
+   */
+  static through(
     transform?: TransformFunction,
     flush?: FlushFunction,
     options?: TransformOptions,
@@ -132,6 +159,7 @@ export class BuildStream {
 
   readonly #name: string; // BuildStream instance name (same as gulp task name)
   readonly #opts: BuildOptions;
+  readonly #logger: Logger;
   readonly #mutex: Mutex = new Mutex();
   #stream: GulpStream = BuildStream.nullStream().end(); // call end() to make sure 'finish' event is emitted even src is not called
   #promiseQ: Promise<unknown> = Promise.resolve();
@@ -150,6 +178,9 @@ export class BuildStream {
   ) {
     this.#name = name ?? anonymousTaskName;
     this.#opts = { ...opts };
+    // Reuse the caller's own logger as-is (no forced prefix) when given;
+    // only create a new pino-backed logger when we need our own default.
+    this.#logger = opts.logger ?? createLogger({ prefix: `[${this.#name}]` });
     if (stream) this.#stream = stream;
     if (promiseQ) this.#promiseQ = promiseQ;
   }
@@ -174,8 +205,17 @@ export class BuildStream {
     return this.#opts;
   }
 
-  get logger() {
-    return (...args: Parameters<typeof console.log>) => this.log(...args);
+  /**
+   * Logger for this BuildStream instance. Defaults to a pino-backed
+   * Logger (from `@wicle/tiny-logger`) tagged with `[name]` as its
+   * prefix, so the prefix is applied by the logger itself at render
+   * time — every level (info/warn/error/...), called from anywhere,
+   * always carries it, not just messages that happen to go through
+   * this.log(). When `opts.logger` was supplied at construction, that
+   * logger is returned as-is (no prefix is forced on it).
+   */
+  get logger(): Logger {
+    return this.#logger;
   }
 
   /** Modern performance metrics getter */
@@ -326,20 +366,24 @@ export class BuildStream {
 
   /**
    * Copy files from source to destination.
-   * Copy changed files only compared to destination counterpart.
-   * Refer to 'gulp-changed' for the details.
+   * Copy only changed files, compared by modification time and size.
+   * Delegates to the 'copy-changed' package. The copy runs asynchronously
+   * and is queued on this BuildStream's promise queue (like exec()), so
+   * a copy failure now propagates and fails the build instead of being
+   * silently discarded.
    *
    * @param globs Source files to copy
    * @param destPath destination path to copy
    * @param opts CopyOptions
    */
-  copy(globs: Glob, destPath: string, opts: CopyOptions): this;
+  copy(globs: Glob, destPath: string, opts?: CopyOptions): this;
 
   /**
    * Copy files from multiple sources to multiple destinations.
    *
    * @param params list of CopyParam (src to dest pairs)
-   * @param opts CopyOptions
+   * @param opts CopyOptions shared across all params (copy-changed's own
+   *   defaultOptions argument — each param's own `options` still wins)
    */
   copy(params: CopyParam | CopyParam[], opts?: CopyOptions): this;
 
@@ -349,9 +393,23 @@ export class BuildStream {
     arg2?: string | CopyOptions,
     arg3: CopyOptions = {},
   ): this {
-    copy(arg1, arg2, arg3);
+    // arg2 is either the dest path (glob+dest+opts form) or CopyOptions
+    // (params+opts form) — this checks which one it actually is.
+    const isDestString = typeof arg2 === "string";
+    const opts: CopyOptions = isDestString ? arg3 : ((arg2 as CopyOptions) ?? arg3);
+    const logger = opts.logger ?? this.logger;
+    const copyChangedOpts: CopyOptions = { ...opts, logger };
 
-    return this;
+    const copyPromise = (
+      isDestString
+        ? copyChangedAsync(arg1 as string | readonly string[], arg2 as string, copyChangedOpts)
+        : copyChangedAsync(arg1 as CopyParam | readonly CopyParam[], copyChangedOpts)
+    ).catch((error: unknown) => {
+      logger.error(`copy failed - ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    });
+
+    return this.promise(copyPromise);
   }
 
   /**
@@ -362,8 +420,8 @@ export class BuildStream {
    * @returns this
    */
   del(patterns: Glob, options: DelOptions = {}): this {
-    const logger = options.logger ?? this.opts.logger ?? this.logger;
-    if (options.logLevel !== "silent") logger(`deleting:[${arrayify(patterns).join(", ")}]`);
+    const logger = options.logger ?? this.logger;
+    if (options.logLevel !== "silent") logger.info(`deleting:[${arrayify(patterns).join(", ")}]`);
 
     deleteSync(patterns, options);
     return this;
@@ -381,7 +439,7 @@ export class BuildStream {
 
     const logger = options.logger ?? this.logger;
     if (options.logLevel !== "silent") {
-      logger(`cleaning:[${cleanList.join(", ")}]`);
+      logger.info(`cleaning:[${cleanList.join(", ")}]`);
     }
 
     return this.del(cleanList, { ...options, logLevel: "silent" });
@@ -538,7 +596,12 @@ export class BuildStream {
   }
 
   /**
-   * Print debug message using `gulp-debug2` with modern patterns
+   * Print debug message using `gulp-debug2` with modern patterns.
+   * gulp-debug2's `DebugOptions.logger` is a plain callback
+   * (`(message?, ...rest) => void`), not the ts-log `Logger` interface
+   * used elsewhere in BuildStream, so this keeps the original callback
+   * wiring (routed through this.log() to keep the `${name}::` prefix)
+   * instead of passing `this.logger` directly.
    *
    * @param title prefix that is to be added to the message.
    * @param options DebugOptions object.Refer to gulp-debug2 docs for the details.
@@ -562,7 +625,8 @@ export class BuildStream {
 
     const options: DebugOptions = {
       title: "debug:",
-      logger: titleOrOptions.logger ?? this.logger,
+      logger:
+        titleOrOptions.logger ?? ((...args: Parameters<typeof console.log>) => this.log(...args)),
       ...titleOrOptions,
       mutex: this.#mutex,
     };
@@ -642,27 +706,24 @@ export class BuildStream {
    * @returns Promise that resolves when the build stream is finished.
    */
   async finish() {
+    this.promise(pEvent(this.#stream, "finish"));
     await this.sync();
-    await pEvent(this.#stream, "finish");
   }
 
   /**
-   * Print message from this BuildStream instance with modern patterns
+   * Print message from this BuildStream instance with modern patterns.
+   * This is a thin convenience wrapper around this.logger.info() — the
+   * `[name]` prefix is applied by the Logger instance itself (see the
+   * constructor and the `logger` getter), not built here, so plain
+   * `this.logger.info(...)`/`.error(...)` calls elsewhere (copy()/del()/
+   * clean()) carry the same prefix without needing to go through log().
    *
    * @param args Items to print.
    * @returns this
    */
   log(...args: Parameters<typeof console.log>): this {
     if (args.length === 0) return this;
-
-    const [firstArg, ...restArgs] = args;
-    const prefixedArgs = isString(firstArg)
-      ? [`${this.name}::${firstArg}`, ...restArgs]
-      : [`${this.name}::`, firstArg, ...restArgs];
-
-    const logger = this.opts.logger ?? console.log;
-    logger(...prefixedArgs);
-
+    this.#logger.info(...args);
     return this;
   }
 

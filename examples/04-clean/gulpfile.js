@@ -14,7 +14,9 @@ const destRoot = path.join(basePath, "dist");
 const copier = {
   name: "copier",
   async build(bs) {
-    bs.copy({ src: [path.join(destRoot, "do-not-delete/sample.txt")], dest: destRoot });
+    await bs
+      .copy({ src: [path.join(destRoot, "do-not-delete/sample.txt")], dest: destRoot })
+      .finish();
 
     try {
       fs.accessSync(bs.opts.clean[0]);

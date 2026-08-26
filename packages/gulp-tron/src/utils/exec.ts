@@ -1,5 +1,6 @@
 import child_process, { type SpawnOptions } from "node:child_process";
 import process from "node:process";
+import { getDefaultLogger } from "@wicle/tiny-logger";
 import type { LogOptions } from "../types.js";
 
 /** Type for execution options combining spawn options with logging */
@@ -86,7 +87,7 @@ async function processToPromise(
  * @returns Process execution result with child process and promise
  */
 export async function exec(command: string, options: ExecOptions = {}): Promise<ExecResult> {
-  const logger = options.logger ?? console.log;
+  const logger = options.logger ?? getDefaultLogger();
 
   const parsed = parseCommand(command);
   if (!parsed.isValid) return { message: `Invalid command: '${command}'` };
@@ -94,7 +95,7 @@ export async function exec(command: string, options: ExecOptions = {}): Promise<
   const childProcess = createChildProcess(parsed.cmd, parsed.args, options);
 
   const ret = await processToPromise(childProcess, command);
-  if (options.logLevel !== "silent") logger(ret.message);
+  if (options.logLevel !== "silent") logger.info(ret.message);
 
   return ret;
 }

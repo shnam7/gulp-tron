@@ -41,12 +41,9 @@
     "reset:node": "find . -type d -name node_modules -exec rm -rf {} +"
   },
   "dependencies": {
-    "@wicle/is": "^2.0.1",
-    "fast-glob": "^3.3.3",
-    "gulp-concat": "^2.6.1",
-    "gulp-data": "^1.3.1",
-    "gulp-imagemin": "^9.2.0",
-    "js-yaml": "^5.2.2"
+    "js-yaml": "^5.4.1",
+    "tinyglobby": "^0.2.17",
+    "vinyl": "^3.0.1"
   },
   "devDependencies": {
     "@gulp-tron/tsconfig": "workspace:*",
@@ -55,12 +52,12 @@
     "@types/imagemin": "^9.0.1",
     "@types/js-yaml": "^4.0.9",
     "@types/through2": "^5.0.0",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "chokidar-cli": "^3.0.0",
     "gulp-tron": "workspace:*",
     "rimraf": "^6.1.3",
     "tsdown": "^0.22.14",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
