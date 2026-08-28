@@ -131,7 +131,13 @@ const typescript = {
   build(bs) {
     bs.src()
       .debug("src")
-      .pipe(tsdownG({ dts: true, tsconfig: "./src/scripts/typescript/tsconfig.json" }))
+      .pipe(
+        tsdownG({
+          dts: true,
+          tsconfig: "./src/scripts/typescript/tsconfig.json",
+          logLevel: "warn", // "silent", "error", "warn", "info"
+        }),
+      )
       .debug("dest")
       .dest();
     // bs.exec("tsc --project ./src/scripts/typescript/tsconfig.json").exec(

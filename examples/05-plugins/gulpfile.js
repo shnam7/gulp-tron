@@ -37,7 +37,7 @@ tron.task({
     // Take '*/css' files only
     bs.src()
       .debug("before:")
-      .intercept((file, enc, cb) => {
+      .intercept((file, _enc, cb) => {
         if (file.path.endsWith(".css")) {
           cb(null, file);
         } else {

@@ -6,3 +6,5 @@ node_modules/
 .turbo/
 coverage/
 dist/
+examples/05-plugins/scss/**/*.css
+examples/05-plugins/scss/**/*.map

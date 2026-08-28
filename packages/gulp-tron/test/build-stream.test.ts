@@ -1,7 +1,7 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { PassThrough, Transform } from "node:stream";
+import { getSilentLogger } from "@wicle/tiny-logger";
 import browserSync from "browser-sync";
 import gulp from "gulp";
 import { pEvent } from "p-event";
@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } fr
 import { BuildStream } from "../src/build-stream.js";
 import type { BuildFunction } from "../src/types.js";
 import { timer } from "../src/utils/index.js";
+import { captureStdio, createMockLogger, createTestFixture } from "./helpers/index.js";
 
 vi.mock("browser-sync", () => ({
   default: {
@@ -25,86 +26,19 @@ vi.mock("copy-changed", async (importOriginal) => {
   return { ...actual, copyChangedAsync: vi.fn(actual.copyChangedAsync) };
 });
 
-// Mock all external dependencies
-// vi.mock('gulp', () => ({
-//     default: {
-//         src: vi.fn(() => new PassThrough({objectMode: true})),
-//         dest: vi.fn(() => new PassThrough({objectMode: true})),
-//     },
-// }))
-
-// // Mock all external dependencies
-// vi.mock('../src/globals.js', () => ({
-//     gulp: {
-//         src: vi.fn(() => new PassThrough({objectMode: true})),
-//         dest: vi.fn(() => new PassThrough({objectMode: true})),
-//     },
-// }))
-
-// vi.mock('del', () => ({
-//     deleteSync: vi.fn(() => []),
-// }))
-
-// vi.mock('globby', () => ({
-//     globbySync: vi.fn(() => []),
-// }))
-
-// vi.mock('gulp-debug2', () => ({
-//     default: vi.fn(() => new PassThrough({objectMode: true})),
-// }))
-
-// vi.mock('gulp-filter', () => ({
-//     default: vi.fn(() => new PassThrough({objectMode: true})),
-// }))
-
-// vi.mock('gulp-rename', () => ({
-//     default: vi.fn(() => new PassThrough({objectMode: true})),
-// }))
-
-// vi.mock('gulp-order3', () => ({
-//     default: vi.fn(() => new PassThrough({objectMode: true})),
-// }))
-
-// vi.mock('gulp-changed', () => ({
-//     default: vi.fn(() => new PassThrough({objectMode: true})),
-//     compareLastModifiedTime: vi.fn(),
-//     compareContents: vi.fn(),
-// }))
-
-const tmpDir = path.join(os.tmpdir(), "build-stream-test");
-const srcRoot = path.join(tmpDir, "src");
-const dest = path.join(tmpDir, "dist");
-const scriptFile = path.join(srcRoot, "scripts", "test.js");
-const styleFile = path.join(srcRoot, "styles", "test.css");
-const pkgFile = path.join(srcRoot, "package.json");
-
-function setupTestFiles() {
-  fs.mkdirSync(path.dirname(scriptFile), { recursive: true });
-  fs.mkdirSync(path.dirname(styleFile), { recursive: true });
-  fs.writeFileSync(scriptFile, "console.log('hello')");
-  fs.writeFileSync(styleFile, "body { color: blue; }");
-  fs.writeFileSync(pkgFile, '{"name":"test"}');
-  if (!fs.existsSync(scriptFile) || !fs.existsSync(scriptFile) || !fs.existsSync(pkgFile)) {
-    throw new Error("Test files not created");
-  }
-}
-
-function cleanupTestFiles() {
-  try {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  } catch {}
-}
+const { tmpDir, srcRoot, dest, scriptFile, styleFile, pkgFile, setup, cleanup } =
+  createTestFixture("build-stream-test");
 
 describe("BuildStream", () => {
   let bs: BuildStream;
   beforeEach(() => {
     vi.clearAllMocks();
     bs = new BuildStream("test-stream");
-    setupTestFiles();
+    setup();
   });
   afterEach(() => {
     vi.clearAllMocks();
-    cleanupTestFiles();
+    cleanup();
   });
 
   describe("Core structure", () => {
@@ -142,14 +76,7 @@ describe("BuildStream", () => {
 
   describe("log method", () => {
     it("should do nothing when called with no arguments", () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       const named = new BuildStream("no-args", { logger: mockLogger });
 
       const result = named.log();
@@ -159,14 +86,7 @@ describe("BuildStream", () => {
     });
 
     it("should call the supplied opts.logger as-is, without forcing a prefix on it", () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       const named = new BuildStream("prefixed-stream", { logger: mockLogger });
 
       named.log("hello");
@@ -179,14 +99,7 @@ describe("BuildStream", () => {
     });
 
     it("should expose the supplied opts.logger directly as this.logger, with no wrapper", () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       const named = new BuildStream("prefixed-stream", { logger: mockLogger });
 
       expect(named.logger).toBe(mockLogger);
@@ -195,20 +108,14 @@ describe("BuildStream", () => {
       expect(mockLogger.error).toHaveBeenCalledWith("boom");
     });
 
-    it("should tag the default logger's rendered output with [name] when no custom logger is given", () => {
-      const chunks: string[] = [];
-      const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
-        chunks.push(String(chunk));
-        return true;
+    it("should tag the default logger's rendered output with [name] when no custom logger is given", async () => {
+      const named = new BuildStream("prefixed-stream");
+      const { stdout } = await captureStdio(() => {
+        named.log("hello");
       });
 
-      const named = new BuildStream("prefixed-stream");
-      named.log("hello");
-
-      writeSpy.mockRestore();
-      const output = chunks.join("");
-      expect(output).toContain("[prefixed-stream]");
-      expect(output).toContain("hello");
+      expect(stdout).toContain("[prefixed-stream]");
+      expect(stdout).toContain("hello");
     });
   });
 
@@ -491,27 +398,40 @@ describe("BuildStream", () => {
     it("should copy multiple source/destination pairs and merge shared options into each param", async () => {
       const dest1 = path.join(tmpDir, "copy-dest-1");
       const dest2 = path.join(tmpDir, "copy-dest-2");
+      const mockLogger = createMockLogger();
 
+      // The shared opts (2nd arg) are copy-changed's own `defaultOptions`,
+      // merged into every param — but a param's own `options` still wins
+      // over that shared default (see the CopyOptions type comment above
+      // BuildStream.copy()).
       await bs
-        .copy([
-          { src: path.join(srcRoot, "scripts/**/*.js"), dest: dest1 },
-          { src: path.join(srcRoot, "styles/**/*.css"), dest: dest2 },
-        ])
+        .copy(
+          [
+            { src: path.join(srcRoot, "scripts/**/*.js"), dest: dest1 },
+            {
+              src: path.join(srcRoot, "styles/**/*.css"),
+              dest: dest2,
+              options: { logLevel: "silent" },
+            },
+          ],
+          { logger: mockLogger },
+        )
         .sync();
 
       expect(fs.existsSync(path.join(dest1, "test.js"))).toBeTruthy();
       expect(fs.existsSync(path.join(dest2, "test.css"))).toBeTruthy();
+
+      // dest1 has no param-level override, so it inherits the shared
+      // logger/logLevel and logs its finish summary...
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("1 file(s) copied"));
+      // ...while dest2's own `options.logLevel: "silent"` overrides the
+      // shared default and suppresses its summary - proving param-level
+      // options win over the shared ones rather than being ignored.
+      expect(mockLogger.info).toHaveBeenCalledTimes(1);
     });
 
     it("should print a summary by default, and stay silent with logLevel: 'silent'", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
 
       // copy() now has the exact same interface as copy-changed itself,
       // so its default logging behavior is copy-changed's own: a summary
@@ -535,14 +455,7 @@ describe("BuildStream", () => {
     });
 
     it("should log the error and reject the promise queue when the copy fails", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       // pkgFile already exists as a plain file, so copying a glob (dynamic
       // pattern) onto it is rejected by copy-changed instead of silently
       // discarded, and BuildStream should propagate that failure.
@@ -558,15 +471,7 @@ describe("BuildStream", () => {
     it("should stringify a non-Error rejection value", async () => {
       const { copyChangedAsync } = await import("copy-changed");
       vi.mocked(copyChangedAsync).mockRejectedValueOnce("plain string failure");
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
-
+      const mockLogger = createMockLogger();
       bs.copy(path.join(srcRoot, "**/*.*"), path.join(tmpDir, "copy-dest-nonerror"), {
         logger: mockLogger,
       });
@@ -603,40 +508,39 @@ describe("BuildStream", () => {
       expect(files).toContain(path.join(dest, "styles/test.css"));
       expect(files).toContain(path.join(dest, "package.json"));
     });
-    it("should not log the deleting message when logLevel is silent", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
-      const named = new BuildStream("del-silent", { logger: mockLogger });
+    it("should not log the deleting message when a silent logger is used", async () => {
+      // del() has no logLevel gate of its own - `options.logLevel` in
+      // DelOptions is only forwarded to the underlying deleteSync() glob
+      // matching, not checked before the logger.info() call. The only way
+      // to suppress the "deleting:[...]" line is to supply a logger that
+      // itself stays quiet, e.g. getSilentLogger() from @wicle/tiny-logger
+      // (the same mechanism clean() uses internally to silence del()).
+      const named = new BuildStream("del-silent", { logger: getSilentLogger() });
+      const { stdout, stderr } = await captureStdio(() => {
+        named.del(path.join(dest, "**/*.does-not-exist"), { force: true });
+      });
 
-      named.del(path.join(dest, "**/*.does-not-exist"), { force: true, logLevel: "silent" });
-
-      expect(mockLogger.info).not.toHaveBeenCalled();
+      expect(stdout).toBe("");
+      expect(stderr).toBe("");
     });
   });
 
   describe("clean method", () => {
-    it("should not log the cleaning message when logLevel is silent", () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
-      const named = new BuildStream("clean-silent", { logger: mockLogger, clean: dest });
+    it("should not log the cleaning message when a silent logger is used", async () => {
+      // Same story as del(): clean()'s own "cleaning:[...]" line is logged
+      // unconditionally via `(options.logger ?? this.logger).info(...)`,
+      // with no logLevel check. Silence only comes from supplying a
+      // logger that itself does nothing.
+      const named = new BuildStream("clean-silent", { logger: getSilentLogger(), clean: dest });
       const mockDel = vi.spyOn(named, "del").mockReturnValue(named);
 
-      named.clean([], { logLevel: "silent" });
-
-      expect(mockLogger.info).not.toHaveBeenCalled();
+      const { stdout, stderr } = await captureStdio(() => {
+        named.clean([]);
+      });
       mockDel.mockRestore();
+
+      expect(stdout).toBe("");
+      expect(stderr).toBe("");
     });
     it("should call del method with collected list of clean targets", async () => {
       // create a new BuildStream instance with clean option
@@ -647,23 +551,21 @@ describe("BuildStream", () => {
       bs.clean(extraCleanList);
 
       expect(mockDel).toHaveBeenCalledTimes(1);
-      expect(mockDel).toHaveBeenCalledWith([bs.opts.clean, ...extraCleanList], {
-        logLevel: "silent",
-      });
+      const [calledList, calledOptions] = mockDel.mock.calls[0];
+      expect(calledList).toEqual([bs.opts.clean, ...extraCleanList]);
+      // clean() silences del()'s own log by swapping in a getSilentLogger()
+      // instance rather than passing a `logLevel` flag (del() doesn't
+      // check logLevel at all) - so the logger handed to del() must differ
+      // from the BuildStream's own configured logger.
+      expect(calledOptions?.logger).toBeDefined();
+      expect(calledOptions?.logger).not.toBe(bs.logger);
       mockDel.mockRestore();
     });
   });
 
   describe("exec method", () => {
     it("should execute a command successfully and resolve the promise queue", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       const named = new BuildStream("exec-test", { logger: mockLogger });
 
       const result = named.exec("echo hello-from-exec");
@@ -674,14 +576,7 @@ describe("BuildStream", () => {
     });
 
     it("should not log anything extra when the command produces no stdout", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       const named = new BuildStream("exec-test", { logger: mockLogger });
 
       named.exec("true");
@@ -692,14 +587,7 @@ describe("BuildStream", () => {
     });
 
     it("should log stdout (but no stderr call) when a failing command only produces stdout", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       const named = new BuildStream("exec-test", { logger: mockLogger });
 
       named.exec("node -e \"console.log('failing-stdout'); process.exit(1)\"");
@@ -709,55 +597,53 @@ describe("BuildStream", () => {
     });
 
     it("should log the '--> done.' message when logLevel is verbose", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       const named = new BuildStream("exec-test", { logger: mockLogger, logLevel: "verbose" });
 
       named.exec("echo hi");
       await named.sync();
 
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("--> done."));
+      // the '--> done.' message is emitted through logger.verbose(), not
+      // logger.info() - BuildStream.exec() relies on the underlying
+      // logger's own level filtering (this.#logger.level, set from
+      // opts.logLevel in the constructor) rather than gating this call
+      // itself, so a mock logger receives the call regardless of the
+      // 'verbose' logLevel passed above; what we can assert here is that
+      // it went to the right method.
+      expect(mockLogger.verbose).toHaveBeenCalledWith(expect.stringContaining("--> done."));
     });
 
-    it("should stay silent before running when logLevel is silent", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
-      const named = new BuildStream("exec-test", { logger: mockLogger, logLevel: "silent" });
+    it("should stay silent when logLevel is silent, using the real logger's level filtering", async () => {
+      // BuildStream.exec() has no per-call logLevel gate of its own - it
+      // always calls this.logger.info()/.verbose() and relies on the
+      // logger instance's own level (this.#logger.level, set from
+      // opts.logLevel in the BuildStream constructor) to actually
+      // suppress output. A plain mock logger has no such filtering, so
+      // this only demonstrates real suppression with the genuine
+      // pino-backed default logger.
+      const named = new BuildStream("exec-silent", { logLevel: "silent" });
+      const { stdout, stderr } = await captureStdio(async () => {
+        named.exec("echo hi");
+        await named.sync();
+      });
 
-      named.exec("echo hi");
-      await named.sync();
-
-      expect(mockLogger.info).not.toHaveBeenCalledWith(expect.stringContaining("exec: 'echo hi'"));
+      expect(stdout).toBe("");
+      expect(stderr).toBe("");
     });
 
     it("should reject and log stdout/stderr when the command fails", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       const named = new BuildStream("exec-test", { logger: mockLogger });
 
       named.exec("node -e \"console.error('boom'); process.exit(1)\"");
 
       await expect(named.sync()).rejects.toThrow();
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("failed to execute"));
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("boom"));
+      // both the 'failed to execute' summary and the captured stderr
+      // ('boom') go through logger.error() in the error branch of
+      // exec()'s callback - there is no stdout here, so logger.info()
+      // is never called at all.
+      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining("failed to execute"));
+      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining("boom"));
     });
   });
 
@@ -964,14 +850,7 @@ describe("BuildStream", () => {
 
   describe("debug method", () => {
     it("should log debug messages", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       const named = new BuildStream("test-stream", { logger: mockLogger });
 
       await named.src(scriptFile).debug("debug message").finish();
@@ -981,14 +860,7 @@ describe("BuildStream", () => {
       expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("debug message"));
     });
     it("should accept a DebugOptions object instead of a title string", async () => {
-      const mockLogger = {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        fatal: vi.fn(),
-      };
+      const mockLogger = createMockLogger();
       const named = new BuildStream("test-stream", { logger: mockLogger });
 
       await named.src(scriptFile).debug({ title: "custom:" }).finish();

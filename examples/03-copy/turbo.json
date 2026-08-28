@@ -2,7 +2,9 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "cache": false
+      "cache": true,
+      "inputs": [],
+      "outputs": ["test-src", "test-dest"]
     }
   }
 }

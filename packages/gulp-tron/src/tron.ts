@@ -182,7 +182,7 @@ export class Tron {
         watcher.on("change", (path: string) => {
           if (logLevel === "silent") return;
           const reloadMsg = options.browserSync ? " reloaded." : "";
-          bs.log(`change detected:'${path}${reloadMsg}`);
+          bs.logger.info(`change detected:'${path}${reloadMsg}`);
         });
       };
 
@@ -199,7 +199,7 @@ export class Tron {
         const watched = [...arrayify(task.watch ?? task.src), ...arrayify(task.addWatch)];
 
         if (watched.length > 0) {
-          bs.log(`Watching '${task.name}': [${watched.join(", ")}]`);
+          bs.logger.info(`Watching '${task.name}': [${watched.join(", ")}]`);
           handleChangeEvent(gulp.watch(watched, gulp.task(task.name ?? "")), task.logLevel);
         }
       }

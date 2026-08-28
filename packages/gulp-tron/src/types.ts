@@ -1,5 +1,5 @@
 import type { Transform } from "node:stream";
-import type { Logger } from "@wicle/tiny-logger";
+import type { Logger, LogLevel } from "@wicle/tiny-logger";
 import type { Options as BrowserSyncOptions } from "browser-sync";
 import type { Options as DelBaseOptions } from "del";
 import type { DestMethod, SrcMethod, TaskFunction, TaskFunctionCallback } from "gulp";
@@ -15,9 +15,10 @@ export type GulpTaskFunction = TaskFunction;
 export type GulpTaskFunctionCallback = TaskFunctionCallback;
 
 // --- Log types
-export type LogLevel = "verbose" | "normal" | "silent";
+export type { LogLevel };
+
 export type LogOptions = {
-  readonly logLevel?: LogLevel;
+  readonly logLevel?: LogLevel; // this has higher precedenc than the level of logger below.
   readonly logger?: Logger;
 };
 

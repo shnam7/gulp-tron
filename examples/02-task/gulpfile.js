@@ -61,7 +61,7 @@ const cmd2 = {
 
 const main = {
   name: "@build",
-  build: (builder) => console.log(builder.name + " is running"),
+  build: (builder) => console.log(`${builder.name} is running`),
   dependsOn: tron.parallel(set01, set02, set03, set04, set05, set06),
   triggers: [cmd1, cmd2], // Run in series
 };

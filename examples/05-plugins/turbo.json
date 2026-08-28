@@ -2,7 +2,9 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "cache": false
+      "cache": true,
+      "inputs": ["scss/**/*.scss"],
+      "outputs": ["scss/**/*.{css,map}"]
     }
   }
 }

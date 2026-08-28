@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "gulp @build",
+    "lint": "biome check",
     "clean": "gulp @clean",
     "watch": "gulp @watch"
   },

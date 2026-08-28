@@ -76,7 +76,13 @@ const scripts = {
   build(bs) {
     bs.src()
       .debug("src")
-      .pipe(tsdownG({ dts: true, tsconfig: "./tsconfig.json" }))
+      .pipe(
+        tsdownG({
+          dts: true,
+          tsconfig: "./tsconfig.json",
+          logLevel: "warn", // "silent", "error", "warn", "info"
+        }),
+      )
       .debug("dest")
       .dest();
     // bs

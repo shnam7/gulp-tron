@@ -2,7 +2,7 @@ import child_process from "node:child_process";
 import { PassThrough, type Stream, Transform, type TransformCallback } from "node:stream";
 import { arrayify, type Glob, isAsyncFunction, isFunction, isGlob } from "@wicle/is";
 import { Mutex } from "@wicle/mutex";
-import { createLogger, type Logger } from "@wicle/tiny-logger";
+import { createLogger, getSilentLogger, type Logger } from "@wicle/tiny-logger";
 import browserSync from "browser-sync";
 import {
   type CopyOptions as CopyChangedOptions,
@@ -178,9 +178,10 @@ export class BuildStream {
   ) {
     this.#name = name ?? anonymousTaskName;
     this.#opts = { ...opts };
-    // Reuse the caller's own logger as-is (no forced prefix) when given;
-    // only create a new pino-backed logger when we need our own default.
+
     this.#logger = opts.logger ?? createLogger({ prefix: `[${this.#name}]` });
+    if (opts.logLevel) this.#logger.level = opts.logLevel;
+
     if (stream) this.#stream = stream;
     if (promiseQ) this.#promiseQ = promiseQ;
   }
@@ -205,15 +206,6 @@ export class BuildStream {
     return this.#opts;
   }
 
-  /**
-   * Logger for this BuildStream instance. Defaults to a pino-backed
-   * Logger (from `@wicle/tiny-logger`) tagged with `[name]` as its
-   * prefix, so the prefix is applied by the logger itself at render
-   * time — every level (info/warn/error/...), called from anywhere,
-   * always carries it, not just messages that happen to go through
-   * this.log(). When `opts.logger` was supplied at construction, that
-   * logger is returned as-is (no prefix is forced on it).
-   */
   get logger(): Logger {
     return this.#logger;
   }
@@ -421,7 +413,7 @@ export class BuildStream {
    */
   del(patterns: Glob, options: DelOptions = {}): this {
     const logger = options.logger ?? this.logger;
-    if (options.logLevel !== "silent") logger.info(`deleting:[${arrayify(patterns).join(", ")}]`);
+    logger.info(`deleting:[${arrayify(patterns).join(", ")}]`);
 
     deleteSync(patterns, options);
     return this;
@@ -438,11 +430,10 @@ export class BuildStream {
     const cleanList = [...arrayify(this.opts.clean), ...arrayify(cleanExtra)];
 
     const logger = options.logger ?? this.logger;
-    if (options.logLevel !== "silent") {
-      logger.info(`cleaning:[${cleanList.join(", ")}]`);
-    }
+    logger.info(`cleaning:[${cleanList.join(", ")}]`);
 
-    return this.del(cleanList, { ...options, logLevel: "silent" });
+    // surpress log from del()
+    return this.del(cleanList, { ...options, logger: getSilentLogger() });
   }
 
   /**
@@ -453,18 +444,18 @@ export class BuildStream {
    * @returns this
    */
   exec(command: string, options: child_process.ExecSyncOptions = {}): this {
-    if (this.opts.logLevel !== "silent") this.log(`exec: '${command}'`);
+    this.logger.info(`exec: '${command}'`);
 
     const execPromise = new Promise<string>((resolve, reject) => {
       child_process.exec(command, options, (error, stdout, stderr) => {
         if (error) {
-          this.log(`error: failed to execute '${command}'`);
-          if (stderr) this.log(stderr);
-          if (stdout) this.log(stdout);
+          this.#logger.error(`error: failed to execute '${command}'`);
+          if (stderr) this.#logger.error(stderr);
+          if (stdout) this.#logger.info(stdout);
           reject(error);
         } else {
-          if (stdout) this.log(stdout);
-          if (this.opts.logLevel === "verbose") this.log(`exec: '${command}' --> done.`);
+          if (stdout) this.#logger.info(stdout);
+          this.#logger.verbose(`exec: '${command}' --> done.`);
           resolve(stdout.toString());
         }
       });
@@ -622,11 +613,9 @@ export class BuildStream {
     if (typeof titleOrOptions === "string") {
       titleOrOptions = { title: titleOrOptions, ...otherOptions };
     }
-
     const options: DebugOptions = {
       title: "debug:",
-      logger:
-        titleOrOptions.logger ?? ((...args: Parameters<typeof console.log>) => this.log(...args)),
+      logger: titleOrOptions.logger ?? this.logger.info.bind(this.logger),
       ...titleOrOptions,
       mutex: this.#mutex,
     };

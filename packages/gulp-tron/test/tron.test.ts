@@ -12,72 +12,17 @@ import {
 } from "vitest";
 import { BuildStream } from "../src/build-stream.js";
 import { Tron } from "../src/tron.js";
-import type { BuildFunction, BuildOptions, GulpTaskName, TaskConfig } from "../src/types.js";
-
-// const gulpTaskList = new Map<string, GulpTaskFunction>()
-// Mock all external dependencies
-// vi.mock('gulp', () => ({
-//     default: {
-//         task: vi.fn((name, fn) => {
-//             if (name !== undefined && fn === undefined) return gulpTaskList.get(name)
-//             gulpTaskList.set(name, fn)
-//         }),
-//     },
-// }))
-
-// --- Utility functions
-function execTask(taskName: GulpTaskName) {
-  const wrapperTask = gulp.task(taskName);
-  if (!wrapperTask) throw new Error(`Task "${taskName}" is not defined`);
-
-  return wrapperTask(() => {});
-}
+import type { BuildFunction, BuildOptions, TaskConfig } from "../src/types.js";
+import { createMockLogger, execTask, makeFakeWatcher } from "./helpers/index.js";
 
 describe("Tron", () => {
   let tron: Tron;
   beforeEach(() => {
     tron = new Tron();
-    // Reset tron instance for each test
-    // const tasks = tron.selectTasksAll()
-    // for (const task of tasks) {
-    //     // Clear tasks by creating a fresh instance
-    // }
   });
   afterAll(() => {
     vi.restoreAllMocks();
   });
-
-  // it('should run tasks in series (async/await)', async () => {
-  //     const calls: string[] = []
-  //     const fn1 = () => {
-  //         calls.push('one')
-  //     }
-
-  //     const fn2 = async () => {
-  //         calls.push('two')
-  //     }q
-
-  //     tron.task('fn1', fn1)
-  //     tron.task('fn2', fn2)
-
-  //     tron.task({
-  //         name: 'fnMain',
-  //         build(bs) {
-  //             calls.push('main')
-  //         },
-  //         dependsOn: 'fn1',
-  //         triggers: 'fn2',
-  //     })
-
-  //     // const seriesTask = gulp.series(fn1, fn2)
-  //     const seriesTask = gulp.task('fnMain')?.unwrap()
-  //     await new Promise<void>((resolve, reject) => {
-  //         seriesTask!(() => {
-  //             resolve()
-  //         })
-  //     })
-  //     expect(calls).toEqual(['one', 'two'])
-  // })
 
   describe("task method", () => {
     it("should create a task with a string name and build function", async () => {
@@ -364,34 +309,24 @@ describe("Tron", () => {
       expect(mockBrowserSync).toHaveBeenCalledWith(expect.objectContaining({ server: "public" }));
     });
 
-    function makeFakeWatcher() {
-      const listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
-      return {
-        on(event: string, cb: (...args: unknown[]) => void) {
-          listeners[event] ??= [];
-          listeners[event].push(cb);
-          return this;
-        },
-        emit(event: string, ...args: unknown[]) {
-          for (const cb of listeners[event] ?? []) cb(...args);
-        },
-      };
-    }
-
     it("should log a message when a watched file changes", async () => {
       const fakeWatcher = makeFakeWatcher();
       mockWatch.mockReturnValue(fakeWatcher as unknown as ReturnType<typeof gulp.watch>);
-      const logSpy = vi.spyOn(BuildStream.prototype, "log");
+      const mockLogger = createMockLogger();
 
       tron.task({ name: "change-task", src: "src/**/*.js" });
-      tron.addWatcher();
+      // The change handler logs via `bs.logger.info(...)`, where `bs` is
+      // the @watch task's own BuildStream instance - so the logger to
+      // observe is the one passed to addWatcher() (the @watch task's own
+      // options), not the watched task's logger.
+      tron.addWatcher({ logger: mockLogger });
       await execTask("@watch");
-      logSpy.mockClear();
 
       fakeWatcher.emit("change", "src/a.js");
 
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("change detected:'src/a.js"));
-      logSpy.mockRestore();
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining("change detected:'src/a.js"),
+      );
     });
 
     it("should not log a change message when the task's logLevel is silent", async () => {
@@ -448,25 +383,6 @@ describe("Tron", () => {
   });
 
   describe("_resolveBuildSet edge cases", () => {
-    // Some resolved buildSet shapes end up as a single, plain callback-style
-    // gulp task (not wrapped in gulp.series/BuildStream.main's promise), so
-    // execTask()'s no-op callback never signals real completion. This waits
-    // for whichever convention the resolved task actually uses.
-    async function runAndWait(taskName: GulpTaskName) {
-      const wrapperTask = gulp.task(taskName);
-      if (!wrapperTask) throw new Error(`Task "${taskName}" is not defined`);
-
-      await new Promise<void>((resolve, reject) => {
-        const maybePromise = wrapperTask((err?: Error | null) => {
-          if (err) reject(err);
-          else resolve();
-        });
-        if (maybePromise && typeof (maybePromise as { then?: unknown }).then === "function") {
-          (maybePromise as Promise<unknown>).then(() => resolve(), reject);
-        }
-      });
-    }
-
     it("should throw when a dependsOn/triggers task name is not registered", () => {
       expect(() =>
         tron.task({ name: "mainTask-missing-dep", dependsOn: "does-not-exist" }),
@@ -484,7 +400,7 @@ describe("Tron", () => {
         triggers: myRawBuildFn as BuildFunction,
       });
 
-      await expect(runAndWait("mainTask-raw-fn")).resolves.not.toThrow();
+      await expect(execTask("mainTask-raw-fn")).resolves.not.toThrow();
       expect(calls).toHaveLength(1);
       expect(calls[0]).toMatch(/^tron-anonymous#\d+-myRawBuildFn$/);
     });
@@ -504,7 +420,7 @@ describe("Tron", () => {
         dependsOn: anonymousFns as unknown as BuildFunction,
       });
 
-      await expect(runAndWait("mainTask-anon-fn")).resolves.not.toThrow();
+      await expect(execTask("mainTask-anon-fn")).resolves.not.toThrow();
       expect(calls).toHaveLength(1);
       expect(calls[0]).toMatch(/^tron-anonymous#\d+-buildFunc$/);
     });
@@ -517,7 +433,7 @@ describe("Tron", () => {
       tron.task("nested-s1", build);
       tron.task({ name: "nested-series-main", build, dependsOn: [["nested-s1"]] });
 
-      await expect(runAndWait("nested-series-main")).resolves.not.toThrow();
+      await expect(execTask("nested-series-main")).resolves.not.toThrow();
       expect(calls).toEqual(expect.arrayContaining(["nested-s1", "nested-series-main"]));
     });
 
@@ -534,7 +450,7 @@ describe("Tron", () => {
         triggers: { set: [["nested-p1", "nested-p2"]] },
       });
 
-      await expect(runAndWait("nested-parallel-main")).resolves.not.toThrow();
+      await expect(execTask("nested-parallel-main")).resolves.not.toThrow();
       expect(calls).toEqual(
         expect.arrayContaining(["nested-p1", "nested-p2", "nested-parallel-main"]),
       );
@@ -557,7 +473,7 @@ describe("Tron", () => {
         dependsOn: { name: "inline-dep-task", build } as TaskConfig,
       });
 
-      await expect(runAndWait("mainTask-inline-taskconfig")).resolves.not.toThrow();
+      await expect(execTask("mainTask-inline-taskconfig")).resolves.not.toThrow();
       expect(calls).toEqual(
         expect.arrayContaining(["inline-dep-task", "mainTask-inline-taskconfig"]),
       );
@@ -581,7 +497,7 @@ describe("Tron", () => {
         triggers: { set: ["single-p-task"] },
       });
 
-      await expect(runAndWait("mainTask-single-parallel")).resolves.not.toThrow();
+      await expect(execTask("mainTask-single-parallel")).resolves.not.toThrow();
       expect(calls).toEqual(expect.arrayContaining(["single-p-task", "mainTask-single-parallel"]));
     });
 

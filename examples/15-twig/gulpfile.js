@@ -57,6 +57,7 @@ const scripts = {
           dts: true,
           sourcemap: true,
           fixedExtension: true,
+          logLevel: "warn", // "silent", "error", "warn", "info"
         }),
       )
       .debug("tsdown");
