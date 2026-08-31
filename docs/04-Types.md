@@ -118,17 +118,25 @@ The BuildStream class provides a fluent API for stream-based build operations su
 
 ```ts
 export class BuildStream {
+  // static factories/utilities
+  static nullStream(): Transform;
+  static through(transform?: TransformFunction, flush?: FlushFunction, options?: TransformOptions): Transform;
+  static main(bs: BuildStream, buildFunc: BuildFunction): Promise<GulpStream>;
+
   readonly name: string;
   readonly className: string;
   readonly stream: GulpStream;
   readonly promiseQ: Promise<unknown>;
   readonly opts: BuildOptions;
-  readonly logger: (...args: Parameters<typeof console.log>) => void;
+  readonly logger: Logger; // from @wicle/tiny-logger — see the Logger note below
   readonly performance: {
     startTime: number;
     elapsedTime: number;
   };
 
+  constructor(name?: string, opts?: BuildOptions, stream?: GulpStream, promiseQ?: Promise<unknown>);
+
+  // source/stream composition
   src(globsOrOptions?: Parameters<SrcMethod>[0] | SrcOptions, options?: SrcOptions): this;
   add(globs: Parameters<SrcMethod>[0], options?: SrcOptions): this;
   remove(patterns?: string | string[]): this;
@@ -136,33 +144,69 @@ export class BuildStream {
   rename(...args: Parameters<typeof renameG>): this;
   order(...args: Parameters<typeof orderG>): this;
   changed(dest?: Parameters<DestMethod>[0], options?: Parameters<typeof changedG>[1]): this;
-  copy(globs: Glob, destPath: string, opts: CopyOptions): this;
+
+  // copy / delete / exec / write
+  copy(globs: Glob, destPath: string, opts?: CopyOptions): this;
   copy(params: CopyParam | CopyParam[], opts?: CopyOptions): this;
   del(patterns: Glob, options?: DelOptions): this;
   clean(cleanExtra?: string | string[], options?: CleanOptions): this;
   exec(command: string, options?: child_process.ExecSyncOptions): this;
-  pipe(...args: Parameters<Transform["pipe"]>): this;
+  dest(folder?: Parameters<DestMethod>[0], options?: DestOptions): this;
+  reload(options?: browserSync.StreamOptions): this;
+
+  // stream lifecycle
+  clear(): this;
+  clone(name?: string): BuildStream;
+  on(...args: Parameters<GulpStream["on"]>): this;
+  promise(func: () => unknown): this;
+  promise(promise: Promise<unknown>): this;
+  chain(func: PluginFunction): this;
+  pipe(plugin: GulpStream | Transform, options?: { end?: boolean }): this;
+  debug(title?: string, options?: DebugOptions): this;
+  debug(options?: DebugOptions): this;
+  through(transform?: TransformFunction, flush?: FlushFunction, options?: TransformOptions): this;
+  intercept(interceptFunc?: TransformFunction, onFinish?: (cb: TransformCallback) => void): this;
+  peek(peekFunc?: (file: Vinyl) => void, onFinish?: (cb: TransformCallback) => void): this;
+
+  // completion / utility
+  sync(): Promise<void>;
+  finish(): Promise<void>;
   log(...args: Parameters<typeof console.log>): this;
-  promise(...args: unknown[]): this;
+  detachStream(): GulpStream;
 }
 ```
+
+This is a signature summary — see [BuildStream docs](./02-BuildStream.md) for the full behavior of each method (defaults, fallbacks, and side effects), since several methods (`src`, `dest`, `del`, `clean`, `copy`) have fallback/merge logic that isn't visible from the type signature alone.
 
 ### Common types used by BuildStream
 
 ```ts
 export type GulpStream = Transform | NodeJS.ReadWriteStream;
 
-export type LogLevel = "verbose" | "normal" | "silent";
+// Re-exported from @wicle/tiny-logger
+export type LogLevel = "trace" | "debug" | "verbose" | "info" | "warn" | "error" | "fatal" | "silent";
 
 export type LogOptions = {
-  readonly logLevel?: LogLevel;
-  readonly logger?: (...args: readonly unknown[]) => void;
+  readonly logLevel?: LogLevel; // takes precedence over logger.level
+  readonly logger?: Logger; // from @wicle/tiny-logger
 };
 
 export type SrcOptions = NonNullable<Parameters<SrcMethod>[1]>;
 export type DestOptions = NonNullable<Parameters<DestMethod>[1]>;
 export type SourceMaps = SrcOptions["sourcemaps"] & DestOptions["sourcemaps"];
 ```
+
+`Logger` is a leveled logger interface from [`@wicle/tiny-logger`](https://www.npmjs.com/package/@wicle/tiny-logger) — it extends `ts-log`'s `Logger` (`trace`/`debug`/`info`/`warn`/`error`/`fatal`) with an added `verbose` level. It is **not** a single `(...args) => void` callback. `gulp-tron` does not re-export the `Logger` type itself, so import it directly if you need to type a custom logger:
+
+```ts
+import type { Logger } from "@wicle/tiny-logger";
+
+const myLogger: Logger = {
+  /* trace, debug, verbose, info, warn, error, fatal */
+};
+```
+
+To get a real, already-configured logger (e.g. to silence a specific call), use `getSilentLogger()` or `getDefaultLogger()` from `@wicle/tiny-logger` — see [Notes on `logLevel` vs a silent logger](./02-BuildStream.md#notes-on-loglevel-vs-a-silent-logger) in the BuildStream docs.
 
 ### Deletion and cleanup related types
 
@@ -185,31 +229,44 @@ The copy and exec utilities also expose public types that can be used by develop
 
 ### Copy utility types
 
+`BuildStream.copy()` delegates entirely to [`copy-changed`](https://www.npmjs.com/package/copy-changed), and `CopyParam`/`CopyOptions`/`CopyResult` are re-exported directly from that package (not redefined by gulp-tron) — so this reflects `copy-changed`'s current shape, and may drift if that package changes:
+
 ```ts
-export type CopyParam = {
-  readonly src: string | string[];
-  readonly dest: string;
-};
+export interface CopyParam {
+  src: string | readonly string[];
+  dest: string;
+  options?: CopyOptions; // per-param override, merged over the shared/default options
+}
 
-export type CopyOptions = LogOptions & {
-  readonly showStats?: boolean;
-  readonly force?: boolean;
-  readonly prefix?: string;
-  readonly dryRun?: boolean;
-  readonly cwd?: string;
-};
+export interface CopyOptions {
+  cwd?: string;
+  clearDest?: boolean | string | readonly string[];
+  force?: boolean;
+  logger?: Logger;
+  logLevel?: "normal" | "verbose" | "silent"; // copy-changed's own LogLevel, distinct from gulp-tron's LogLevel above
+  globOptions?: GlobOptions; // from tinyglobby
+  dryRun?: boolean;
+  onCheckChanged?: (srcFile: string, destFile: string, options: Required<CopyOptions>) => boolean | Promise<boolean>;
+  onClearDest?: (delPatterns: string[], options: Required<CopyOptions>) => void | Promise<void>;
+  onCopy?: (srcFile: string, destFile: string, options: Required<CopyOptions>) => void | Promise<void>;
+  onSkip?: (srcFile: string, destFile: string, options: Required<CopyOptions>) => void | Promise<void>;
+  onFinish?: (result: CopyResult, options: Required<CopyOptions>) => void | Promise<void>;
+}
 
-export type CopyResult = {
-  copied: number;
-  skipped: number;
-  errors: number;
-  message: string;
-  srcPath: string;
-  destPath: string;
-};
+export interface CopyResult {
+  copyCount: number;
+  skipCount: number;
+}
 ```
 
+When calling `bs.copy(params, opts)` with an array of `CopyParam`, `opts` is passed through as `copy-changed`'s `defaultOptions` — it's merged into every param, but each param's own `options` field wins over it. See [`copy-changed` on npm](https://www.npmjs.com/package/copy-changed) for the full behavior of the `onCheckChanged`/`onClearDest`/`onCopy`/`onSkip`/`onFinish` hooks.
+
 ### Exec utility types
+
+There are two distinct `exec`-related APIs — don't confuse them:
+
+- **`bs.exec(command, options?)`** (a `BuildStream` instance method) — takes `child_process.ExecSyncOptions` and runs the command via the callback-based `child_process.exec()` internally, queued on the stream's promise queue. See [BuildStream docs](./02-BuildStream.md#execcommand-options).
+- **`exec(command, options?)`** (the standalone utility below, from `gulp-tron`'s `utils` module) — a separate helper built on `child_process.spawn()`.
 
 ```ts
 export type ExecOptions = SpawnOptions & LogOptions;
@@ -218,7 +275,11 @@ export type ExecResult = {
   exitCode?: number;
   message?: string;
 };
+
+export function exec(command: string, options?: ExecOptions): Promise<ExecResult>;
 ```
+
+`exec()`'s own output line (its `logger.info(ret.message)` at the end) is suppressed when `options.logLevel === "silent"` — this is the one place in gulp-tron where `logLevel` is actually checked directly in code, rather than relying on the logger instance's own level filtering.
 
 ---
 

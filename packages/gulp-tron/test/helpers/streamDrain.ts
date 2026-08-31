@@ -1,35 +1,37 @@
+import type { Writable } from "node:stream";
 import { vi } from "vitest";
 
 /**
- * Simulates a Writable stream (process.stdout/process.stderr) that has
- * pending buffered data (`writableLength`) and fires its 'drain' event
- * synchronously once a listener subscribes. Call `restore()` afterward
- * to undo both the `once` spy and the `writableLength` override.
+ * Makes `stream` behave as if its internal buffer is full: `writableLength`
+ * reads as non-zero and `write()` returns `false`, then a `drain` event is
+ * emitted on the next tick so callers waiting on it can resolve.
  */
-export function withPendingDrain(stream: NodeJS.WriteStream, pendingBytes = 10) {
-  const onceSpy = vi.spyOn(stream, "once").mockImplementation(function (
-    this: NodeJS.WriteStream,
-    event: string | symbol,
-    cb: (...args: unknown[]) => void,
-  ) {
-    if (event === "drain") cb();
-    return this;
+export function withPendingDrain(stream: Writable) {
+  const originalWritableLength = Object.getOwnPropertyDescriptor(stream, "writableLength");
+  Object.defineProperty(stream, "writableLength", { value: 1, configurable: true });
+
+  const writeSpy = vi.spyOn(stream, "write").mockImplementation((..._args: unknown[]) => {
+    const cb = _args.find((a) => typeof a === "function");
+    // Invoke the write callback with no error (mirrors a real failed-to-fully-flush
+    // write) so the `if (success) resolve()` false branch runs, then emit 'drain'
+    // so the fallback listener resolves the promise. Both are deferred past the
+    // `return false` below, since `success` isn't assigned until write() returns.
+    process.nextTick(() => cb?.(null));
+    queueMicrotask(() => stream.emit("drain"));
+    return false;
   });
-  const originalDescriptor = Object.getOwnPropertyDescriptor(stream, "writableLength");
-  Object.defineProperty(stream, "writableLength", { value: pendingBytes, configurable: true });
+  const onceSpy = vi.spyOn(stream, "once");
 
-  function restore() {
-    if (originalDescriptor) {
-      Object.defineProperty(stream, "writableLength", originalDescriptor);
-    } else {
-      // No own property existed before (writableLength is normally
-      // inherited from the Writable prototype's getter) — deleting our
-      // added own property restores that, rather than leaving it stuck
-      // at `pendingBytes` forever and hanging every later flush.
-      delete (stream as unknown as Record<string, unknown>).writableLength;
-    }
-    onceSpy.mockRestore();
-  }
-
-  return { onceSpy, restore };
+  return {
+    onceSpy,
+    restore: () => {
+      writeSpy.mockRestore();
+      onceSpy.mockRestore();
+      if (originalWritableLength) {
+        Object.defineProperty(stream, "writableLength", originalWritableLength);
+      } else {
+        Reflect.deleteProperty(stream, "writableLength");
+      }
+    },
+  };
 }

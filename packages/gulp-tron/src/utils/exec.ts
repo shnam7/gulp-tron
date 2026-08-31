@@ -26,7 +26,7 @@ function parseCommand(command: string): ParsedCommand {
   const trimmedCommand = command.trim();
   if (trimmedCommand.length === 0) return { cmd: command, args: [], isValid: false };
 
-  const [cmd, ...args] = trimmedCommand.split(/\s+/v);
+  const [cmd, ...args] = trimmedCommand.split(/\s+/);
   return { cmd: cmd ?? "", args, isValid: Boolean(cmd?.trim()) };
 }
 

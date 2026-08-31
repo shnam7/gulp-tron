@@ -55,9 +55,9 @@ tron.task({
 });
 ```
 
-## Example from `examples/00-getting-started`
+## A More Complete Example
 
-Below is a simplified version of `examples/00-getting-started/gulpfile.js`.
+Here's a more complete example combining several tasks, cleanup, and file watching with live reload — a common shape for a small static-site build:
 
 ```js
 import tron from "gulp-tron";
@@ -142,13 +142,9 @@ It also provides helpers like `bs.copy()`, `bs.filter()`, and `bs.clean()`.
 - Learn how to use gulp-tron with `task()`, `series()`, and `parallel()`.
 - Explore `TaskConfig` options like `dependsOn`, `triggers`, `clean`, and `watch`.
 - Use `addCleaner()` and `addWatcher()` to automate cleaning and watching.
-- Check the `examples/` folder for real-world cases.
 
 ## Related documentation
 
 - [Tron Class Documentation](./01-Tron.md)
-- [BuildStream Class Documentation](./01-BuildStream.md)
-
----
-
-For additional examples and details, explore the `examples/` directory.
+- [BuildStream Class Documentation](./02-BuildStream.md)
+- [Types Reference](./04-Types.md)

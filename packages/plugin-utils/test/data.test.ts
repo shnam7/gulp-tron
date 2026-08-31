@@ -3,60 +3,56 @@ import type { TransformCallback } from "node:stream";
 import type { BuildStream, LogOptions } from "gulp-tron";
 import * as yaml from "js-yaml";
 import { glob } from "tinyglobby";
-import File from "vinyl";
+import Vinyl from "vinyl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  type DataFunctionCallback,
-  dataP,
-  loadDataAsync,
-  type VinylWithData,
-} from "../src/data.js";
+import { type DataFunctionCallback, dataP, loadDataAsync } from "../src/data.js";
 
 vi.mock("node:fs/promises");
 vi.mock("tinyglobby");
 vi.mock("js-yaml");
 
-interface MockLogger {
-  warn: ReturnType<typeof vi.fn>;
-  error: ReturnType<typeof vi.fn>;
-  info: ReturnType<typeof vi.fn>;
-  log: ReturnType<typeof vi.fn>;
+// interface MockLogger {
+//   warn: ReturnType<typeof vi.fn>;
+//   error: ReturnType<typeof vi.fn>;
+//   info: ReturnType<typeof vi.fn>;
+// }
+
+function createMockLogger() {
+  return {
+    trace: vi.fn(),
+    debug: vi.fn(),
+    verbose: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  };
 }
 
 interface MockBuildStream extends Omit<BuildStream, "intercept" | "opts" | "logger"> {
   opts: LogOptions;
   logger: typeof console;
   intercept: (
-    cb: (file: VinylWithData, enc: string, cb: TransformCallback) => Promise<void>,
+    cb: (file: Vinyl, enc: string, cb: TransformCallback) => Promise<void>,
   ) => MockBuildStream;
 }
 
 describe("gulp-tron dataP Plugin Test Suite", () => {
-  let mockLogger: MockLogger;
+  const mockLogger = createMockLogger();
   let mockBuildStream: MockBuildStream;
   let interceptCallback:
-    | ((file: VinylWithData, enc: string, cb: TransformCallback) => Promise<void>)
+    | ((file: Vinyl, enc: string, cb: TransformCallback) => Promise<void>)
     | null = null;
 
   beforeEach(() => {
     vi.restoreAllMocks();
 
-    mockLogger = {
-      warn: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-      log: vi.fn(),
-    };
-
     mockBuildStream = {
       opts: { logLevel: "info" },
       logger: mockLogger as unknown as typeof console,
-      intercept: vi.fn(
-        (cb: (file: VinylWithData, enc: string, cb: TransformCallback) => Promise<void>) => {
-          interceptCallback = cb;
-          return mockBuildStream;
-        },
-      ),
+      intercept: vi.fn((cb: (file: Vinyl, enc: string, cb: TransformCallback) => Promise<void>) => {
+        interceptCallback = cb;
+        return mockBuildStream;
+      }),
     } as unknown as MockBuildStream;
   });
 
@@ -79,9 +75,7 @@ describe("gulp-tron dataP Plugin Test Suite", () => {
     it("should trigger a warning log when an unsupported file extension is found", async () => {
       vi.mocked(glob).mockResolvedValue(["src/image.png"]);
 
-      const result = await loadDataAsync("src/**/*", {
-        logger: mockLogger as unknown as typeof console,
-      });
+      const result = await loadDataAsync("src/**/*", { logger: mockLogger });
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
         expect.stringContaining("skipping unsupported file type"),
@@ -93,9 +87,7 @@ describe("gulp-tron dataP Plugin Test Suite", () => {
       vi.mocked(glob).mockResolvedValue(["src/broken.json"]);
       vi.mocked(fs.readFile).mockRejectedValue(new Error("Disk Read Error"));
 
-      const result = await loadDataAsync("src/**/*", {
-        logger: mockLogger as unknown as typeof console,
-      });
+      const result = await loadDataAsync("src/**/*", { logger: mockLogger });
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         expect.stringContaining("failed to read file"),
@@ -108,20 +100,20 @@ describe("gulp-tron dataP Plugin Test Suite", () => {
       vi.mocked(glob).mockResolvedValue([]);
       await loadDataAsync("src/**/*", {
         logLevel: "verbose",
-        logger: mockLogger as unknown as typeof console,
+        logger: mockLogger,
       });
       expect(mockLogger.info).toHaveBeenCalled();
     });
   });
 
   describe("dataP Plugin Stream Pipeline Tests", () => {
-    let mockFile: VinylWithData;
+    let mockFile: Vinyl;
 
     beforeEach(() => {
-      mockFile = new File({
+      mockFile = new Vinyl({
         path: "src/pages/index.html",
         contents: Buffer.from("<h1>Hello</h1>"),
-      }) as VinylWithData;
+      }) as Vinyl;
     });
 
     it("should latch static glob patterns and bind cached files data onto file.data", async () => {
@@ -189,8 +181,9 @@ describe("gulp-tron dataP Plugin Test Suite", () => {
     });
 
     it("should fall back gracefully to old-school node-style callback declarations", async () => {
-      const customCallbackFunc = (_file: VinylWithData, cb: DataFunctionCallback) => {
+      const customCallbackFunc = (_file: Vinyl, cb: DataFunctionCallback) => {
         cb(null, { callbackKey: "callbackValue" });
+        return undefined;
       };
 
       const plugin = dataP(customCallbackFunc);
@@ -206,8 +199,9 @@ describe("gulp-tron dataP Plugin Test Suite", () => {
     });
 
     it("should bubble errors up the pipeline if the internal callback receives an error instance", async () => {
-      const customCallbackFunc = (_file: VinylWithData, cb: DataFunctionCallback) => {
+      const customCallbackFunc = (_file: Vinyl, cb: DataFunctionCallback) => {
         cb(new Error("Callback Error"));
+        return undefined;
       };
 
       const plugin = dataP(customCallbackFunc);

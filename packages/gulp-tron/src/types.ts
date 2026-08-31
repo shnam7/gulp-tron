@@ -2,8 +2,9 @@ import type { Transform } from "node:stream";
 import type { Logger, LogLevel } from "@wicle/tiny-logger";
 import type { Options as BrowserSyncOptions } from "browser-sync";
 import type { Options as DelBaseOptions } from "del";
-import type { DestMethod, SrcMethod, TaskFunction, TaskFunctionCallback } from "gulp";
+import type gulpNS from "gulp";
 import type File from "vinyl";
+import type { DestOptions, SrcOptions } from "vinyl-fs";
 import type { BuildStream } from "./build-stream.js";
 
 // --- Common Types ------------------------------------------------------------
@@ -11,8 +12,8 @@ import type { BuildStream } from "./build-stream.js";
 // --- Gulp types
 export type GulpStream = Transform | NodeJS.ReadWriteStream;
 export type GulpTaskName = string;
-export type GulpTaskFunction = TaskFunction;
-export type GulpTaskFunctionCallback = TaskFunctionCallback;
+export type GulpTaskFunction = gulpNS.TaskFunction;
+export type GulpTaskFunctionCallback = gulpNS.TaskFunctionCallback;
 
 // --- Log types
 export type { LogLevel };
@@ -23,8 +24,9 @@ export type LogOptions = {
 };
 
 // --- Utility types
-export type SrcOptions = NonNullable<Parameters<SrcMethod>[1]>;
-export type DestOptions = NonNullable<Parameters<DestMethod>[1]>;
+export type { DestOptions, SrcOptions };
+export type SrcMethod = typeof gulpNS.src;
+export type DestMethod = typeof gulpNS.dest;
 export type SourceMaps = SrcOptions["sourcemaps"] & DestOptions["sourcemaps"];
 export type DelOptions = DelBaseOptions & LogOptions;
 export type CleanOptions = DelOptions;

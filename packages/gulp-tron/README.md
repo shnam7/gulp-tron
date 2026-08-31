@@ -80,7 +80,7 @@ You can inspect the generated tasks with the `gulp --tasks` command:
 
 ```bash
 $ pnpm gulp --tasks
-Tasks for ~/dev/public/gulp-tron/examples/00-getting-started/gulpfile.js
+Tasks for ~/myproject/gulpfile.js
 ├── scss
 ├── scripts
 ├─┬ @build
@@ -111,7 +111,7 @@ tron is an instance of Tron, the gulp task manager. It can create tasks
 with dependency hierarchy based on TaskConfig settings.
 
 `Tron` provides the following API.
-Refer to [Tron](./docs/01-Tron.md) for more details.
+Refer to [Tron](../../docs/01-Tron.md) for more details.
 
 ## TaskConfig
 
@@ -234,15 +234,17 @@ Cleaner options can also include `LogOptions` and the options accepted by `delet
 
 ### Log Options
 
-|   name    |   type   | description                         |
-| :-------: | :------: | ----------------------------------- |
-| logLevel? |  string  | : 'verbose' or 'normal' or 'silent' |
-|  logger?  | function | `(...args: any[]) => void`          |
+|   name    |   type   | description                                                                                                                                      |
+| :-------: | :------: | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| logLevel? |  string  | `"trace"` \| `"debug"` \| `"verbose"` \| `"info"` \| `"warn"` \| `"error"` \| `"fatal"` \| `"silent"` (from `@wicle/tiny-logger`'s `LogLevel`)     |
+|  logger?  |  object  | A `Logger` from [`@wicle/tiny-logger`](https://www.npmjs.com/package/@wicle/tiny-logger) — `{ trace, debug, verbose, info, warn, error, fatal }`, not a single callback function. |
+
+> **Note:** `logLevel` isn't checked explicitly by every method — `del()`/`clean()` always log, and rely on the logger instance's own level filtering to actually stay quiet. See [BuildStream docs](../../docs/02-BuildStream.md#notes-on-loglevel-vs-a-silent-logger) for details.
 
 ## BuildStream
 
 BuildStream is a wrapper class for gulp streams with methods such as `src`, `add`, `remove`, `filter`, `rename`, `order`, `changed`, `copy`, `del`, `clean`, `exec`, `dest`, `reload`, `clear`, `clone`, `chain`, `pipe`, and `debug`.
-Refer to [BuildStream](./docs/02-BuildStream.md) for more details about the available API.
+Refer to [BuildStream](../../docs/02-BuildStream.md) for more details about the available API.
 
 ## Plugin
 
@@ -307,10 +309,9 @@ If you run into a situation where gulp tasks are not created as expected, verify
 
 ## More Information
 
-- [Tron](./docs/01-Tron.md)
-- [BuildStream](./docs/02-BuildStream.md)
-
-Check **[examples](./examples/)** for more examples.
+- [Tron](../../docs/01-Tron.md)
+- [BuildStream](../../docs/02-BuildStream.md)
+- [Types Reference](../../docs/04-Types.md)
 
 ## License
 

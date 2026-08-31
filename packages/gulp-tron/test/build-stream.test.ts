@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { PassThrough, Transform } from "node:stream";
+import { PassThrough } from "node:stream";
 import { getSilentLogger } from "@wicle/tiny-logger";
 import browserSync from "browser-sync";
 import gulp from "gulp";
@@ -8,7 +8,8 @@ import { pEvent } from "p-event";
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { BuildStream } from "../src/build-stream.js";
 import type { BuildFunction } from "../src/types.js";
-import { timer } from "../src/utils/index.js";
+import { timer } from "../src/utils/misc.js";
+import { throughSafe } from "../src/utils/stream.js";
 import { captureStdio, createMockLogger, createTestFixture } from "./helpers/index.js";
 
 vi.mock("browser-sync", () => ({
@@ -42,10 +43,6 @@ describe("BuildStream", () => {
   });
 
   describe("Core structure", () => {
-    it("should handle static methods", () => {
-      expect(BuildStream.nullStream()).toBeInstanceOf(Transform);
-      expect(BuildStream.through()).toBeInstanceOf(Transform);
-    });
     it("should have getters", () => {
       expect(bs.name).toBe("test-stream");
       expect(bs.className).toBe("BuildStream");
@@ -200,7 +197,7 @@ describe("BuildStream", () => {
       });
     });
     it("should keep sourcemaps as-is when it is already a function", () => {
-      const sourcemapsFn = () => {};
+      const sourcemapsFn = () => true;
       bs.src(path.join(srcRoot, "**/*.js"), { sourcemaps: sourcemapsFn });
       expect(mockSrc).toHaveBeenCalledWith(
         path.join(srcRoot, "**/*.js"),
@@ -493,6 +490,7 @@ describe("BuildStream", () => {
       const targetFile = path.join(dest, "scripts/test.js");
       expect(fs.existsSync(targetFile)).toBeTruthy();
       bs.del(path.join(dest, "**/*.js"), { force: true });
+      await bs.sync();
       // check if the file is deleted
       expect(fs.existsSync(targetFile)).toBeFalsy();
 
@@ -839,7 +837,7 @@ describe("BuildStream", () => {
   describe("pipe method", () => {
     it("should pipe another stream to current build stream", async () => {
       const messages: string[] = [];
-      const plugin = BuildStream.through(undefined, (_cb) => {
+      const plugin = throughSafe(undefined, (_cb) => {
         messages.push("plugin called");
       });
       await bs.src(path.join(srcRoot, "**/*.*")).pipe(plugin).finish();

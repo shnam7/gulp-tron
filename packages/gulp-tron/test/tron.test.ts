@@ -215,7 +215,19 @@ describe("Tron", () => {
     let mockDel: MockInstance<typeof BuildStream.prototype.del>;
 
     beforeEach(() => {
-      mockDel = vi.spyOn(BuildStream.prototype, "del");
+      // IMPORTANT: vi.spyOn() alone still calls through to the REAL del(),
+      // which really executes deleteSync() on disk. Since addCleaner()
+      // wires up a task that deletes relative glob patterns like "dist"
+      // (see the tests below), leaving this spy un-mocked deletes whatever
+      // "dist"/"dist1"/"dist2"/"dist3" folder happens to exist under the
+      // current working directory when the suite runs - e.g. this
+      // package's own build output. Always stub the implementation so we
+      // only observe the call, never perform the deletion.
+      mockDel = vi.spyOn(BuildStream.prototype, "del").mockImplementation(function (
+        this: BuildStream,
+      ) {
+        return this;
+      });
     });
     afterEach(() => {
       mockDel.mockRestore();
@@ -248,7 +260,16 @@ describe("Tron", () => {
     let mockWatch: MockInstance<typeof gulp.watch>;
     let mockBrowserSync: MockInstance<typeof browserSync.init>;
     beforeEach(() => {
-      mockWatch = vi.spyOn(gulp, "watch");
+      // Same reasoning as addCleaner's del() spy above: an un-mocked
+      // gulp.watch() calls through to the real chokidar watcher on
+      // whatever "src/**/*.js" etc. resolves to under cwd, and it's never
+      // closed - a real resource leak on real project files. Default to a
+      // lightweight fake watcher; tests that need to actually fire a
+      // 'change' event override this return value with their own
+      // makeFakeWatcher() instance.
+      mockWatch = vi
+        .spyOn(gulp, "watch")
+        .mockReturnValue(makeFakeWatcher() as unknown as ReturnType<typeof gulp.watch>);
       mockBrowserSync = vi.spyOn(browserSync, "init").mockImplementation(() => {
         return {} as unknown as browserSync.BrowserSyncInstance;
       });

@@ -1,22 +1,18 @@
 import child_process from "node:child_process";
-import { PassThrough, type Stream, Transform, type TransformCallback } from "node:stream";
+import type Stream from "node:stream";
 import { arrayify, type Glob, isAsyncFunction, isFunction, isGlob } from "@wicle/is";
 import { Mutex } from "@wicle/mutex";
 import { createLogger, getSilentLogger, type Logger } from "@wicle/tiny-logger";
 import browserSync from "browser-sync";
-import {
-  type CopyOptions as CopyChangedOptions,
-  type CopyParam,
-  type CopyResult,
-  copyChangedAsync,
-} from "copy-changed";
-import { deleteSync } from "del";
+import { type CopyOptions, type CopyParam, type CopyResult, copyChangedAsync } from "copy-changed";
+import { deleteAsync } from "del";
 import es from "event-stream";
 import changedG, { compareContents, compareLastModifiedTime } from "gulp-changed";
 import debugG, { type DebugOptions } from "gulp-debug2";
 import filterG from "gulp-filter";
 import orderG from "gulp-order3";
 import renameG from "gulp-rename";
+import lead from "lead";
 import { pEvent } from "p-event";
 import { StreamQueue } from "streamqueue";
 import type Vinyl from "vinyl";
@@ -27,122 +23,38 @@ import {
   type BuildOptions,
   type CleanOptions,
   type DelOptions,
+  type DestMethod,
   type GulpStream,
   type PluginFunction,
+  type SrcMethod,
   type SrcOptions,
 } from "./types.js";
-import { flushAllStdio } from "./utils/index.js";
+import {
+  clearStreamG,
+  cloneStreamG,
+  createNullStream,
+  createTransform,
+  type FlushFunction,
+  flushAllStdio,
+  PassThrough,
+  pairSourcemapFilesG,
+  type Transform,
+  type TransformCallback,
+  type TransformFunction,
+  type TransformOptions,
+  throughSafe,
+} from "./utils/stream.js";
 
-export type { CopyParam, CopyResult };
+export type { CopyOptions, CopyParam, CopyResult };
 
 // Same interface as 'copy-changed' itself — no BuildStream-specific
 // additions (its `logger: Logger` field already matches BuildStream's
 // own unified Logger type, so nothing needs adapting here either).
-export type CopyOptions = CopyChangedOptions;
-
-// --- Type aliases
-type SrcMethod = typeof gulp.src;
-type DestMethod = typeof gulp.dest;
-type TransformFunction = (file: Vinyl, enc: BufferEncoding, callback: TransformCallback) => void;
-type FlushFunction = (cb: TransformCallback) => void;
-type TransformOptions = Stream.TransformOptions;
-
-const transformConfig = { highWaterMark: 16, objectMode: true };
-
-// --- Utility functions
-function createTransform(
-  transform?: TransformFunction,
-  flush?: FlushFunction,
-  options?: TransformOptions,
-): Transform {
-  return new Transform({
-    ...transformConfig,
-    ...options,
-    transform,
-    flush,
-  });
-}
-
-function clearStreamG(): Transform {
-  return createTransform((_file: Vinyl, _enc: BufferEncoding, cb: TransformCallback) => {
-    cb(null);
-  });
-}
-
-function cloneStreamG(): Transform {
-  return createTransform((file: Vinyl, _enc: BufferEncoding, cb: TransformCallback) => {
-    cb(null, file.clone());
-  });
-}
-
-function appendG(...args: Parameters<typeof gulp.src>) {
-  const pass = new PassThrough({ objectMode: true });
-  return es.duplex(
-    pass,
-    new StreamQueue({ objectMode: true }, pass, gulp.src(...args) as Transform),
-  );
-}
 
 /*****************************************************************************
  *  Gulp Stream Wrapper providing API for build processing.
  *****************************************************************************/
 export class BuildStream {
-  /**
-   * Create an empty, already-usable stream. Public (not protected):
-   * it's a pure factory with no internal state to protect, and is used
-   * both internally (as the default/detached stream) and externally
-   * (e.g. tests exercising a stream-less BuildStream).
-   */
-  static nullStream(): Transform {
-    return new PassThrough({ objectMode: true });
-  }
-
-  /**
-   * Internal utility method to create a through stream with the given transform
-   * and flush functions.
-   *
-   * @param transform data transformation function for each file in the stream
-   * @param flush function to be called when the stream is ending
-   * @param options options for the Transform stream
-   * @returns A Transform stream that applies the given transform and flush functions
-   */
-  /**
-   * Create a through stream wired with the given transform/flush
-   * functions. Public (not private): same reasoning as nullStream()
-   * above — a pure stream factory, exercised directly in tests.
-   * Note: this is a *static* factory distinct from the public
-   * *instance* method of the same name below (`bs.through(...)`),
-   * which pipes a transform into this BuildStream's own stream.
-   */
-  static through(
-    transform?: TransformFunction,
-    flush?: FlushFunction,
-    options?: TransformOptions,
-  ): Transform {
-    let isCbCalled = false;
-    const _transform = ((file, enc, cb) => {
-      const _cbWrpper = ((error: Error | undefined, data?: Vinyl) => {
-        cb(error ?? null, data);
-        isCbCalled = true;
-      }) as unknown as TransformCallback;
-
-      if (transform) transform(file, enc, _cbWrpper);
-      if (!isCbCalled) cb();
-    }) satisfies TransformFunction;
-
-    const _flush = ((cb) => {
-      let isCbCalled = false;
-      const _cbWrapper = ((error: Error | undefined, data?: Vinyl) => {
-        cb(error ?? null, data);
-        isCbCalled = true;
-      }) as unknown as TransformCallback;
-
-      if (flush) flush(_cbWrapper);
-      if (!isCbCalled) cb();
-    }) satisfies FlushFunction;
-    return createTransform(_transform, _flush, options);
-  }
-
   /**
    * Internal method to execute the main build function with proper promise handling.
    *
@@ -161,7 +73,7 @@ export class BuildStream {
   readonly #opts: BuildOptions;
   readonly #logger: Logger;
   readonly #mutex: Mutex = new Mutex();
-  #stream: GulpStream = BuildStream.nullStream().end(); // call end() to make sure 'finish' event is emitted even src is not called
+  #stream: GulpStream = createNullStream().end(); // call end() to make sure 'finish' event is emitted even src is not called
   #promiseQ: Promise<unknown> = Promise.resolve();
   #srcCalled = false;
 
@@ -262,6 +174,14 @@ export class BuildStream {
    * @returns this
    */
   add(globs: Parameters<SrcMethod>[0], options: SrcOptions = {}): this {
+    function appendG(...args: Parameters<typeof gulp.src>) {
+      const pass = new PassThrough({ objectMode: true });
+      return es.duplex(
+        pass,
+        new StreamQueue({ objectMode: true }, pass, gulp.src(...args) as Transform),
+      );
+    }
+
     if (this.#srcCalled) this.#stream = this.#stream.pipe(appendG(globs, options)) as GulpStream;
     else this.src(globs, options);
 
@@ -392,6 +312,16 @@ export class BuildStream {
     const logger = opts.logger ?? this.logger;
     const copyChangedOpts: CopyOptions = { ...opts, logger };
 
+    // try {
+    //   isDestString
+    //     ? copyChangedSync(arg1 as string | readonly string[], arg2 as string, copyChangedOpts)
+    //     : copyChangedSync(arg1 as CopyParam | readonly CopyParam[], copyChangedOpts);
+    // } catch (error: unknown) {
+    //   logger.error(`copy failed - ${error instanceof Error ? error.message : String(error)}`);
+    //   throw error;
+    // }
+    // return this;
+
     const copyPromise = (
       isDestString
         ? copyChangedAsync(arg1 as string | readonly string[], arg2 as string, copyChangedOpts)
@@ -400,7 +330,6 @@ export class BuildStream {
       logger.error(`copy failed - ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     });
-
     return this.promise(copyPromise);
   }
 
@@ -415,8 +344,14 @@ export class BuildStream {
     const logger = options.logger ?? this.logger;
     logger.info(`deleting:[${arrayify(patterns).join(", ")}]`);
 
-    deleteSync(patterns, options);
-    return this;
+    // deleteSync(patterns, options);
+    // return this;
+
+    const delPromise = deleteAsync(patterns, options).catch((error) => {
+      logger.error(`del failed - ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    });
+    return this.promise(delPromise);
   }
 
   /**
@@ -443,7 +378,7 @@ export class BuildStream {
    * @param options ExecOptions to be passed to child_process.spawn().
    * @returns this
    */
-  exec(command: string, options: child_process.ExecSyncOptions = {}): this {
+  exec(command: string, options: child_process.ExecOptions = {}): this {
     this.logger.info(`exec: '${command}'`);
 
     const execPromise = new Promise<string>((resolve, reject) => {
@@ -471,6 +406,21 @@ export class BuildStream {
    * directory `.` is used.
    * If options.sourcemaps are not provided, then `conf.sourcemaps` is used.
    *
+   * When external sourcemaps are enabled, vinyl-fs's own dest()
+   * implementation writes each main file to disk and re-emits it
+   * downstream *before* it has even started writing that file's
+   * companion `.map` file (the two are written as two separate,
+   * sequential items internally). A downstream step that reads the
+   * `.map` file straight off disk itself — as many CSS minifiers do,
+   * following the `sourceMappingURL` comment that's already embedded in
+   * the main file's contents by this point — can therefore race the
+   * `.map` file's write and read it back truncated or empty. Since
+   * vinyl-fs's own write stage only ever releases one item downstream
+   * once *its own* write has fully completed, holding each main file
+   * back just long enough to see its companion `.map` file emerge (and
+   * releasing both together) is enough to close that gap — with no
+   * externally-visible change to the file/pipeline API.
+   *
    * @param args THe same arguments as the original gulp.dest()
    * @returns this
    */
@@ -478,7 +428,9 @@ export class BuildStream {
     const [folder = this.#opts.dest, opts = {}] = args;
     opts.sourcemaps ??= this.#opts.sourcemaps;
 
-    this.#stream.pipe(gulp.dest(folder ?? ".", opts));
+    this.#stream = lead(
+      this.#stream.pipe(gulp.dest(folder ?? ".", opts)).pipe(pairSourcemapFilesG()),
+    );
     return this;
   }
 
@@ -649,7 +601,7 @@ export class BuildStream {
     interceptFunc?: (file: Vinyl, enc: BufferEncoding, cb: TransformCallback) => void,
     onFinish?: (cb: TransformCallback) => void,
   ): this {
-    this.pipe(BuildStream.through(interceptFunc, onFinish));
+    this.pipe(throughSafe(interceptFunc, onFinish));
     // this.pipe(createTransform(interceptFunc, onFinish))
     return this;
   }
@@ -662,21 +614,15 @@ export class BuildStream {
    * @returns this
    */
   peek(peekFunc?: (file: Vinyl) => void, onFinish?: (cb: TransformCallback) => void): this {
-    return this.intercept(peekFunc, onFinish);
-    // return this.intercept(
-    //     peekFunc
-    //         ? (file, _enc, cb) => {
-    //               peekFunc(file)
-    //               cb(null, file)
-    //           }
-    //         : undefined,
-    //     onFinish
-    //         ? cb => {
-    //               onFinish(cb)
-    //               cb()
-    //           }
-    //         : undefined,
-    // )
+    return this.intercept(
+      peekFunc
+        ? (file, _enc, cb) => {
+            peekFunc(file);
+            cb(null, file);
+          }
+        : undefined,
+      onFinish,
+    );
   }
 
   //-------------------------------------------------------------------------
@@ -724,7 +670,7 @@ export class BuildStream {
    */
   detachStream(): GulpStream {
     const detachedStream = this.#stream;
-    this.#stream = BuildStream.nullStream().end(); // reset the stream to null
+    this.#stream = createNullStream().end(); // reset the stream to null
     return detachedStream;
   }
 }

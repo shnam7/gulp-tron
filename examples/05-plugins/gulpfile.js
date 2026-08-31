@@ -43,8 +43,6 @@ tron.task({
         } else {
           cb(null);
         }
-
-        bs.log("---", file.basename);
       })
       .debug("after:");
   },

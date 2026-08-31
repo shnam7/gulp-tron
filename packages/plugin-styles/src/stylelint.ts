@@ -54,6 +54,11 @@ export const stylelintP =
               `stylelintP: unrecognized parser "${String(options.parser)}", using default parser`,
             );
           }
+          // Actually fall back to postcss's default parser — previously
+          // `pcssOptions` was left holding the invalid string value from
+          // its initial assignment above, so the warning claimed a
+          // fallback that never happened.
+          pcssOptions = {};
           break;
       }
     }

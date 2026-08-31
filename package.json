@@ -28,7 +28,7 @@
     "reset": "npm-run-all -s clean reset:turbo reset:node",
     "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +",
     "reset:node": "find . -type d -name node_modules -exec rm -rf {} +",
-    "prepare-to-commit": "run-s clean lint build test clean"
+    "prepare-to-commit": "run-s lint build test clean"
   },
   "license": "MIT",
   "engines": {

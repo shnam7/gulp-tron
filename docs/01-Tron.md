@@ -76,10 +76,12 @@ Creates a watcher task that observes file changes and triggers task execution.
 - `options.browserSync`: optional BrowserSync configuration to enable live reload.
 - `options.watch`: optional file glob or array of globs to override default watch patterns.
 - `options.addWatch`: optional extra watch patterns to supplement the default set.
-- `options.logLevel`: optional log verbosity for watcher events.
+- `options.logLevel`: optional log level for watcher events.
 - `options.logger`: optional custom logger.
 
 The watcher task uses each selected task's `watch` or `src` patterns, and will also reload BrowserSync when configured.
+
+Separately from the watcher-level logger above, each **watched task's own** `logLevel: "silent"` (set on that task's own config, not on `addWatcher()`) explicitly suppresses that task's `change detected:'...'` line in code — this check is independent of, and in addition to, whatever logger/logLevel the `@watch` task itself is using.
 
 ### `series(...args: BuildSet[]): BuildSetSeries`
 
