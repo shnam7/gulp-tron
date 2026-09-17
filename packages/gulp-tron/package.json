@@ -42,7 +42,7 @@
     "prepare-to-commit": "run-s clean lint test build clean",
     "prepublishOnly": "bun run build",
     "npm-dry-run": "npm publish --dry-run",
-    "reset": "npm-run-all -s clean reset:turbo reset:node",
+    "reset": "run-s clean reset:turbo reset:node",
     "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +",
     "reset:node": "find . -type d -name node_modules -exec rm -rf {} +"
   },
@@ -89,7 +89,7 @@
     "gulp": "^5.0.1"
   },
   "devDependencies": {
-    "@gulp-tron/tsconfig": "file:../tsconfig",
+    "@gulp-tron/tsconfig": "workspace:*",
     "@types/browser-sync": "^2.29.1",
     "@types/event-stream": "^4.0.6",
     "@types/glob-parent": "^5.1.3",
@@ -112,6 +112,6 @@
     "vitest": "^5.0.1"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }

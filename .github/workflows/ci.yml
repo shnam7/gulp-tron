@@ -11,15 +11,18 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22, 24] # check both for v20 and 24
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -27,7 +30,7 @@ jobs:
           bun-version: 1.4.2
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile && bun install unrun
 
       - name: Validate
-        run: bun run ci
+        run: bun run prepare-to-commit

@@ -42,7 +42,7 @@
     "prepare-to-commit": "run-s clean lint test build clean",
     "prepublishOnly": "bun run build",
     "npm-dry-run": "npm publish --dry-run",
-    "reset": "npm-run-all -s clean reset:turbo reset:node",
+    "reset": "run-s clean reset:turbo reset:node",
     "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +",
     "reset:node": "find . -type d -name node_modules -exec rm -rf {} +"
   },

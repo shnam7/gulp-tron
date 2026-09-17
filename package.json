@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "workspaces": [
     "packages/*",
@@ -39,7 +39,7 @@
     "clean:pkg": "turbo clean --filter=gulp-tron --filter=@gulp-tron/plugin-*",
     "clean:examples": "turbo run clean --filter=./examples/*",
     "prepare-to-commit": "run-s lint build test clean",
-    "reset": "npm-run-all -s clean reset:turbo reset:node",
+    "reset": "run-s build clean reset:turbo reset:node",
     "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +",
     "reset:node": "find . -type d -name node_modules -exec rm -rf {} +"
   },
