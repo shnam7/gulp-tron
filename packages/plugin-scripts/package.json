@@ -1,8 +1,8 @@
 {
   "name": "@gulp-tron/plugin-scripts",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.1",
   "type": "module",
+  "author": "Robin Nam",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
@@ -24,6 +24,9 @@
       "default": "./dist/index.mjs"
     }
   },
+  "files": [
+    "dist/*"
+  ],
   "scripts": {
     "dev": "run-s build watch",
     "dev:test": "vitest watch --coverage --coverage.include=src",
@@ -37,11 +40,39 @@
     "watch": "chokidar 'src/**' -c 'run-p \"build:ts --no-clean\" build:ts:types'",
     "clean": "rimraf ./dist ./coverage",
     "prepare-to-commit": "run-s clean lint test build clean",
+    "prepublishOnly": "bun run build",
     "npm-dry-run": "npm publish --dry-run",
     "reset": "npm-run-all -s clean reset:turbo reset:node",
     "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +",
     "reset:node": "find . -type d -name node_modules -exec rm -rf {} +"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shnam7/gulp-tron",
+    "directory": "packages/plugin-scripts"
+  },
+  "bugs": {
+    "url": "https://github.com/shnam7/gulp-tron/issues"
+  },
+  "homepage": "https://github.com/shnam7/gulp-tron/blob/main/packages/plugin-scripts#readme",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "gulp",
+    "task",
+    "build",
+    "builder",
+    "manager",
+    "script",
+    "typescript",
+    "javascript",
+    "babel",
+    "coffeescript",
+    "eslint",
+    "terser"
+  ],
   "dependencies": {
     "@babel/core": "^8.0.5",
     "gulp-babel": "^8.1.0",

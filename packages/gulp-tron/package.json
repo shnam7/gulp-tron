@@ -1,8 +1,9 @@
 {
   "name": "gulp-tron",
-  "version": "0.9.4",
-  "description": "Easy to use, flexible gulp build manager",
+  "version": "0.9.5",
+  "description": "Easy to use gulp build manager",
   "type": "module",
+  "author": "Robin Nam",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
@@ -39,18 +40,21 @@
     "watch": "chokidar 'src/**' -c 'run-p \"build:ts --no-clean\" lint:ts:types'",
     "clean": "rimraf ./dist ./coverage",
     "prepare-to-commit": "run-s clean lint test build clean",
-    "prepublishOnly": "run-s build",
-    "npm-dry-run": "npm publish --dry-run"
+    "prepublishOnly": "bun run build",
+    "npm-dry-run": "npm publish --dry-run",
+    "reset": "npm-run-all -s clean reset:turbo reset:node",
+    "reset:turbo": "find . -type d -name .turbo -exec rm -rf {} +",
+    "reset:node": "find . -type d -name node_modules -exec rm -rf {} +"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/shnam7/gulp-tron"
+    "url": "git+https://github.com/shnam7/gulp-tron.git",
+    "directory": "packages/gulp-tron"
   },
-  "homepage": "https://github.com/shnam7/gulp-tron#readme",
   "bugs": {
     "url": "https://github.com/shnam7/gulp-tron/issues"
   },
-  "author": "Robin Nam (https://github.com/shnam7)",
+  "homepage": "https://github.com/shnam7/gulp-tron/blob/main/packages/gulp-tron#readme",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
@@ -60,19 +64,7 @@
     "task",
     "build",
     "builder",
-    "manager",
-    "babel",
-    "typescript",
-    "es6",
-    "sass",
-    "scss",
-    "less",
-    "coffee",
-    "coffeescript",
-    "postcss",
-    "twig",
-    "panini",
-    "markdown"
+    "manager"
   ],
   "dependencies": {
     "@wicle/is": "^2.1.1",
