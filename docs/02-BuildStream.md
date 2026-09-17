@@ -1,300 +1,611 @@
-# BuildStream Class
+# BuildStream
 
-## Overview
+`BuildStream` is the per-task stream pipeline used inside `gulp-tron`.
 
-`BuildStream` is a core utility used by [`Tron`](./01-Tron.md) to implement build tasks. It wraps gulp streams and provides a fluent, task-friendly API for source selection, file processing, destination output, cleanup, command execution, and stream lifecycle management.
+Each task build function receives a `BuildStream` instance as an argument. It wraps a gulp stream and adds convenience methods for source selection, stream transforms, output writing, cleanup, async coordination, and logging.
 
-In practice, `BuildStream` instances are created by `Tron` task manager and passed into task build functions, but the class can also be instantiated directly for advanced uses.
+In short, `BuildStream` is the main API you use when implementing the actual work of a task.
 
-## Public Properties
+## Essentials
 
-- `name: string` — The task name or instance name.
-- `className: string` — The name of the class (`BuildStream`).
-- `opts: BuildOptions` — Task configuration options passed to the stream.
-- `stream: GulpStream` — The underlying gulp/Node stream.
-
-- `logger: Logger` — A leveled logger bound to this stream (from [`@wicle/tiny-logger`](https://www.npmjs.com/package/@wicle/tiny-logger); has `trace`/`debug`/`verbose`/`info`/`warn`/`error`/`fatal` methods, not a single callback). Defaults to a logger prefixed with `[name]`; pass `opts.logger` to supply your own.
-- `performance: object` — Runtime metrics including `startTime` and `elapsedTime`, returned by the getter.
-
-## Constructor
+### Constructor
 
 ```ts
-new BuildStream(name?: string, opts?: BuildOptions, stream?: GulpStream, promiseQ?: Promise<unknown>)
+new BuildStream(name?: string, opts?: BuildOptions, stream?: GulpStream, promiseQ?: Promise<unknown>);
 ```
 
-- `name` (optional): task or instance name.
-- `opts` (optional): build options such as `src`, `dest`, `order`, `sourcemaps`, `clean`, `logger`, and `logLevel`.
-- `stream` (optional): custom underlying stream.
-- `promiseQ` (optional, advanced): a starting promise to seed the internal async queue — mainly for internal/testing use.
+Most users don't construct `BuildStream` directly - it's created automatically and passed to a task's `build` function.
 
-## Core Stream Methods
+- **name**: `string` (optional)
+  Name for this instance, used as the logger's `[name]` prefix and returned by the `name` getter.
+  - Default: `"<anonymous>"`
 
-### `src(globsOrOptions?, options?)`
+- **opts**: `BuildOptions` (optional)
+  Task options this instance operates with (`src`, `dest`, `order`, `sourcemaps`, `logger`, `logLevel`, plus the cleaner/watcher fields). Stored and consulted later by methods such as `src()`, `dest()`, `order()`, and `clean()` when their own arguments are omitted.
+  - Default: `{}`
 
-Starts the build stream by selecting source files.
+- **stream**: `GulpStream` (optional)
+  An existing stream to wrap instead of starting from a null stream.
+  - Default: a null stream that is already ended, so a `finish` event still fires even if `src()` is never called
 
-- `globsOrOptions`: source files, either a glob string or array of glob strings, or a `SrcOptions` object that may include `src`, `base`, `since`, `read`, and other gulp source options.
-- `options`: optional `SrcOptions` that override any values in `globsOrOptions` or the configured `opts.src`.
+- **promiseQ**: `Promise<unknown>` (optional)
+  An existing promise queue to continue from - used when one `BuildStream` is derived from another, e.g. `clone()`.
+  - Default: `Promise.resolve()`
 
-If `globsOrOptions` is omitted, `BuildStream` uses `opts.src` from the task configuration.
+### Properties
 
-The method also honors `opts.sourcemaps` and sets `encoding: false` by default for binary-safe gulp 4 handling.
+- **name**: `string` (read-only)
+  Task or instance name.
 
-### `add(globs, options?)`
+- **className**: `string` (read-only)
+  Runtime class name of the instance, normally `"BuildStream"`.
 
-Appends additional source files to the existing stream.
+- **stream**: `GulpStream` (read-only)
+  The current underlying gulp/Node stream.
 
-- `globs`: file glob string or array of glob strings to add.
-- `options`: optional `SrcOptions` for the added source files.
+- **promiseQ**: `Promise<unknown>` (read-only)
+  The current queued asynchronous work for this instance.
 
-If `src()` has not been called yet, this method behaves like `src(globs, options)`.
+- **opts**: `BuildOptions` (read-only)
+  A copy of the options this instance was constructed with.
 
-### `remove(patterns)`
+- **logger**: `Logger` (read-only)
+  The `@wicle/tiny-logger` logger instance used for this task's log output.
 
-Removes matching files from the current stream.
+- **performance**: `{ startTime: number; elapsedTime: number }` (read-only)
+  Timing metadata: `startTime` is when the instance was created; `elapsedTime` is recalculated on every access.
 
-- `patterns`: single glob string or array of glob strings.
+## Source & Stream Building
 
-Negative glob patterns are supported and automatically normalized so excluded files are removed from the stream.
+### src(globsOrOptions?, options?)
 
-### `filter(...args)`
+```ts
+bs.src(globsOrOptions?: string | string[] | SrcOptions, options?: SrcOptions): this;
+```
 
-Applies `gulp-filter` to the stream.
+Starts (or restarts) the stream by calling `gulp.src()`, then applies `order()`.
 
-- `args[0]`: glob pattern, array of glob patterns, or a predicate function.
-- `args[1]`: optional filter options such as `restore` or `passthrough`.
+- **globsOrOptions**: `string | string[] | SrcOptions` (optional)
+  Either the glob pattern(s) to read, or an `SrcOptions` object to use together with the task's own `src` patterns.
+  - Default: the task's `src` option
 
-If only negation patterns are provided, a wildcard is injected so the filter is still applied correctly.
+- **options**: `SrcOptions` (optional)
+  Options for `gulp.src()`, merged over anything passed via `globsOrOptions`.
+  - Default: `{}`
 
-### `rename(...args)`
+Notes: `sourcemaps` falls back to the task's `sourcemaps` option when not set in `options`, and `encoding` defaults to `false` for compatibility with binary files (e.g. images) under gulp 4.
 
-Applies `gulp-rename` to the stream.
+```ts
+bs.src();
+bs.src("src/**/*.js");
+bs.src({ read: false });
+```
 
-- Accepts the same arguments as `gulp-rename`.
-- Supports a rename string, an options object, or a callback function to compute new file names.
+### add(globs, options?)
 
-### `order(...args)`
+```ts
+bs.add(globs: string | string[], options?: SrcOptions): this;
+```
 
-Orders files in the stream using `gulp-order3`.
+Appends more files to the current stream via `gulp.src()`, without discarding what's already there. If `src()` hasn't been called yet, this behaves the same as calling `src(globs, options)`.
 
-- `args[0]`: glob pattern or array of glob patterns defining the desired file order.
-- `args[1]`: optional options object for `gulp-order3`.
+- **globs**: `string | string[]`
+  Glob pattern(s) to add to the stream.
 
-If no patterns are provided, it uses `opts.order` from the task configuration.
+- **options**: `SrcOptions` (optional)
+  Options for `gulp.src()`.
+  - Default: `{}`
 
-### `changed(dest?, options?)`
+```ts
+bs.add("src/**/*.txt");
+```
 
-Filters the stream to only changed files compared to the destination.
+### remove(patterns?)
 
-- `dest`: optional destination folder path to compare against. If omitted, defaults to `opts.dest`.
-- `options`: optional `gulp-changed` options such as `hasChanged`, `extension`, or `debug`.
+```ts
+bs.remove(patterns?: string | string[]): this;
+```
 
-Uses a custom compare function that checks last modified time first and then file contents for more reliable change detection.
+Removes files matching `patterns` from the stream. A thin wrapper around `filter()` with the patterns negated.
 
-### `copy(globs, destPath, opts?)`
+- **patterns**: `string | string[]` (optional)
+  Glob pattern(s) to remove. A leading `!` is toggled, so an already-negated pattern is re-included instead.
 
-Copies files from source to destination.
+```ts
+bs.remove(["**/*.tmp", "!**/keep.tmp"]);
+```
 
-- `globs`: source glob or array of globs to copy.
-- `destPath`: destination folder path.
-- `opts`: optional `CopyOptions` for the copy operation.
+### filter(...args)
 
-### `copy(params, opts?)`
+```ts
+bs.filter(patterns: string | string[] | FilterFunction, options?: GulpFilterOptions): this;
+```
 
-Supports multiple `CopyParam` entries for mapping sources to destinations.
+Filters files in the stream using `gulp-filter`. See `gulp-filter`'s own docs for the full argument reference.
 
-- `params`: a `CopyParam` object or array of `CopyParam`, each with a `src` glob, a `dest` path, and an optional per-param `options` override.
-- `opts`: optional `CopyOptions`, passed as `copy-changed`'s `defaultOptions` and merged into every param — but each param's own `options` field wins over it.
+- **patterns**: `string | string[] | FilterFunction`
+  Glob pattern(s), or a predicate function, selecting which files stay in the stream. A negation-only pattern list gets `"*"` prepended automatically.
 
-`copy()` is a thin wrapper: it forwards directly to [`copy-changed`](https://www.npmjs.com/package/copy-changed)'s `copyChangedAsync()` and queues the result on the promise queue. See [Copy utility types](./04-Types.md#copy-utility-types) for the full `CopyOptions` shape (including the `onCopy`/`onSkip`/`onFinish` hooks).
+- **options**: `GulpFilterOptions` (optional)
+  Options forwarded to `gulp-filter`.
 
-### `del(patterns, options?)`
+```ts
+bs.filter("**/*.js");
+```
 
-Deletes files or folders synchronously using `del`.
+### rename(...args)
 
-- `patterns`: glob string or array of glob strings to delete.
-- `options`: optional `DelOptions` such as `force`, `cwd`, `dryRun`, `logger`, and `logLevel`.
+```ts
+bs.rename(...args: Parameters<typeof gulpRename>): this;
+```
 
-### `clean(cleanExtra?, options?)`
+Renames files in the stream using `gulp-rename`. See `gulp-rename`'s own docs for the accepted argument forms.
 
-Deletes configured clean targets.
+- **args**: same arguments `gulp-rename` itself accepts - a string, an object of path parts, or a rename function.
 
-- `cleanExtra`: additional glob or array of globs to clean beyond `opts.clean`.
-- `options`: optional `CleanOptions` including `logger`/`logLevel` and nested `delOptions`.
+```ts
+bs.rename({ extname: ".mjs" });
+```
 
-Combines `opts.clean` and `cleanExtra`, logs its own `cleaning:[...]` message (also unconditionally — see the note below), then delegates to `del()` while swapping in `getSilentLogger()` as the logger, so `del()`'s own `deleting:[...]` line doesn't also print.
+### order(...args)
 
-### `exec(command, options?)`
+```ts
+bs.order(patterns?: string | string[], options?: GulpOrderOptions): this;
+```
 
-Executes a shell command and adds the result to the promise queue.
+Orders files in the stream using `gulp-order`.
 
-- `command`: shell command string to execute.
-- `options`: optional `child_process.ExecSyncOptions` for command execution.
+- **patterns**: `string | string[]` (optional)
+  Glob pattern(s) describing the desired order.
+  - Default: the task's `order` option
 
-Runs the command via `child_process.exec()` (despite the `ExecSyncOptions` type name, it's the callback-based, non-blocking `exec`). Logs the command line up front, then either the captured stdout and a `verbose`-level "--> done." message on success, or an `error`-level failure message plus stderr on failure. None of this is gated by `options.logLevel` — this instance method uses `this.logger` throughout, so suppressing it relies on the logger's own level filtering (see the note below), not on anything passed to `exec()` itself. The result is queued so later `sync()` or `finish()` waits for command completion.
+- **options**: `GulpOrderOptions` (optional)
+  Options forwarded to `gulp-order`.
 
-This is a different API from the standalone `exec()` utility function — see [Exec utility types](./04-Types.md#exec-utility-types) for that distinction.
+```ts
+bs.order(["**/vendor/*.js", "**/*.js"]);
+```
 
-### `dest(folder?, options?)`
+### changed(dest?, options?)
 
-Writes the stream to a destination folder using `gulp.dest()`.
+```ts
+bs.changed(dest?: string | ((file: File) => string), options?: GulpChangedOptions): this;
+```
 
-- `folder`: optional destination folder path. If omitted, uses `this.opts.dest` or `"."`.
-- `options`: optional destination options, including `sourcemaps`.
+Filters out files that are unchanged compared to `dest`. A file is treated as changed only if its last-modified time looks different **and** its contents actually differ - this two-step check avoids false positives from files that were merely touched without being edited.
 
-If `options.sourcemaps` is not provided, it falls back to `this.opts.sourcemaps`.
+- **dest**: `string | ((file: File) => string)` (optional)
+  Destination to compare against.
+  - Default: the task's `dest` option. If neither is available, `changed()` is a no-op and the stream passes through unfiltered.
 
-### `reload(options?)`
+- **options**: `GulpChangedOptions` (optional)
+  Options forwarded to `gulp-changed`. You can still pass your own `hasChanged` comparator to override the default two-step check.
+  - Default: `{}`
 
-Reloads BrowserSync if it is active.
+```ts
+bs.changed("dist");
+```
 
-- `options`: optional BrowserSync stream options for reload behavior.
+## File System Operations
 
-When BrowserSync is active, it pipes the current stream through `browserSync.stream(options)`.
+### copy(globs, destPath, opts?) / copy(params, opts?)
 
-### `clear()`
+```ts
+bs.copy(globs: string | string[], destPath: string, opts?: CopyOptions): this;
+bs.copy(params: CopyParam | CopyParam[], opts?: CopyOptions): this;
+```
 
-Removes all files from the stream by piping through an empty transform.
+Copies only changed files (by modification time and size) from source to destination, delegating to the `copy-changed` package. The copy runs asynchronously and is queued on this instance's promise queue, so a copy failure propagates and fails the build.
 
-### `clone(name?)`
+**`copy(globs, destPath, opts?)`**
 
-Clones the current stream and returns a new `BuildStream` instance.
+- **globs**: `string | string[]`
+  Source glob(s) to copy.
 
-- `name`: optional name for the cloned stream instance.
+- **destPath**: `string`
+  Destination path to copy into.
 
-Useful for branching a build pipeline without consuming the original stream.
+- **opts**: `CopyOptions` (optional)
+  Options forwarded to `copy-changed` (e.g. `force`, `clearDest`, `dryRun`).
+  - Default: `{}`
 
-### `on(...args)`
+**`copy(params, opts?)`**
 
-Attaches event listeners to the underlying stream.
+- **params**: `CopyParam | CopyParam[]`
+  One or more `{ src, dest, options? }` copy tasks.
 
-- `args[0]`: event name such as `finish`, `error`, or `data`.
-- `args[1]`: listener callback.
+- **opts**: `CopyOptions` (optional)
+  Shared defaults merged into every param's own `options` - a param's own `options` still wins where the two overlap. This is `copy-changed`'s own `defaultOptions` argument.
+  - Default: `{}`
 
-Returns the current `BuildStream` instance.
+```ts
+bs.copy("src/**/*.png", "dist/images");
+```
 
-### `promise(func | promise)`
+### del(patterns, options?)
 
-Adds an async action to the promise queue.
+```ts
+bs.del(patterns: string | string[], options?: DelOptions): this;
+```
 
-- `func`: a synchronous or async callback returning a value or promise.
-- `promise`: an existing `Promise`.
+Deletes files and folders matching `patterns`, delegating to the `del` package. The delete runs asynchronously and is queued on this instance's promise queue.
 
-The queue guarantees each async action runs in order.
+- **patterns**: `string | string[]`
+  Glob pattern(s) of files/folders to delete.
 
-### `chain(func)`
+- **options**: `DelOptions` (optional)
+  `del`'s own options (e.g. `force`, `dryRun`, `cwd`) plus `logger`/`logLevel`.
+  - Default: `{}`
 
-Chains a plugin-style function to the build stream.
+```ts
+bs.del("dist/**");
+```
 
-- `func`: callback that receives the current `BuildStream` instance.
+### clean(cleanExtra?, options?)
 
-This is useful for executing custom build logic while preserving fluent chaining.
+```ts
+bs.clean(cleanExtra?: string | string[], options?: CleanOptions): this;
+```
 
-### `pipe(plugin, options?)`
+Deletes the task's configured `clean` targets together with any extra patterns you pass, then delegates to `del()` - with `del()`'s own logging silenced, since `clean()` already logs its own summary line.
 
-Pipes a plugin or transform into the stream.
+- **cleanExtra**: `string | string[]` (optional)
+  Additional patterns to delete, on top of the task's own `clean` option.
+  - Default: `[]`
 
-- `plugin`: a gulp plugin stream or Node transform stream.
-- `options`: optional pipe options such as `{ end?: boolean }`.
+- **options**: `CleanOptions` (optional)
+  Passed through to the underlying `del()` call.
+  - Default: `{}`
 
-### `debug(title?: string, options?: DebugOptions): this`
+```ts
+bs.clean("dist/tmp");
+```
 
-Applies `gulp-debug2` to the stream and prints debug information.
+### exec(command, options?)
 
-- `title`: optional title prefix for debug output.
-- `options`: optional `DebugOptions` for gulp-debug2.
+```ts
+bs.exec(command: string, options?: child_process.ExecOptions): this;
+```
 
-Returns the current `BuildStream` instance for fluent chaining.
+Runs a shell command via Node's `child_process.exec()`, queued on this instance's promise queue. `stdout` is logged on success; on failure, `stderr` (if any) and `stdout` are logged and the error is re-thrown, failing the build.
 
-### `debug(options?: DebugOptions): this`
+- **command**: `string`
+  Shell command to execute.
 
-Applies `gulp-debug2` to the stream and prints debug information.
+- **options**: `child_process.ExecOptions` (optional)
+  Options forwarded to `child_process.exec()`.
+  - Default: `{}`
 
-- `options`: optional `DebugOptions` for gulp-debug2.
+```ts
+bs.exec("npm run build");
+```
 
-Returns the current `BuildStream` instance for fluent chaining.
+### dest(folder?, options?)
 
-### `through(transform?, flush?, options?)`
+```ts
+bs.dest(folder?: string | ((file: File) => string), options?: DestOptions): this;
+```
 
-Inserts a custom transform stream into the pipeline.
+Writes the current stream to disk via `gulp.dest()`. Companion sourcemap files are held back just long enough to be released together with their main file, closing a race where a downstream step could otherwise read a `.map` file before it's fully written.
 
-- `transform`: function called for each file in the stream.
-- `flush`: optional function called when the stream ends.
-- `options`: optional stream transform options.
+- **folder**: `string | ((file: File) => string)` (optional)
+  Destination folder, or a function returning one per file.
+  - Default: the task's `dest` option, or `"."` if that's also missing
 
-### `intercept(interceptFunc?, onFinish?)`
+- **options**: `DestOptions` (optional)
+  Options forwarded to `gulp.dest()`. `sourcemaps` falls back to the task's `sourcemaps` option when not set here.
+  - Default: `{}`
 
-Adds a transform that can modify or inspect each file in the stream.
+```ts
+bs.dest("dist");
+bs.dest();
+```
 
-- `interceptFunc`: function called for each file, with `(file, enc, cb)` parameters.
-- `onFinish`: optional callback fired once when the stream finishes processing files.
+## Live Reload & Debugging
 
-### `peek(peekFunc?, onFinish?)`
+### reload(options?)
 
-Alias for `intercept()` that is useful for read-only inspection of each file.
+```ts
+bs.reload(options?: BrowserSyncStreamOptions): this;
+```
 
-- `peekFunc`: function called for each file with the file object.
-- `onFinish`: optional callback fired after all files are processed.
+Pipes the stream through BrowserSync's reload stream - but only when BrowserSync is actually active (`browserSync.active`), so it's safe to call even in setups that don't use BrowserSync at all.
 
-## Build Completion Methods
+- **options**: `BrowserSyncStreamOptions` (optional)
+  Options forwarded to `browserSync.stream()`.
+  - Default: `{}`
 
-### `sync()`
+```ts
+bs.reload();
+```
 
-Waits for queued async actions to resolve and flushes stdio.
+### debug(title?, options?) / debug(options?)
 
-This ensures any async jobs added via `promise()` or `exec()` are complete before proceeding.
+```ts
+bs.debug(title?: string, options?: DebugOptions): this;
+bs.debug(options?: DebugOptions): this;
+```
 
-### `finish()`
+Inserts a `gulp-debug2` step into the pipeline, printing file paths as they pass through - useful for inspecting the pipeline during development.
 
-Waits for both the promise queue and the stream `finish` event.
+- **title**: `string` (optional)
+  Prefix shown before each debug line.
+  - Default: `"debug:"`
 
-This ensures the current stream has fully completed and all queued async actions are finished.
+- **options**: `DebugOptions` (optional)
+  Options forwarded to `gulp-debug2`. If `options.logger` is omitted, output is routed through this instance's own logger at the `info` level.
+  - Default: `{}`
 
-- Use `finish()` when the task should not end until both stream output and async tasks are done.
+```ts
+bs.debug("after-build");
+```
 
-### `log(...args)`
+## Stream Lifecycle & Composition
 
-Logs messages prefixed with the stream name.
+### chain(func)
 
-- `args`: values to log, similar to `console.log`.
+```ts
+bs.chain(func: PluginFunction): this;
+```
 
-Uses `this.logger.info(...)` — either `opts.logger` if you supplied one, or the default `[name]`-prefixed logger.
+Runs a plugin-style function against this `BuildStream` instance - useful for grouping reusable pipeline steps.
 
-### `detachStream()`
+- **func**: `PluginFunction`
+  `(bs: BuildStream) => void`. Called immediately with this instance.
 
-Detaches the current underlying stream and resets the instance to a null stream.
+```ts
+bs.chain((stream) => stream.log("custom step"));
+```
 
-- Returns the detached `GulpStream`.
+### pipe(plugin, options?)
 
-The `BuildStream` instance can continue to be reused after detaching.
+```ts
+bs.pipe(plugin: GulpStream | Transform, options?: { end?: boolean }): this;
+```
 
-## Static Methods
+Pipes the current stream through a gulp/Node plugin stream.
 
-- `BuildStream.nullStream(): Transform` — Returns a pass-through transform stream that emits no files. Used internally as the default underlying stream, and useful as a placeholder in tests.
-- `BuildStream.through(transform?, flush?, options?): Transform` — Creates a standalone transform stream, independent of any `BuildStream` instance. The instance method `through()` above uses this internally.
-- `BuildStream.main(bs, buildFunc): Promise<GulpStream>` — Runs a task's `build` function against a `BuildStream` instance and resolves once the resulting stream (and any queued async work) has finished. This is what `Tron` uses internally to run each task's `build` function; you generally won't call it directly unless building custom task-execution logic.
+- **plugin**: `GulpStream | Transform`
+  The plugin stream to pipe through.
+
+- **options**: `{ end?: boolean }` (optional)
+  Whether to end the writable side of the stream when the readable side ends.
+
+```ts
+bs.pipe(myPlugin());
+```
+
+### through(transform?, flush?, options?)
+
+```ts
+bs.through(transform?: TransformFunction, flush?: FlushFunction, options?: TransformOptions): this;
+```
+
+Inserts an ad hoc transform stream into the pipeline, without needing a separate plugin package.
+
+- **transform**: `TransformFunction` (optional)
+  Called for each file passing through.
+
+- **flush**: `FlushFunction` (optional)
+  Called once after all files have passed through.
+
+- **options**: `TransformOptions` (optional)
+  Node stream `Transform` options (e.g. `objectMode`).
+
+```ts
+bs.through(transformFn);
+```
+
+### clear()
+
+```ts
+bs.clear(): this;
+```
+
+Removes all files currently in the stream, without ending it. Takes no arguments.
+
+```ts
+bs.clear();
+```
+
+### clone(name?)
+
+```ts
+bs.clone(name?: string): BuildStream;
+```
+
+Creates a new `BuildStream` that shares this instance's options and promise queue, with its own cloned copy of the current stream contents.
+
+- **name**: `string` (optional)
+  Name for the cloned instance.
+  - Default: this instance's own name
+
+```ts
+const copyStream = bs.clone("copy");
+```
+
+## Events & Inspection Hooks
+
+### on(...args)
+
+```ts
+bs.on(event: string, listener: (...args: unknown[]) => void): this;
+```
+
+Shortcut for `bs.stream.on()` - attaches an event listener directly to the underlying stream.
+
+- **event**: `string`
+  Event name (e.g. `"finish"`, `"data"`, `"error"`).
+
+- **listener**: `(...args: unknown[]) => void`
+  Handler invoked when the event fires.
+
+```ts
+bs.on("finish", () => console.log("done"));
+```
+
+### intercept(interceptFunc?, onFinish?)
+
+```ts
+bs.intercept(
+  interceptFunc?: (file: Vinyl, enc: BufferEncoding, cb: TransformCallback) => void,
+  onFinish?: (cb: TransformCallback) => void,
+): this;
+```
+
+Adds a function that can inspect, mutate, or replace each file passing through the stream.
+
+- **interceptFunc**: (optional)
+  Called once per file; call `cb(error, file)` to continue (or `cb(error, null)` to drop the file).
+
+- **onFinish**: (optional)
+  Called once after all files have passed through; call `cb()` when done.
+
+```ts
+bs.intercept((file, enc, cb) => {
+  file.contents = Buffer.from("...");
+  cb(null, file);
+});
+```
+
+### peek(peekFunc?, onFinish?)
+
+```ts
+bs.peek(peekFunc?: (file: Vinyl) => void, onFinish?: (cb: TransformCallback) => void): this;
+```
+
+A read-only variant of `intercept()` for lightweight inspection - files pass through unchanged.
+
+- **peekFunc**: `(file: Vinyl) => void` (optional)
+  Called once per file, for inspection only.
+
+- **onFinish**: (optional)
+  Called once after all files have passed through.
+
+```ts
+bs.peek((file) => console.log(file.relative));
+```
+
+## Async Coordination
+
+### promise(func) / promise(promise)
+
+```ts
+bs.promise(func: () => unknown): this;
+bs.promise(promise: Promise<unknown>): this;
+```
+
+Adds a function or a promise to this instance's internal promise queue, so it's awaited (in order) before the task is considered complete.
+
+- **func**: `() => unknown`
+  A function to queue. If it's an async function, it's awaited in place.
+
+- **promise**: `Promise<unknown>`
+  A promise to queue directly.
+
+```ts
+bs.promise(async () => {
+  /* async work */
+});
+```
+
+### sync()
+
+```ts
+bs.sync(): Promise<void>;
+```
+
+Awaits the internal promise queue, then flushes any buffered stdio output. Takes no arguments.
+
+```ts
+await bs.sync();
+```
+
+### finish()
+
+```ts
+bs.finish(): Promise<void>;
+```
+
+Waits for the underlying stream to emit `finish`, then calls `sync()` - use this when you need both the stream and all queued async work to have completed. Takes no arguments.
+
+```ts
+await bs.finish();
+```
+
+## Logging
+
+### log(...args)
+
+```ts
+bs.log(...args: Parameters<typeof console.log>): this;
+```
+
+Logs a message via this instance's logger, at the `info` level.
+
+- **args**: same arguments you'd pass to `console.log()`.
+
+Note: the `[name]` prefix you see in the output comes from how the logger itself was created (see the constructor), not from `log()` - so calling `this.logger.info()`/`.error()` directly (as `copy()`, `del()`, and `clean()` do) produces the same prefix without going through `log()`.
+
+```ts
+bs.log("build finished");
+```
 
 ## Example
 
 ```ts
-import { BuildStream } from "gulp-tron";
-
-const bs = new BuildStream("build-js", {
+tron.task({
+  name: "scripts",
   src: "src/**/*.js",
   dest: "dist/js",
+  build: (bs) => bs
+    .src()
+    .debug("src")
+    .pipe(/* plugin */)
+    .dest(),
 });
-
-bs.src().pipe(/* transform stream */).dest().log("build complete");
 ```
 
-## Notes
+## Advanced
 
-- `BuildStream` is designed to work with Tron class, but can also be used directly for manual stream management.
-- For task-level behavior and setup, see the [Tron class documentation](./01-Tron.md).
+### detachStream()
 
-### Notes on `logLevel` vs. a silent logger
+```ts
+bs.detachStream(): GulpStream;
+```
 
-`options.logLevel` (part of `LogOptions`) is only actually checked by code in a couple of places — e.g. the standalone `exec()` utility, and `copy()` (delegated to `copy-changed`). Elsewhere — `del()`, `clean()`, and `BuildStream.exec()`'s own instance-level logging — the code always calls `logger.info()`/`.error()`/`.verbose()` unconditionally. Suppression in those cases comes entirely from the *logger instance itself* filtering by level:
+Detaches the current underlying stream from this instance and resets the instance to a fresh null stream. Takes no arguments.
 
-- Construct the `BuildStream` (or pass per-call `options.logger`) with a genuinely silent logger, e.g. `getSilentLogger()` from `@wicle/tiny-logger`.
-- Or construct it with `logLevel: "silent"` in `opts` — this sets the *default logger's* own `.level`, so its methods no-op internally. This only works with the real, pino-backed default logger; a hand-rolled mock/stub logger has no built-in level filtering of its own, so passing `logLevel: "silent"` alongside a plain mock logger will not suppress anything.
+The returned stream is no longer managed by this `BuildStream` instance, but the instance itself can be reused afterward.
+
+```ts
+const detached = bs.detachStream();
+```
+
+### `BuildStream.main(bs, buildFunc)` (static)
+
+```ts
+BuildStream.main(bs: BuildStream, buildFunc: BuildFunction): Promise<GulpStream>;
+```
+
+Runs a task's build function against `bs`, then waits for the stream to finish and for all of `bs`'s queued async work to settle. This is what `Tron` calls internally to execute a task's `build` function - most users won't call it directly.
+
+- **bs**: `BuildStream`
+  The instance to run the build function against.
+
+- **buildFunc**: `BuildFunction`
+  `(bs: BuildStream) => Promise<unknown> | undefined`. The task's build function.
+
+`main` is the only static method on `BuildStream`. (An earlier version of this doc also listed a static `BuildStream.through()` - that method doesn't exist; the transform-stream functionality it described is the instance method [`through()`](#throughtransform-flush-options) above.)
+
+### `logLevel` vs. a silent logger
+
+`options.logLevel` is applied once, in the constructor, to set the logger's level - individual methods don't re-check it afterward. When a method needs to suppress a *nested* call's output regardless of level - for example, `clean()` silencing the `del()` call it makes internally - it does so by passing that call a genuinely silent logger, not by inspecting `logLevel`.
+
+If you want to silence output intentionally, use a real silent logger (or a logger whose level is set to `"silent"`) rather than relying on a plain mock logger with no-op methods. This matters most when `copy()`, `del()`, or `clean()` need to log their own internal activity without adding noise to your task's output.
+
+## Related docs
+
+- [Getting Started](./00-Getting%20started.md)
+- [Tron](./01-Tron.md)
+- [Type Reference](./04-Types.md)

@@ -77,6 +77,14 @@ describe("stream-utils", () => {
     expect(output.path).toBe("async.js");
   });
 
+  it("throughSafe should automatically complete a callback-less flush", async () => {
+    const transform = throughSafe(undefined, () => {});
+
+    transform.resume();
+    transform.end();
+    await new Promise<void>((resolve) => transform.once("finish", resolve));
+  });
+
   it("clearStreamG should drop files", async () => {
     const stream = clearStreamG();
     const outputs: Vinyl[] = [];

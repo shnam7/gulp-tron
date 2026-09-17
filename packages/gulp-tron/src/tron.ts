@@ -128,22 +128,29 @@ export class Tron {
    * @returns this for method chaining
    */
   addCleaner(options: CleanerOptions = {}): this {
-    const targetTaskNames = this.selectTasks(options.target ?? "*");
-    const taskBlocks = targetTaskNames
-      .map((name) => this.findTask(name))
-      .filter((task) => task !== undefined);
+    const taskName = options.name ?? defaultCleanTaskName;
 
-    const cleanList = taskBlocks.flatMap((task) => arrayify(task.clean));
-
-    // Use arrow function with explicit name for better debugging
     const cleanerFunction = (bs: BuildStream): void => {
+      const targetTaskNames = this.selectTasks(options.target ?? "*").filter(
+        (name) => name !== taskName,
+      );
+      const taskBlocks = targetTaskNames
+        .map((name) => this.findTask(name))
+        .filter((task) => task !== undefined);
+
+      const cleanList = [
+        ...arrayify(options.clean),
+        ...taskBlocks.flatMap((task) => arrayify(task.clean)),
+      ];
+
+      if (cleanList.length === 0) return;
       bs.clean(cleanList);
     };
 
-    // Set function name for better stack traces
     Object.defineProperty(cleanerFunction, "name", { value: "__cleanerFunction__" });
 
-    this.task({ name: defaultCleanTaskName, ...options, build: cleanerFunction } as TaskConfig);
+    const { clean: _clean, ...taskConfig } = { ...options, name: taskName, build: cleanerFunction };
+    this.task(taskConfig as TaskConfig);
     return this;
   }
 
@@ -155,11 +162,6 @@ export class Tron {
    * @returns this for method chaining
    */
   addWatcher(options: WatcherOptions = {}): this {
-    const targetTaskName = this.selectTasks(options.target ?? "*");
-    const taskBlocks = targetTaskName
-      .map((name) => this.findTask(name))
-      .filter((task) => task !== undefined);
-
     const taskName = options.name ?? defaultWatchTaskName;
     let isWatching = false;
 
@@ -167,6 +169,13 @@ export class Tron {
     const watcherFunction = (bs: BuildStream): void => {
       // Watch task should not run repeatedly on change detection.
       if (isWatching) return;
+
+      const targetTaskNames = this.selectTasks(options.target ?? "*").filter(
+        (name) => name !== taskName,
+      );
+      const taskBlocks = targetTaskNames
+        .map((name) => this.findTask(name))
+        .filter((task) => task !== undefined);
 
       // Helper function with improved typing
       const handleChangeEvent = (
@@ -196,7 +205,11 @@ export class Tron {
         // Skip the other watchers (watcher should not monitor the other watchers)
         if (task.build === watcherFunction) continue;
 
-        const watched = [...arrayify(task.watch ?? task.src), ...arrayify(task.addWatch)];
+        const watched = [
+          ...arrayify(options.watch ?? task.watch ?? task.src),
+          ...arrayify(task.addWatch),
+          ...arrayify(options.addWatch),
+        ];
 
         if (watched.length > 0) {
           bs.logger.info(`Watching '${task.name}': [${watched.join(", ")}]`);
@@ -260,10 +273,9 @@ export class Tron {
 
     if (patternList.every((pattern) => pattern.startsWith("!"))) patternList.unshift("*");
 
-    const selected = this.#taskBlocks
-      .keys()
-      .filter((taskName) => multimatch(taskName, patternList).length > 0)
-      .toArray();
+    const selected = Array.from(this.#taskBlocks.keys()).filter(
+      (taskName) => multimatch(taskName, patternList).length > 0,
+    );
 
     return selected.length > 0 ? selected : [];
   }
@@ -274,7 +286,7 @@ export class Tron {
    * @returns Array of all the TaskConfig objects registered.
    */
   selectTasksAll(): readonly GulpTaskName[] {
-    return this.#taskBlocks.keys().toArray();
+    return Array.from(this.#taskBlocks.keys());
   }
 
   /**

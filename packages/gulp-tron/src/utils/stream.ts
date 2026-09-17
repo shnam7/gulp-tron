@@ -126,7 +126,12 @@ export function throughSafe(
       cb(error ?? null, data);
     }) as TransformCallback;
 
-    const maybePromise = fn?.(...args, wrappedCb);
+    if (!fn) {
+      wrappedCb();
+      return;
+    }
+
+    const maybePromise = fn(...args, wrappedCb);
     if (maybePromise && typeof (maybePromise as Promise<unknown>).then === "function") {
       (maybePromise as Promise<unknown>).then(
         () => wrappedCb(),

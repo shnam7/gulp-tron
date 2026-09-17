@@ -37,6 +37,12 @@ describe("Exec Utility", () => {
       });
     });
 
+    it("should reject a failed command when throwOnError is enabled", async () => {
+      await expect(exec("false", { throwOnError: true })).rejects.toThrow(
+        'Command "false" exited with code: 1',
+      );
+    });
+
     it("should handle a spawn error (e.g. invalid cwd)", async () => {
       const result = await exec("echo test", { cwd: "/definitely/does/not/exist/xyz" });
       expect(result.exitCode).toBeUndefined();

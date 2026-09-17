@@ -1,34 +1,6 @@
 # Type Reference
 
-This document summarizes the public API types exported by gulp-tron in a developer-friendly way, grouped by class and module.
-
-> Source references: packages/gulp-tron/src/types.ts, packages/gulp-tron/src/build-stream.ts, packages/gulp-tron/src/tron.ts, and packages/gulp-tron/src/utils/\*.ts
-
----
-
-## 1. Types related to the Tron class
-
-The Tron class is responsible for task registration, dependency management, cleaner/watcher creation, and task selection.
-
-### Tron
-
-```ts
-export class Tron {
-  get taskCount(): number;
-  task(conf: TaskConfig): this;
-  task(name: string, buildFunc?: BuildFunction, opts?: BuildOptions): this;
-  createTasks(...confList: TaskConfig[]): this;
-  addCleaner(options?: CleanerOptions): this;
-  addWatcher(options?: WatcherOptions): this;
-  series(...args: BuildSet[]): BuildSetSeries;
-  parallel(...args: BuildSet[]): BuildSetParallel;
-  selectTasks(patterns?: string | string[]): GulpTaskName[];
-  selectTasksAll(): readonly GulpTaskName[];
-  findTask(name?: string): TaskBlock | undefined;
-}
-```
-
-### Task Configuration
+## TaskConfig
 
 ```ts
 export type TaskConfig = BuildOptions & {
@@ -41,17 +13,46 @@ export type TaskConfig = BuildOptions & {
 export type TaskBlock = Omit<TaskConfig, "dependsOn" | "triggers">;
 ```
 
-### BuildSet and BuildFuntion
+- **name**: `GulpTaskName` (i.e. `string`)
+  The task's unique name. See `isValidTaskName` below for the exact naming rules.
+
+- **build**: `BuildFunction` (optional)
+  The function that performs the task's work. A task with no `build` is a no-op (useful as a pure grouping node for `dependsOn`/`triggers`).
+
+- **dependsOn**: `BuildSet` (optional)
+  Tasks that must run to completion before this one starts.
+
+- **triggers**: `BuildSet` (optional)
+  Tasks that run once this task's own `build` function completes.
+
+- **all other fields**: inherited from `BuildOptions` (see below) - `src`, `dest`, `order`, `sourcemaps`, plus the cleaner/watcher fields.
+
+`TaskBlock` is the stored, already-resolved form of a task - the same shape as `TaskConfig` but without `dependsOn`/`triggers`, since those are resolved into the task's gulp dependency graph rather than kept as data. This is what `Tron.findTask()` returns.
+
+## BuildSet and BuildFunction
 
 ```ts
 export type BuildFunction = (bs: BuildStream) => Promise<unknown> | undefined;
 
-export type BuildSet = GulpTaskName | BuildFunction | TaskConfig | BuildSetSeries | BuildSetParallel;
+export type BuildSet =
+  | GulpTaskName
+  | BuildFunction
+  | TaskConfig
+  | BuildSetSeries
+  | BuildSetParallel;
 
 export type BuildSetSeries = BuildSet[];
-
 export type BuildSetParallel = { readonly set: BuildSet[] };
 ```
+
+- **`BuildFunction`**: the shape every task's `build` function must have. It receives the task's `BuildStream` instance and may return a promise (awaited before the task is considered done) or nothing.
+
+- **`BuildSet`**: any value accepted as a `dependsOn`/`triggers` entry - a registered task name, an inline `BuildFunction`, a full `TaskConfig`, or a nested series/parallel group. See [Task resolution behavior](./01-Tron.md#task-resolution-behavior) for how each variant is resolved.
+  - `GulpTaskName` - runs the already-registered task with that name.
+  - `BuildFunction` - runs as an anonymous, unregistered task.
+  - `TaskConfig` - registers and runs a full task definition inline.
+  - `BuildSetSeries` - a plain array; its entries run one after another.
+  - `BuildSetParallel` - `{ set: [...] }`; its entries run concurrently.
 
 ### BuildOptions
 
@@ -59,14 +60,28 @@ export type BuildSetParallel = { readonly set: BuildSet[] };
 export type BuildOptions = Omit<CleanerOptions, "name"> &
   Omit<WatcherOptions, "name"> &
   LogOptions & {
-    readonly src?: Parameters<SrcMethod>[0];
+    readonly src?: string | string[];
     readonly order?: string | string[];
-    readonly dest?: Parameters<DestMethod>[0];
+    readonly dest?: string | ((file: File) => string);
     readonly sourcemaps?: boolean;
   };
 ```
 
-### Cleaner and Watcher Options
+`BuildOptions` is the options bag shared by `TaskConfig` and the third argument of `Tron.task(name, buildFunc, opts)`. It's composed of `CleanerOptions` and `WatcherOptions` (each minus their own `name` field, since a task's name is `TaskConfig.name`, not a separate cleaner/watcher name) and `LogOptions`, plus:
+
+- **src**: `string | string[]` (optional)
+  Source files for the build operation. Read by `BuildStream.src()`/`add()` when no explicit glob is passed.
+
+- **order**: `string | string[]` (optional)
+  Input file ordering patterns. Read by `BuildStream.order()` when no explicit patterns are passed.
+
+- **dest**: `string | ((file: File) => string)` (optional)
+  Output destination. Read by `BuildStream.dest()`/`changed()` when no explicit destination is passed.
+
+- **sourcemaps**: `boolean` (optional)
+  Sourcemaps option used as the fallback for `gulp.src()`/`gulp.dest()` when not set explicitly on a given call.
+
+### CleanerOptions and WatcherOptions
 
 ```ts
 export type CleanerOptions = CleanOptions &
@@ -85,7 +100,24 @@ export type WatcherOptions = LogOptions & {
 };
 ```
 
-### Default task name constants
+`CleanerOptions` is the options object accepted by `Tron.addCleaner()`:
+
+- **name**: `string` (optional) - name of the generated clean task. Default: `"@clean"` ([`defaultCleanTaskName`](#default-task-names)).
+- **target**: `string | string[]` (optional) - multimatch pattern(s) selecting which registered tasks' `clean` properties to gather. Default: `"*"`.
+- **clean**: `string | string[]` (optional) - additional glob patterns to delete, independent of the selected tasks' own `clean` patterns.
+- *(plus `CleanOptions` and `LogOptions` fields - see below)*
+
+`WatcherOptions` is the options object accepted by `Tron.addWatcher()`, and (minus `name`) the set of per-task fields a `TaskConfig` can also carry to influence its own watch behavior:
+
+- **name**: `string` (optional) - name of the generated watch task. Default: `"@watch"` ([`defaultWatchTaskName`](#default-task-names)).
+- **target**: `string | string[]` (optional) - multimatch pattern(s) selecting which registered tasks to watch. Default: `"*"`.
+- **browserSync**: `BrowserSyncOptions` (optional) - options passed to `browser-sync`'s `.init()`. Starts BrowserSync and reloads it on every watched change, if set.
+- **watch**: `string | string[]` (optional) - overrides the selected task's own `src`/`watch` patterns.
+- **addWatch**: `string | string[]` (optional) - patterns to watch in addition to the base patterns.
+
+Full behavior and examples for both are in the [Tron API](./01-Tron.md#addcleaneroptions) doc.
+
+## Default task names
 
 ```ts
 export const defaultCleanTaskName = "@clean";
@@ -93,232 +125,103 @@ export const defaultWatchTaskName = "@watch";
 export const anonymousTaskName = "<anonymous>";
 ```
 
-### Task name and function types
+- **`defaultCleanTaskName`**: the reserved name (`"@clean"`) used for the task `addCleaner()` generates.
+- **`defaultWatchTaskName`**: the reserved name (`"@watch"`) used for the task `addWatcher()` generates.
+- **`anonymousTaskName`**: the name (`"<anonymous>"`) given to a `BuildStream` instance created without an explicit `name`.
+
+## Utility guards
 
 ```ts
 export type GulpTaskName = string;
-export type GulpTaskFunction = TaskFunction;
-export type GulpTaskFunctionCallback = TaskFunctionCallback;
-```
+export type GulpTaskFunction = gulpNS.TaskFunction;
+export type GulpTaskFunctionCallback = gulpNS.TaskFunctionCallback;
 
-### Type guard helpers
-
-```ts
 export const isValidTaskName = (name: string): boolean => ...;
 export const isTaskConfig = (value: unknown): value is TaskConfig => ...;
 ```
 
+- **`GulpTaskName`**: an alias for `string`, used wherever a task name is expected.
+- **`GulpTaskFunction`** / **`GulpTaskFunctionCallback`**: re-exports of gulp's own `TaskFunction`/`TaskFunctionCallback` types, for typing raw gulp tasks alongside `gulp-tron` ones.
+- **`isValidTaskName(name)`**: returns `true` when `name` is non-empty, has no leading/trailing whitespace, and contains none of `" / \ | ? *`.
+- **`isTaskConfig(value)`**: a type guard - returns `true` when `value` is an object with a `name` field that itself passes `isValidTaskName`.
+
 ---
 
-## 2. BuildStream class
-
-The BuildStream class provides a fluent API for stream-based build operations such as sourcing, filtering, renaming, copying, deleting, and executing commands.
-
-### BuildStream
+## LogOptions
 
 ```ts
-export class BuildStream {
-  // static factories/utilities
-  static nullStream(): Transform;
-  static through(transform?: TransformFunction, flush?: FlushFunction, options?: TransformOptions): Transform;
-  static main(bs: BuildStream, buildFunc: BuildFunction): Promise<GulpStream>;
-
-  readonly name: string;
-  readonly className: string;
-  readonly stream: GulpStream;
-  readonly promiseQ: Promise<unknown>;
-  readonly opts: BuildOptions;
-  readonly logger: Logger; // from @wicle/tiny-logger — see the Logger note below
-  readonly performance: {
-    startTime: number;
-    elapsedTime: number;
-  };
-
-  constructor(name?: string, opts?: BuildOptions, stream?: GulpStream, promiseQ?: Promise<unknown>);
-
-  // source/stream composition
-  src(globsOrOptions?: Parameters<SrcMethod>[0] | SrcOptions, options?: SrcOptions): this;
-  add(globs: Parameters<SrcMethod>[0], options?: SrcOptions): this;
-  remove(patterns?: string | string[]): this;
-  filter(...args: Parameters<typeof filterG>): this;
-  rename(...args: Parameters<typeof renameG>): this;
-  order(...args: Parameters<typeof orderG>): this;
-  changed(dest?: Parameters<DestMethod>[0], options?: Parameters<typeof changedG>[1]): this;
-
-  // copy / delete / exec / write
-  copy(globs: Glob, destPath: string, opts?: CopyOptions): this;
-  copy(params: CopyParam | CopyParam[], opts?: CopyOptions): this;
-  del(patterns: Glob, options?: DelOptions): this;
-  clean(cleanExtra?: string | string[], options?: CleanOptions): this;
-  exec(command: string, options?: child_process.ExecSyncOptions): this;
-  dest(folder?: Parameters<DestMethod>[0], options?: DestOptions): this;
-  reload(options?: browserSync.StreamOptions): this;
-
-  // stream lifecycle
-  clear(): this;
-  clone(name?: string): BuildStream;
-  on(...args: Parameters<GulpStream["on"]>): this;
-  promise(func: () => unknown): this;
-  promise(promise: Promise<unknown>): this;
-  chain(func: PluginFunction): this;
-  pipe(plugin: GulpStream | Transform, options?: { end?: boolean }): this;
-  debug(title?: string, options?: DebugOptions): this;
-  debug(options?: DebugOptions): this;
-  through(transform?: TransformFunction, flush?: FlushFunction, options?: TransformOptions): this;
-  intercept(interceptFunc?: TransformFunction, onFinish?: (cb: TransformCallback) => void): this;
-  peek(peekFunc?: (file: Vinyl) => void, onFinish?: (cb: TransformCallback) => void): this;
-
-  // completion / utility
-  sync(): Promise<void>;
-  finish(): Promise<void>;
-  log(...args: Parameters<typeof console.log>): this;
-  detachStream(): GulpStream;
-}
-```
-
-This is a signature summary — see [BuildStream docs](./02-BuildStream.md) for the full behavior of each method (defaults, fallbacks, and side effects), since several methods (`src`, `dest`, `del`, `clean`, `copy`) have fallback/merge logic that isn't visible from the type signature alone.
-
-### Common types used by BuildStream
-
-```ts
-export type GulpStream = Transform | NodeJS.ReadWriteStream;
-
-// Re-exported from @wicle/tiny-logger
-export type LogLevel = "trace" | "debug" | "verbose" | "info" | "warn" | "error" | "fatal" | "silent";
+export type { LogLevel } from "@wicle/tiny-logger";
 
 export type LogOptions = {
-  readonly logLevel?: LogLevel; // takes precedence over logger.level
-  readonly logger?: Logger; // from @wicle/tiny-logger
+  readonly logLevel?: LogLevel;
+  readonly logger?: Logger;
 };
 
-export type SrcOptions = NonNullable<Parameters<SrcMethod>[1]>;
-export type DestOptions = NonNullable<Parameters<DestMethod>[1]>;
+export type { SrcOptions, DestOptions } from "vinyl-fs";
 export type SourceMaps = SrcOptions["sourcemaps"] & DestOptions["sourcemaps"];
 ```
 
-`Logger` is a leveled logger interface from [`@wicle/tiny-logger`](https://www.npmjs.com/package/@wicle/tiny-logger) — it extends `ts-log`'s `Logger` (`trace`/`debug`/`info`/`warn`/`error`/`fatal`) with an added `verbose` level. It is **not** a single `(...args) => void` callback. `gulp-tron` does not re-export the `Logger` type itself, so import it directly if you need to type a custom logger:
+- **`logLevel`**: re-exported as-is from `@wicle/tiny-logger`.
+  Currently available values are `"trace"` | `"debug"` | `"verbose"` | `"info"` | `"warn"` | `"error"` | `"fatal"` | `"silent"`
+- **`logger`**: Logger type from `@wicle/tiny-logger`. Use it when you need a custom logger with a real, level-aware implementation. A plain `ts-log` logger (e.g. `console`) doesn't satisfy this by itself; wrap it with `@wicle/tiny-logger`'s `withVerbose()` helper first.
 
-```ts
-import type { Logger } from "@wicle/tiny-logger";
-
-const myLogger: Logger = {
-  /* trace, debug, verbose, info, warn, error, fatal */
-};
-```
-
-To get a real, already-configured logger (e.g. to silence a specific call), use `getSilentLogger()` or `getDefaultLogger()` from `@wicle/tiny-logger` — see [Notes on `logLevel` vs a silent logger](./02-BuildStream.md#notes-on-loglevel-vs-a-silent-logger) in the BuildStream docs.
-
-### Deletion and cleanup related types
+## CleanOptions
 
 ```ts
 export type DelOptions = DelBaseOptions & LogOptions;
 export type CleanOptions = DelOptions;
 ```
 
-### Plugin type
+- **`DelBaseOptions`**: an internal alias for the `del` package's own `Options` type (`import type { Options as DelBaseOptions } from "del"`) - not itself exported, but every field of `del`'s `Options` (e.g. `force`, `dryRun`, `cwd`) is available on `DelOptions`.
+- **`DelOptions`**: `del`'s options plus `LogOptions` - used by `BuildStream.del()`.
+- **`CleanOptions`**: currently identical to `DelOptions` - used by `BuildStream.clean()` and `Tron.addCleaner()`.
+
+## PluginFunction
 
 ```ts
 export type PluginFunction = (bs: BuildStream) => void;
 ```
 
----
+The shape of a function passed to `BuildStream.chain()` - synchronous, and expected to call other `BuildStream` methods on `bs` directly rather than return a new value.
 
-## 3. Types from utility modules
+## CopyOptions
 
-The copy and exec utilities also expose public types that can be used by developers.
-
-### Copy utility types
-
-`BuildStream.copy()` delegates entirely to [`copy-changed`](https://www.npmjs.com/package/copy-changed), and `CopyParam`/`CopyOptions`/`CopyResult` are re-exported directly from that package (not redefined by gulp-tron) — so this reflects `copy-changed`'s current shape, and may drift if that package changes:
+The copy API is re-exported directly from `copy-changed`, so the public types match that library's current API shape.
 
 ```ts
-export interface CopyParam {
-  src: string | readonly string[];
-  dest: string;
-  options?: CopyOptions; // per-param override, merged over the shared/default options
-}
-
-export interface CopyOptions {
-  cwd?: string;
-  clearDest?: boolean | string | readonly string[];
-  force?: boolean;
-  logger?: Logger;
-  logLevel?: "normal" | "verbose" | "silent"; // copy-changed's own LogLevel, distinct from gulp-tron's LogLevel above
-  globOptions?: GlobOptions; // from tinyglobby
-  dryRun?: boolean;
-  onCheckChanged?: (srcFile: string, destFile: string, options: Required<CopyOptions>) => boolean | Promise<boolean>;
-  onClearDest?: (delPatterns: string[], options: Required<CopyOptions>) => void | Promise<void>;
-  onCopy?: (srcFile: string, destFile: string, options: Required<CopyOptions>) => void | Promise<void>;
-  onSkip?: (srcFile: string, destFile: string, options: Required<CopyOptions>) => void | Promise<void>;
-  onFinish?: (result: CopyResult, options: Required<CopyOptions>) => void | Promise<void>;
-}
-
-export interface CopyResult {
-  copyCount: number;
-  skipCount: number;
-}
+export type CopyOptions = import("copy-changed").CopyOptions;
+export type CopyParam = import("copy-changed").CopyParam;
+export type CopyResult = import("copy-changed").CopyResult;
 ```
 
-When calling `bs.copy(params, opts)` with an array of `CopyParam`, `opts` is passed through as `copy-changed`'s `defaultOptions` — it's merged into every param, but each param's own `options` field wins over it. See [`copy-changed` on npm](https://www.npmjs.com/package/copy-changed) for the full behavior of the `onCheckChanged`/`onClearDest`/`onCopy`/`onSkip`/`onFinish` hooks.
+- **`CopyParam`**: `{ src: string | readonly string[]; dest: string; options?: CopyOptions }` - one entry in a multi-file copy call.
+- **`CopyResult`**: `{ copyCount: number; skipCount: number }` - returned by a copy operation once it finishes.
+- **`CopyOptions`**: `copy-changed`'s full options type (`cwd`, `destType`, `clearDest`, `force`, `logger`, `logLevel`, `globOptions`, `dryRun`, and the `onCheckChanged`/`onClearDest`/`onCopy`/`onSkip`/`onFinish` hooks) - see `copy-changed`'s own README for the complete field-by-field reference.
 
-### Exec utility types
-
-There are two distinct `exec`-related APIs — don't confuse them:
-
-- **`bs.exec(command, options?)`** (a `BuildStream` instance method) — takes `child_process.ExecSyncOptions` and runs the command via the callback-based `child_process.exec()` internally, queued on the stream's promise queue. See [BuildStream docs](./02-BuildStream.md#execcommand-options).
-- **`exec(command, options?)`** (the standalone utility below, from `gulp-tron`'s `utils` module) — a separate helper built on `child_process.spawn()`.
+## ExecOptions
 
 ```ts
-export type ExecOptions = SpawnOptions & LogOptions;
+export type ExecOptions = import("node:child_process").SpawnOptions &
+  LogOptions & {
+    readonly throwOnError?: boolean;
+  };
 
 export type ExecResult = {
   exitCode?: number;
   message?: string;
 };
 
-export function exec(command: string, options?: ExecOptions): Promise<ExecResult>;
+export async function exec(command: string, options?: ExecOptions): Promise<ExecResult>;
 ```
 
-`exec()`'s own output line (its `logger.info(ret.message)` at the end) is suppressed when `options.logLevel === "silent"` — this is the one place in gulp-tron where `logLevel` is actually checked directly in code, rather than relying on the logger instance's own level filtering.
+- **`exitCode`**: process exit code (`0` for success, non-zero for failure).
+- **`message`**: error message (empty string on success).
+- **`throwOnError`**: when `true`, rejects the promise on failure; when `false` (default), resolves with an error message instead of throwing.
 
----
+Intended use, per the earlier version of this doc: running commands outside the main build stream pipeline - linting, formatting, or pre-flight checks that should fail the build on error.
 
-## 4. Usage guide
+## Related docs
 
-### Registering a task with TaskConfig
-
-```ts
-const tron = new Tron();
-
-tron.task({
-  name: "build",
-  src: "src/**/*.js",
-  dest: "dist",
-  build: (bs) => bs.src().pipe(/* ... */),
-});
-```
-
-### Defining dependencies and triggers with BuildSet
-
-```ts
-tron.task({
-  name: "all",
-  dependsOn: tron.series("build", "copy"),
-  triggers: tron.parallel("watch"),
-});
-```
-
-### Chaining BuildStream operations
-
-```ts
-const bs = new BuildStream("build");
-bs.src("src/**/*.js").filter("**/*.js").rename({ extname: ".min.js" }).dest("dist");
-```
-
----
-
-## 5. Notes
-
-- The Tron and BuildStream classes are the core public API entry points for task management and stream processing.
-- Most of the shared types are defined in packages/gulp-tron/src/types.ts, while Tron and BuildStream compose them in their own APIs.
-- When extending the library or writing custom plugins, start with TaskConfig, BuildOptions, BuildSet, CopyOptions, and ExecOptions.
+- [Getting Started](./00-Getting%20started.md)
+- [Tron API](./01-Tron.md)
+- [BuildStream API](./02-BuildStream.md)

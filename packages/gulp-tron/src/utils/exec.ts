@@ -4,7 +4,10 @@ import { getDefaultLogger } from "@wicle/tiny-logger";
 import type { LogOptions } from "../types.js";
 
 /** Type for execution options combining spawn options with logging */
-export type ExecOptions = SpawnOptions & LogOptions;
+export type ExecOptions = SpawnOptions &
+  LogOptions & {
+    readonly throwOnError?: boolean;
+  };
 export type ExecResult = {
   exitCode?: number;
   message?: string;
@@ -96,6 +99,8 @@ export async function exec(command: string, options: ExecOptions = {}): Promise<
 
   const ret = await processToPromise(childProcess, command);
   if (options.logLevel !== "silent") logger.info(ret.message);
+
+  if (options.throwOnError && ret.message) throw new Error(ret.message);
 
   return ret;
 }

@@ -254,6 +254,14 @@ describe("Tron", () => {
       await expect(execTask("@clean")).resolves.not.toThrow();
       expect(mockDel).toHaveBeenCalledWith(["dist3", "dist1", "dist2"], expect.any(Object));
     });
+
+    it("should include tasks registered after the cleaner task is created", async () => {
+      tron.addCleaner({ clean: ["dist-initial"] });
+      tron.task({ name: "late-task", clean: ["dist-late"] });
+
+      await expect(execTask("@clean")).resolves.not.toThrow();
+      expect(mockDel).toHaveBeenCalledWith(["dist-initial", "dist-late"], expect.any(Object));
+    });
   });
 
   describe("addWatch method", () => {
@@ -318,6 +326,17 @@ describe("Tron", () => {
 
       await expect(execTask("@watch")).resolves.not.toThrow();
       expect(mockWatch).toHaveBeenCalledWith(["src/**/*.css"], expect.any(Function));
+    });
+
+    it("should apply watch and addWatch patterns supplied to addWatcher", async () => {
+      tron.task({ name: "configured-task", src: "src/**/*.js", addWatch: "src/**/*.css" });
+      tron.addWatcher({ watch: "config/**/*.json", addWatch: "public/**/*" });
+
+      await expect(execTask("@watch")).resolves.not.toThrow();
+      expect(mockWatch).toHaveBeenCalledWith(
+        ["config/**/*.json", "src/**/*.css", "public/**/*"],
+        expect.any(Function),
+      );
     });
 
     it("should initialize browserSync if option is set", async () => {
@@ -400,6 +419,14 @@ describe("Tron", () => {
 
       await expect(execTask("@watch")).resolves.not.toThrow();
       expect(mockWatch).not.toHaveBeenCalled();
+    });
+
+    it("should watch tasks registered after the watcher task is created", async () => {
+      tron.addWatcher();
+      tron.task({ name: "late-watch-task", src: "src/**/*.js" });
+
+      await expect(execTask("@watch")).resolves.not.toThrow();
+      expect(mockWatch).toHaveBeenCalledWith(["src/**/*.js"], expect.any(Function));
     });
   });
 

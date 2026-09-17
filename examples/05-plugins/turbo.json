@@ -3,7 +3,6 @@
   "tasks": {
     "build": {
       "cache": true,
-      "inputs": ["scss/**/*.scss"],
       "outputs": ["scss/**/*.{css,map}"]
     }
   }

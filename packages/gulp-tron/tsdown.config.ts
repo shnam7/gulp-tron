@@ -7,5 +7,5 @@ export default defineConfig({
   cjsDefault: false,
   deps: { neverBundle: true },
   platform: "node",
-  target: "node18",
+  target: "node20",
 });

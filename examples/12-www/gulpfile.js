@@ -81,7 +81,7 @@ const zip = {
     `!${path.join(srcRoot, "*.zip")}`,
   ],
   dest: destRoot,
-  outFile: "10-www.zip",
+  outFile: `${projectName}.zip`,
   watch: [], // disable watch by setting 'watch' to empty array
 };
 

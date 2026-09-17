@@ -837,7 +837,7 @@ describe("BuildStream", () => {
   describe("pipe method", () => {
     it("should pipe another stream to current build stream", async () => {
       const messages: string[] = [];
-      const plugin = throughSafe(undefined, (_cb) => {
+      const plugin = throughSafe(undefined, () => {
         messages.push("plugin called");
       });
       await bs.src(path.join(srcRoot, "**/*.*")).pipe(plugin).finish();

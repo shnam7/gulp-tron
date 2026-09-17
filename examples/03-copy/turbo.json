@@ -3,7 +3,6 @@
   "tasks": {
     "build": {
       "cache": true,
-      "inputs": [],
       "outputs": ["test-src", "test-dest"]
     }
   }

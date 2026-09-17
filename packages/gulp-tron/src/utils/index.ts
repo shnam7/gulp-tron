@@ -1,2 +1,2 @@
-export { arrayify, default as is } from "@wicle/is";
+export { arrayify, is } from "@wicle/is";
 export * from "./exec.js";

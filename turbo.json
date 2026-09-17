@@ -15,8 +15,7 @@
       "cache": false
     },
     "test": {
-      "cache": false,
-      "outputs": ["!coverage/**"]
+      "cache": false
     },
     "clean": {
       "cache": false
