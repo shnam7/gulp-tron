@@ -1,8 +1,10 @@
+import type { ReactElement, ReactNode } from "react";
+
 type ContainerProps = {
-  children?: React.ReactNode;
+  children?: ReactNode;
 };
 
-export default function Container({ children }: ContainerProps) {
+export default function Container({ children }: ContainerProps): ReactElement {
   return (
     <div
       style={{

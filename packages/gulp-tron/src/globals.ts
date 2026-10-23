@@ -1,8 +1,8 @@
 import gulp from "gulp";
 
-let _gulpInstance = gulp;
+let _gulpInstance: typeof gulp = gulp;
 
-export function useGulp(gulpInstance: typeof gulp) {
+export function useGulp(gulpInstance: typeof gulp): void {
   _gulpInstance = gulpInstance;
 }
 

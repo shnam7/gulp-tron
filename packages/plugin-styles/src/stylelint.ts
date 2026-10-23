@@ -82,7 +82,7 @@ export const stylelintP =
 export const stylelintSassP = (
   options: StylelintOptions = {},
   reporterOptions: StylelintReporterOptions = {},
-) => {
+): PluginFunction => {
   const opts: StylelintOptions = { ...options, parser: sassParser as unknown };
   return stylelintP(opts, reporterOptions);
 };
@@ -93,7 +93,7 @@ export const stylelintSassP = (
 export const stylelintScssP = (
   options: StylelintOptions = {},
   reporterOptions: StylelintReporterOptions = {},
-) => {
+): PluginFunction => {
   const opts: StylelintOptions = { ...options, parser: scssParser as unknown };
   return stylelintP(opts, reporterOptions);
 };
@@ -104,7 +104,7 @@ export const stylelintScssP = (
 export const stylelintLessP = (
   options: StylelintOptions = {},
   reporterOptions: StylelintReporterOptions = {},
-) => {
+): PluginFunction => {
   const opts: StylelintOptions = { ...options, parser: lessParser as unknown };
   return stylelintP(opts, reporterOptions);
 };

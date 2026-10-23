@@ -75,7 +75,7 @@ export async function flushStdout(): Promise<void> {
  * Flushes stderr by waiting for the drain event or forcing a write.
  * @returns Promise that resolves when stderr is flushed
  */
-export async function flushStderr() {
+export async function flushStderr(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     if (process.stderr.writableLength === 0) resolve();
 
@@ -93,7 +93,7 @@ export async function flushStderr() {
 /**
  * Flushes both stdout and stderr.
  */
-export async function flushAllStdio() {
+export async function flushAllStdio(): Promise<void> {
   await Promise.all([flushStdout(), flushStderr()]);
 }
 

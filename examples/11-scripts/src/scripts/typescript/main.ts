@@ -5,11 +5,11 @@ await Promise.resolve();
 
 export class TsContainer {
   // ES2022: Static class properties
-  static staticProperty = "typescriptIsCool";
+  static staticProperty: string = "typescriptIsCool";
 
   // ES2022: initializer syntax
   protected _title = "Typescript";
-  protected _style;
+  protected _style: string;
 
   constructor() {
     this._style = `
@@ -19,7 +19,7 @@ export class TsContainer {
         `;
   }
 
-  render(root: HTMLElement | undefined) {
+  render(root: HTMLElement | undefined): void {
     if (!root) throw new Error(`typescript:Invalid root root node`);
 
     const title = document.createElement("h1");
@@ -32,5 +32,5 @@ export class TsContainer {
   }
 }
 
-export const container = new TsContainer();
+export const container: TsContainer = new TsContainer();
 container.render(document.querySelector<HTMLElement>("#typescript") as HTMLElement);

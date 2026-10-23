@@ -4,7 +4,8 @@
     "module": "nodenext", // this is default
     "moduleResolution": "nodenext",
     "strict": true,
-    "declaration": false,
+    "declaration": true,
+    "isolatedDeclarations": true,
     "noImplicitAny": true,
     "lib": ["dom", "es6", "esnext", "dom.iterable", "scripthost"],
     "noEmitOnError": true,

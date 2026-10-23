@@ -3,7 +3,6 @@
 [![npm package](https://img.shields.io/npm/v/gulp-tron.svg)](https://www.npmjs.com/package/gulp-tron) [![node compatibility](https://img.shields.io/node/v/gulp-tron.svg)](https://nodejs.org/en/about/previous-releases) [![build status](https://github.com/shnam7/gulp-tron/actions/workflows/ci.yml/badge.svg)](https://github.com/shnam7/gulp-tron/actions/workflows/ci.yml)
 
 Easy-to-use, configuration-driven build manager for Gulp projects.
-
 - Simple task creation through configuration
 - Fluent API for manipulating build streams
 - Dependency management for task execution
@@ -101,7 +100,6 @@ const conf = {
 ### `BuildStream`
 
 A `BuildStream` instance is created for each task execution and provides fluent API such as:
-
 - `src()` / `add()` / `remove()` / `filter()`
 - `rename()` / `order()` / `changed()`
 - `copy()` / `del()` / `clean()` / `exec()`
@@ -145,7 +143,6 @@ tron
 ```
 
 This creates:
-
 - `styles` task
 - `@clean` task from the task's `clean` property
 - `@watch` task from the task's `watch` or `src` property

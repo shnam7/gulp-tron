@@ -4,5 +4,7 @@
     "sourceMap": true,
     "rootDir": "./src/scripts",
     "outDir": "./dist"
-  }
+  },
+  "include": ["./src/scripts/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -62,7 +62,7 @@ export class BuildStream {
    * @param buildFunc BuildFunction from TaskConfig (`conf.build`).
    * @returns void or A promise to be waited by gulp task.
    */
-  static async main(bs: BuildStream, buildFunc: BuildFunction) {
+  static async main(bs: BuildStream, buildFunc: BuildFunction): Promise<GulpStream> {
     await buildFunc(bs);
     if (bs.#srcCalled) bs.promise(pEvent(bs.stream, "finish"));
     await bs.#promiseQ;
@@ -98,23 +98,23 @@ export class BuildStream {
     if (promiseQ) this.#promiseQ = promiseQ;
   }
 
-  get name() {
+  get name(): string {
     return this.#name;
   }
 
-  get className() {
+  get className(): string {
     return this.constructor.name;
   }
 
-  get stream() {
+  get stream(): GulpStream {
     return this.#stream;
   }
 
-  get promiseQ() {
+  get promiseQ(): Promise<unknown> {
     return this.#promiseQ;
   }
 
-  get opts() {
+  get opts(): BuildOptions {
     return this.#opts;
   }
 
@@ -123,7 +123,7 @@ export class BuildStream {
   }
 
   /** Modern performance metrics getter */
-  get performance() {
+  get performance(): { startTime: number; elapsedTime: number } {
     return {
       ...this.#performanceMetrics,
       elapsedTime: performance.now() - this.#performanceMetrics.startTime,
@@ -640,7 +640,7 @@ export class BuildStream {
    *
    * @returns Promise that resolves when the build stream is finished.
    */
-  async finish() {
+  async finish(): Promise<void> {
     this.promise(pEvent(this.#stream, "finish"));
     await this.sync();
   }

@@ -14,7 +14,7 @@
     "@gulp-tron/plugin-styles": "workspace:*",
     "@gulp-tron/plugin-utils": "workspace:*",
     "@gulp-tron/tsconfig": "workspace:*",
-    "@swc/core": "^1.16.2",
+    "@swc/core": "^1.16.20",
     "gulp": "^5.0.1",
     "gulp-htmlmin": "^5.0.1",
     "gulp-prettier": "^7.0.0",

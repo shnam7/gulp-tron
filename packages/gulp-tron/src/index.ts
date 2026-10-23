@@ -4,7 +4,7 @@
 
 import { Tron } from "./tron.js";
 
-const tron = new Tron();
+const tron: Tron = new Tron();
 
 export * from "./build-stream.js";
 export { gulp } from "./globals.js";
