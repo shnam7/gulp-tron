@@ -15,7 +15,8 @@ const fixturePath = path.join(destRoot, "do-not-delete");
 const fixture = {
   name: "fixture",
   build: async (bs) => {
-    await bs.exec(`mkdir -p ${fixturePath}`).exec(`touch ${path.join(fixturePath, "sample.txt")}`);
+    await bs.exec(`mkdir -p ${fixturePath}`).sync(); // wait for directory to be created before creating file
+    await bs.exec(`touch ${path.join(fixturePath, "sample.txt")}`).sync();
   },
   clean: [fixturePath],
 };
